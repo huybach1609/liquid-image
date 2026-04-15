@@ -1,18 +1,31 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { Button } from "./components/ui/button";
-import { Input } from "./components/ui/input";
-import { ThemeToggle } from "./components/theme-toggle";
+import { Button } from "./shared/components/ui/button";
+import { Input } from "./shared/components/ui/input";
+import { ThemeToggle } from "./shared/components/theme-toggle";
+
+type MagickVersionInfo = {
+  versionName: string;
+  aboutLine: string;
+};
 
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
+  const [versionInfo, setVersionInfo] = useState<MagickVersionInfo | null>(null);
 
   async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
     setGreetMsg(await invoke("greet", { name }));
   }
+  async function checkVersion() {
+    const info = await invoke<MagickVersionInfo>("check_version");
+    setVersionInfo(info);
+  }
 
+  useEffect(() => {
+    checkVersion();
+  }, []);
+  
   return (
     <main className="min-h-screen bg-background p-6 text-foreground">
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
@@ -46,6 +59,10 @@ function App() {
             {greetMsg || "Theme switch now updates all shadcn semantic tokens."}
           </p>
         </section>
+      </div>
+      <div className="mt-3 space-y-1 text-sm text-muted-foreground">
+        <p>{versionInfo ? `Version: ${versionInfo.versionName}` : "Checking version..."}</p>
+        {/* <p>{versionInfo?.aboutLine ?? ""}</p> */}
       </div>
     </main>
   );
