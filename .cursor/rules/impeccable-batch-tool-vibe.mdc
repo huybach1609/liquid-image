@@ -1,0 +1,48 @@
+---
+description: Impeccable UI vibe for batch image desktop-style interface
+alwaysApply: true
+---
+
+# Impeccable UI Vibe - Batch Tool
+
+Use this visual direction for UI work in this project.
+
+## Core Mood
+- Build a calm, pro desktop-tool feel: quiet, precise, utility-first.
+- Keep visuals subtle and lightweight; avoid flashy gradients/glows.
+- Prioritize scanability and dense-but-clean information layout.
+
+## Layout Pattern
+- Prefer structured multi-pane layouts with clear vertical separators.
+- Use card/group sections for settings, pipeline steps, queues, and output.
+- Keep action bar/footer persistent for key actions (e.g., run/apply).
+
+## Visual Language
+- Base surfaces: off-white/neutral (`#fff`, `#f9f9f8`, `#f5f5f3`).
+- Hairline borders: `0.5px` with soft black alpha (`rgba(0,0,0,0.10-0.20)`).
+- Border radius: `8px` for controls/cards, `12px` for app/container shells.
+- Accent color: lavender-purple (`#7F77DD`), darker hover (`#534AB7`).
+
+## Typography
+- Use system sans stack, compact sizes (`11px`, `12px`, `13px`).
+- Section labels: uppercase, slightly tracked, muted gray.
+- Keep weight modest (`500`) and avoid oversized headings.
+
+## Components and States
+- Inputs/selects/buttons are compact with soft outlines and subtle hover fill.
+- Tabs/step headers use low-contrast inactive states + clear active indicator.
+- Status colors stay semantic and restrained:
+  - success: green-tint background + dark green text
+  - running/info: blue-tint background + blue text
+  - error: red-tint background + dark red text
+  - queued/disabled: reduced contrast/opacity
+
+## Interaction Rules
+- Use micro-feedback only (hover, active border, selected row tint).
+- Keep motion minimal; avoid dramatic transitions.
+- Preserve predictable spacing rhythm (tight vertical gaps, aligned controls).
+
+## Avoid
+- Neon palettes, heavy shadows, glassmorphism, large rounded "mobile" styling.
+- Oversized typography or excessive whitespace that reduces tool density.
+- Decorative UI that weakens operational clarity.
