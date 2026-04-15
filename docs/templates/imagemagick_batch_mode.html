@@ -1,0 +1,309 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);font-size:13px;color:var(--color-text-primary);background:var(--color-background-tertiary)}
+.app{display:flex;height:660px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;background:var(--color-background-primary)}
+.col{display:flex;flex-direction:column;border-right:0.5px solid var(--color-border-tertiary)}
+.col:last-child{border-right:none}
+.col-head{padding:11px 14px;font-size:11px;font-weight:500;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.06em;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0}
+.col-body{flex:1;overflow-y:auto;padding:10px}
+.btn{background:transparent;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:4px 10px;font-size:12px;cursor:pointer;color:var(--color-text-primary);font-family:var(--font-sans)}
+.btn:hover{background:var(--color-background-secondary)}
+.btn-sm{padding:3px 8px;font-size:11px}
+.btn-primary{background:#7F77DD;border-color:#7F77DD;color:#fff}
+.btn-primary:hover{background:#534AB7;border-color:#534AB7}
+.btn-danger{background:transparent;border-color:var(--color-border-danger);color:var(--color-text-danger)}
+.file-item{display:flex;align-items:center;gap:8px;padding:7px 9px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);margin-bottom:6px;background:var(--color-background-primary)}
+.file-thumb{width:36px;height:28px;background:var(--color-background-secondary);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:var(--color-text-tertiary);font-weight:500}
+.file-info{flex:1;min-width:0}
+.file-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-meta{font-size:11px;color:var(--color-text-tertiary)}
+.file-status{width:16px;height:16px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px}
+.status-done{background:#EAF3DE;color:#3B6D11}
+.status-err{background:#FCEBEB;color:#A32D2D}
+.status-wait{background:var(--color-background-secondary);color:var(--color-text-tertiary)}
+.status-run{background:#E6F1FB;color:#185FA5}
+.step-card{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);margin-bottom:8px;overflow:hidden}
+.step-head{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--color-background-secondary);cursor:pointer;user-select:none}
+.step-num{width:20px;height:20px;border-radius:50%;background:#7F77DD;color:#fff;font-size:10px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-label{flex:1;font-size:12px;font-weight:500}
+.step-badge{font-size:10px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:2px 7px;color:var(--color-text-secondary)}
+.step-body{padding:10px;border-top:0.5px solid var(--color-border-tertiary)}
+.field{margin-bottom:10px}
+.field label{display:block;font-size:11px;color:var(--color-text-secondary);margin-bottom:4px;font-weight:500}
+.field select,.field input[type=text],.field input[type=number]{width:100%;padding:4px 7px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px;font-family:var(--font-sans)}
+.field input[type=range]{width:100%}
+.field-row{display:flex;gap:8px}
+.field-row .field{flex:1;margin-bottom:0}
+.add-step-row{display:flex;gap:6px;flex-wrap:wrap;padding:4px 0 8px}
+.add-chip{border:0.5px dashed var(--color-border-secondary);border-radius:var(--border-radius-md);padding:4px 10px;font-size:11px;cursor:pointer;color:var(--color-text-secondary);background:transparent}
+.add-chip:hover{background:var(--color-background-secondary);color:var(--color-text-primary);border-style:solid}
+.cmd-bar{border-top:0.5px solid var(--color-border-tertiary);padding:10px 14px;background:var(--color-background-secondary);flex-shrink:0}
+.cmd-label{font-size:10px;color:var(--color-text-tertiary);margin-bottom:4px;font-weight:500;text-transform:uppercase;letter-spacing:.06em}
+.cmd-code{font-family:var(--font-mono);font-size:10px;color:#7F77DD;word-break:break-all;line-height:1.6}
+.progress-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.progress-track{flex:1;height:4px;background:var(--color-background-secondary);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;border-radius:2px;transition:width .4s}
+.log-line{font-family:var(--font-mono);font-size:11px;line-height:1.8;color:var(--color-text-secondary)}
+.log-line.ok{color:#3B6D11}
+.log-line.err{color:#A32D2D}
+.log-line.run{color:#185FA5}
+.tab-bar{display:flex;border-bottom:0.5px solid var(--color-border-tertiary);flex-shrink:0}
+.tab{padding:9px 14px;font-size:12px;cursor:pointer;color:var(--color-text-secondary);border-bottom:2px solid transparent;margin-bottom:-0.5px}
+.tab.active{color:var(--color-text-primary);font-weight:500;border-bottom-color:#7F77DD}
+.tab:hover:not(.active){color:var(--color-text-primary)}
+.pane{display:none;flex:1;flex-direction:column;overflow:hidden}
+.pane.active{display:flex}
+.footer{padding:10px 16px;border-top:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0}
+.stat{font-size:11px;color:var(--color-text-tertiary)}
+.stat b{color:var(--color-text-primary);font-weight:500}
+</style>
+
+<h2 class="sr-only">ImageMagick batch mode UI — three-column layout with file queue, pipeline builder, and output/progress pane</h2>
+
+<div class="app">
+
+  <div class="col" style="width:210px;min-width:210px">
+    <div class="col-head">
+      Input queue
+      <button class="btn btn-sm">+ Add files</button>
+    </div>
+    <div class="col-body">
+
+      <div style="margin-bottom:8px">
+        <div class="field">
+          <label>Source folder</label>
+          <input type="text" value="~/photos/raw/" style="font-size:11px">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Filter</label>
+            <select style="font-size:11px"><option>*.jpg</option><option>*.png</option><option>*.*</option></select>
+          </div>
+          <div class="field">
+            <label>Recurse</label>
+            <select style="font-size:11px"><option>No</option><option>Yes</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div style="height:0.5px;background:var(--color-border-tertiary);margin:10px 0 8px"></div>
+
+      <div class="file-item">
+        <div class="file-thumb">JPG</div>
+        <div class="file-info">
+          <div class="file-name">sunset_01.jpg</div>
+          <div class="file-meta">4032×3024 · 3.8 MB</div>
+        </div>
+        <div class="file-status status-done">✓</div>
+      </div>
+      <div class="file-item">
+        <div class="file-thumb">JPG</div>
+        <div class="file-info">
+          <div class="file-name">portrait_02.jpg</div>
+          <div class="file-meta">2448×3264 · 2.1 MB</div>
+        </div>
+        <div class="file-status status-done">✓</div>
+      </div>
+      <div class="file-item" style="border-color:#378ADD;background:#E6F1FB">
+        <div class="file-thumb" style="background:#B5D4F4;color:#0C447C">JPG</div>
+        <div class="file-info">
+          <div class="file-name" style="color:#0C447C">landscape_03.jpg</div>
+          <div class="file-meta" style="color:#185FA5">processing…</div>
+        </div>
+        <div class="file-status status-run">↻</div>
+      </div>
+      <div class="file-item" style="opacity:.55">
+        <div class="file-thumb">JPG</div>
+        <div class="file-info">
+          <div class="file-name">citynight_04.jpg</div>
+          <div class="file-meta">5472×3648 · 6.2 MB</div>
+        </div>
+        <div class="file-status status-wait">–</div>
+      </div>
+      <div class="file-item" style="opacity:.55">
+        <div class="file-thumb">PNG</div>
+        <div class="file-info">
+          <div class="file-name">logo_source.png</div>
+          <div class="file-meta">800×600 · 420 KB</div>
+        </div>
+        <div class="file-status status-wait">–</div>
+      </div>
+      <div class="file-item" style="border-color:#E24B4A;background:#FCEBEB">
+        <div class="file-thumb" style="background:#F7C1C1;color:#A32D2D">TIF</div>
+        <div class="file-info">
+          <div class="file-name" style="color:#A32D2D">scan_corrupt.tif</div>
+          <div class="file-meta" style="color:#A32D2D">unsupported depth</div>
+        </div>
+        <div class="file-status status-err">✕</div>
+      </div>
+
+    </div>
+    <div style="padding:10px;border-top:0.5px solid var(--color-border-tertiary);flex-shrink:0">
+      <div class="progress-row">
+        <div class="progress-track" style="flex:1"><div class="progress-fill" style="width:42%;background:#7F77DD"></div></div>
+        <span class="stat"><b>3</b>/7</span>
+      </div>
+      <div class="stat">2 done · 1 running · 1 error</div>
+    </div>
+  </div>
+
+  <div class="col" style="flex:1;min-width:0">
+    <div class="col-head">
+      Pipeline
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm">Save preset</button>
+        <button class="btn btn-sm">Load preset</button>
+      </div>
+    </div>
+    <div class="col-body">
+
+      <div class="step-card">
+        <div class="step-head" onclick="toggle(this)">
+          <div class="step-num">1</div>
+          <span class="step-label">Resize</span>
+          <span class="step-badge">1920×1080 · fit</span>
+          <span style="font-size:11px;color:var(--color-text-tertiary)">▾</span>
+        </div>
+        <div class="step-body">
+          <div class="field-row">
+            <div class="field"><label>Width</label><input type="number" value="1920" style="font-size:11px"></div>
+            <div class="field"><label>Height</label><input type="number" value="1080" style="font-size:11px"></div>
+            <div class="field"><label>Mode</label><select style="font-size:11px"><option>Fit</option><option>Fill</option><option>Exact</option><option>Width only</option><option>Height only</option></select></div>
+          </div>
+          <div class="field"><label>Filter</label><select style="font-size:11px"><option>Lanczos</option><option>Mitchell</option><option>Bilinear</option><option>Nearest</option></select></div>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-head" onclick="toggle(this)">
+          <div class="step-num">2</div>
+          <span class="step-label">Normalize colors</span>
+          <span class="step-badge">auto</span>
+          <span style="font-size:11px;color:var(--color-text-tertiary)">▾</span>
+        </div>
+        <div class="step-body" style="display:none">
+          <div class="field"><label>Method</label><select style="font-size:11px"><option>Normalize (−normalize)</option><option>Auto-level (−auto-level)</option><option>Contrast stretch</option></select></div>
+          <div class="field"><label>Black point %<span style="float:right" id="bp">0.1</span></label><input type="range" min="0" max="5" step="0.1" value="0.1" oninput="document.getElementById('bp').textContent=parseFloat(this.value).toFixed(1)"></div>
+          <div class="field"><label>White point %<span style="float:right" id="wp">0.1</span></label><input type="range" min="0" max="5" step="0.1" value="0.1" oninput="document.getElementById('wp').textContent=parseFloat(this.value).toFixed(1)"></div>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-head" onclick="toggle(this)">
+          <div class="step-num">3</div>
+          <span class="step-label">Convert</span>
+          <span class="step-badge">→ WEBP · q85</span>
+          <span style="font-size:11px;color:var(--color-text-tertiary)">▾</span>
+        </div>
+        <div class="step-body" style="display:none">
+          <div class="field-row">
+            <div class="field"><label>Format</label><select style="font-size:11px"><option>WEBP</option><option>PNG</option><option>JPEG</option><option>AVIF</option></select></div>
+            <div class="field"><label>Quality<span style="float:right" id="qv">85</span></label><input type="range" min="1" max="100" value="85" step="1" oninput="document.getElementById('qv').textContent=this.value"></div>
+          </div>
+          <div class="field"><label>Strip metadata</label><select style="font-size:11px"><option>Yes (−strip)</option><option>No</option></select></div>
+        </div>
+      </div>
+
+      <div style="margin-top:10px">
+        <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:6px;font-weight:500">Add step</div>
+        <div class="add-step-row">
+          <div class="add-chip">+ Crop</div>
+          <div class="add-chip">+ Mirror</div>
+          <div class="add-chip">+ B&W</div>
+          <div class="add-chip">+ Contrast</div>
+          <div class="add-chip">+ Vignette</div>
+          <div class="add-chip">+ Border</div>
+          <div class="add-chip">+ Rotate</div>
+          <div class="add-chip">+ Text/logo</div>
+          <div class="add-chip">+ Compose</div>
+          <div class="add-chip" style="border-color:#7F77DD;color:#534AB7">+ Custom flag</div>
+        </div>
+      </div>
+
+    </div>
+    <div class="cmd-bar">
+      <div class="cmd-label">Mogrify preview (per file)</div>
+      <div class="cmd-code">mogrify -path ./out/ -resize 1920x1080 -filter Lanczos -normalize -quality 85 -strip -format webp *.jpg</div>
+    </div>
+  </div>
+
+  <div class="col" style="width:230px;min-width:230px">
+    <div class="tab-bar">
+      <div class="tab active" onclick="switchTab('output',this)">Output</div>
+      <div class="tab" onclick="switchTab('log',this)">Log</div>
+      <div class="tab" onclick="switchTab('settings',this)">Settings</div>
+    </div>
+
+    <div class="pane active" id="pane-output">
+      <div class="col-head" style="border-top:none">
+        Destination
+      </div>
+      <div class="col-body">
+        <div class="field"><label>Output folder</label><input type="text" value="./out/" style="font-size:11px"></div>
+        <div class="field"><label>Naming pattern</label>
+          <select style="font-size:11px">
+            <option>Same name</option>
+            <option>{name}_out</option>
+            <option>{name}_{op}</option>
+            <option>{date}_{name}</option>
+            <option>Custom…</option>
+          </select>
+        </div>
+        <div class="field"><label>On conflict</label><select style="font-size:11px"><option>Overwrite</option><option>Skip</option><option>Rename (+1)</option></select></div>
+        <div style="height:0.5px;background:var(--color-border-tertiary);margin:10px 0"></div>
+        <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:8px;font-weight:500">Concurrency</div>
+        <div class="field"><label>Workers<span style="float:right" id="wv">4</span></label><input type="range" min="1" max="16" value="4" step="1" oninput="document.getElementById('wv').textContent=this.value"></div>
+        <div class="field"><label>On error</label><select style="font-size:11px"><option>Skip & continue</option><option>Stop all</option><option>Retry once</option></select></div>
+        <div style="height:0.5px;background:var(--color-border-tertiary);margin:10px 0"></div>
+        <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:8px;font-weight:500">After run</div>
+        <div class="field"><label>Action</label><select style="font-size:11px"><option>Do nothing</option><option>Open folder</option><option>Show notification</option><option>Run script…</option></select></div>
+      </div>
+    </div>
+
+    <div class="pane" id="pane-log">
+      <div class="col-body" style="padding:12px">
+        <div class="log-line ok">✓ sunset_01.jpg → sunset_01.webp</div>
+        <div class="log-line ok">✓ portrait_02.jpg → portrait_02.webp</div>
+        <div class="log-line run">↻ landscape_03.jpg — step 2/3…</div>
+        <div class="log-line" style="color:var(--color-text-tertiary)">  citynight_04.jpg — queued</div>
+        <div class="log-line" style="color:var(--color-text-tertiary)">  logo_source.png — queued</div>
+        <div class="log-line err">✕ scan_corrupt.tif — error: unsupported bit depth (48)</div>
+      </div>
+    </div>
+
+    <div class="pane" id="pane-settings">
+      <div class="col-body">
+        <div class="field"><label>ImageMagick binary</label><input type="text" value="/usr/local/bin/magick" style="font-size:11px"></div>
+        <div class="field"><label>Memory limit</label><select style="font-size:11px"><option>256 MB</option><option>512 MB</option><option>1 GB</option><option>2 GB</option></select></div>
+        <div class="field"><label>Disk cache</label><select style="font-size:11px"><option>1 GB</option><option>2 GB</option><option>4 GB</option></select></div>
+        <div class="field"><label>Preview before run</label><select style="font-size:11px"><option>First file only</option><option>All files</option><option>Disabled</option></select></div>
+      </div>
+    </div>
+
+    <div class="footer" style="gap:8px;flex-direction:column;align-items:stretch;padding:10px 12px">
+      <div style="display:flex;gap:6px">
+        <button class="btn" style="flex:1">Dry run</button>
+        <button class="btn btn-primary" style="flex:1">Run batch →</button>
+      </div>
+      <div class="stat" style="text-align:center">est. ~24 s · 4 workers · 14.3 MB out</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function toggle(head){
+  const body=head.nextElementSibling;
+  const arrow=head.querySelector('span:last-child');
+  const open=body.style.display!=='none';
+  body.style.display=open?'none':'block';
+  arrow.textContent=open?'▸':'▾';
+}
+function switchTab(id,tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
+  tab.classList.add('active');
+  document.getElementById('pane-'+id).classList.add('active');
+}
+</script>

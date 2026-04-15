@@ -1,0 +1,205 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);font-size:13px;color:var(--color-text-primary);background:var(--color-background-tertiary)}
+.app{display:flex;height:620px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;background:var(--color-background-primary)}
+.sidebar{width:180px;min-width:180px;border-right:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);display:flex;flex-direction:column}
+.sidebar-header{padding:14px 12px 10px;font-size:11px;font-weight:500;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.06em;border-bottom:0.5px solid var(--color-border-tertiary)}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 12px;cursor:pointer;border-radius:0;font-size:13px;color:var(--color-text-secondary);transition:background .12s}
+.nav-item:hover{background:var(--color-background-primary);color:var(--color-text-primary)}
+.nav-item.active{background:var(--color-background-primary);color:var(--color-text-primary);font-weight:500;border-right:2px solid #7F77DD}
+.nav-icon{width:15px;height:15px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.center{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{padding:12px 16px;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;gap:10px}
+.file-pill{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:5px 10px;font-size:12px;color:var(--color-text-secondary);cursor:pointer;display:flex;align-items:center;gap:6px}
+.file-pill:hover{border-color:var(--color-border-primary);color:var(--color-text-primary)}
+.btn{background:transparent;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:5px 12px;font-size:13px;cursor:pointer;color:var(--color-text-primary);font-family:var(--font-sans)}
+.btn:hover{background:var(--color-background-secondary)}
+.btn-primary{background:#7F77DD;border-color:#7F77DD;color:#fff}
+.btn-primary:hover{background:#534AB7;border-color:#534AB7}
+.workspace{flex:1;display:flex;overflow:hidden}
+.canvas-area{flex:1;display:flex;align-items:center;justify-content:center;background:var(--color-background-tertiary);position:relative;overflow:hidden}
+.img-placeholder{width:280px;height:210px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:border-color .15s}
+.img-placeholder:hover{border-color:var(--color-border-primary)}
+.img-placeholder svg{opacity:.3}
+.img-placeholder p{font-size:12px;color:var(--color-text-tertiary)}
+.options-panel{width:240px;min-width:240px;border-left:0.5px solid var(--color-border-tertiary);display:flex;flex-direction:column;overflow:hidden}
+.panel-title{padding:12px 14px;font-size:12px;font-weight:500;color:var(--color-text-tertiary);border-bottom:0.5px solid var(--color-border-tertiary);text-transform:uppercase;letter-spacing:.06em}
+.panel-body{flex:1;overflow-y:auto;padding:14px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;color:var(--color-text-secondary);margin-bottom:5px;font-weight:500}
+.field input[type=text],.field select,.field input[type=number]{width:100%;padding:5px 8px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px;font-family:var(--font-sans)}
+.field input[type=range]{width:100%;margin-top:2px}
+.field-row{display:flex;gap:8px}
+.field-row .field{flex:1;margin-bottom:0}
+.val-badge{font-size:11px;color:var(--color-text-tertiary);float:right}
+.cmd-bar{border-top:0.5px solid var(--color-border-tertiary);padding:10px 14px;background:var(--color-background-secondary)}
+.cmd-label{font-size:10px;color:var(--color-text-tertiary);margin-bottom:4px;font-weight:500;text-transform:uppercase;letter-spacing:.06em}
+.cmd-code{font-family:var(--font-mono);font-size:11px;color:#7F77DD;word-break:break-all;line-height:1.5}
+.footer{padding:10px 16px;border-top:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.tag{font-size:11px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:2px 8px;color:var(--color-text-secondary)}
+.divider{height:0.5px;background:var(--color-border-tertiary);margin:10px 0}
+</style>
+
+<h2 class="sr-only">ImageMagick desktop UI mockup with sidebar navigation, canvas preview, and options panel</h2>
+
+<div class="app">
+
+  <div class="sidebar">
+    <div class="sidebar-header">Operations</div>
+    <div style="overflow-y:auto;flex:1;padding:6px 0">
+      <div class="nav-item active"><span class="nav-icon">⇄</span> Convert</div>
+      <div class="nav-item"><span class="nav-icon">✂</span> Crop</div>
+      <div class="nav-item"><span class="nav-icon">⟺</span> Mirror</div>
+      <div class="nav-item"><span class="nav-icon">◑</span> Black & white</div>
+      <div class="nav-item"><span class="nav-icon">◐</span> Contrast</div>
+      <div class="nav-item"><span class="nav-icon">🎨</span> Normalize colors</div>
+      <div class="nav-item"><span class="nav-icon">◉</span> Vignette</div>
+      <div class="nav-item"><span class="nav-icon">▣</span> Border</div>
+      <div class="nav-item"><span class="nav-icon">↻</span> Rotate</div>
+      <div class="nav-item"><span class="nav-icon">⤡</span> Scale / resize</div>
+      <div class="nav-item"><span class="nav-icon">T</span> Text / logo</div>
+      <div class="nav-item"><span class="nav-icon">⊞</span> Compose</div>
+      <div class="divider"></div>
+      <div class="nav-item"><span class="nav-icon">⌨</span> Custom</div>
+    </div>
+  </div>
+
+  <div class="center">
+    <div class="topbar">
+      <div class="file-pill">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="2" y="1" width="9" height="13" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M8 1v4h4" stroke="currentColor" stroke-width="1.2"/></svg>
+        photo.jpg
+      </div>
+      <div class="file-pill" style="margin-right:auto">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Add file
+      </div>
+      <button class="btn">Batch mode</button>
+      <button class="btn btn-primary">Run →</button>
+    </div>
+
+    <div class="workspace">
+      <div class="canvas-area">
+        <div class="img-placeholder">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect x="4" y="8" width="40" height="32" rx="3" stroke="currentColor" stroke-width="1.5"/><circle cx="16" cy="18" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M4 32l10-10 8 8 6-6 12 10" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          <p>Drop image or click to open</p>
+          <p style="font-size:11px;color:var(--color-text-tertiary)">png · jpg · gif · webp · tiff · bmp</p>
+        </div>
+        <div style="position:absolute;bottom:12px;right:12px;display:flex;gap:6px">
+          <button class="btn" style="font-size:11px;padding:3px 9px">100%</button>
+          <button class="btn" style="font-size:11px;padding:3px 9px">Fit</button>
+        </div>
+      </div>
+
+      <div class="options-panel">
+        <div class="panel-title">Convert — options</div>
+        <div class="panel-body">
+
+          <div class="field">
+            <label>Output format</label>
+            <select>
+              <option>PNG</option>
+              <option>JPEG</option>
+              <option>WEBP</option>
+              <option>TIFF</option>
+              <option>BMP</option>
+              <option>GIF</option>
+              <option>AVIF</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Quality <span class="val-badge" id="qval">85</span></label>
+            <input type="range" min="1" max="100" value="85" oninput="document.getElementById('qval').textContent=this.value;updateCmd()">
+          </div>
+
+          <div class="field">
+            <label>Color depth</label>
+            <select onchange="updateCmd()">
+              <option>8-bit</option>
+              <option>16-bit</option>
+              <option>32-bit</option>
+            </select>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="field">
+            <label>Strip metadata</label>
+            <select onchange="updateCmd()">
+              <option>Yes (−strip)</option>
+              <option>No</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Color profile</label>
+            <select onchange="updateCmd()">
+              <option>sRGB</option>
+              <option>Adobe RGB</option>
+              <option>CMYK</option>
+            </select>
+          </div>
+
+          <div class="divider"></div>
+          <div class="field">
+            <label>Output filename</label>
+            <input type="text" value="photo_out.png" oninput="updateCmd()">
+          </div>
+
+          <div class="field">
+            <label>Output folder</label>
+            <input type="text" value="./output/" oninput="updateCmd()">
+          </div>
+
+        </div>
+
+        <div class="cmd-bar">
+          <div class="cmd-label">CLI preview</div>
+          <div class="cmd-code" id="cmdout">magick photo.jpg -quality 85 -strip -profile sRGB ./output/photo_out.png</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div style="display:flex;gap:6px">
+        <span class="tag">photo.jpg</span>
+        <span class="tag">3840 × 2160</span>
+        <span class="tag">4.2 MB</span>
+      </div>
+      <div style="font-size:11px;color:var(--color-text-tertiary)">ImageMagick 7.1</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function updateCmd(){
+  document.getElementById('cmdout').textContent = 'magick photo.jpg -quality '+document.getElementById('qval').textContent+' -strip -profile sRGB ./output/photo_out.png';
+}
+document.querySelectorAll('.nav-item').forEach(el=>{
+  el.addEventListener('click',function(){
+    document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+    this.classList.add('active');
+    const op = this.textContent.trim();
+    document.querySelector('.panel-title').textContent = op + ' — options';
+    let cmd = 'magick photo.jpg ';
+    if(op.includes('Crop')) cmd += '-gravity Center -crop 800x600+0+0 +repage';
+    else if(op.includes('Mirror')) cmd += '-flop';
+    else if(op.includes('Black')) cmd += '-colorspace Gray';
+    else if(op.includes('Contrast')) cmd += '-contrast-stretch 0.15x0.05%';
+    else if(op.includes('Normalize')) cmd += '-normalize';
+    else if(op.includes('Vignette')) cmd += '-vignette 0x20+5+5';
+    else if(op.includes('Border')) cmd += '-bordercolor black -border 10x10';
+    else if(op.includes('Rotate')) cmd += '-rotate 90';
+    else if(op.includes('Scale')) cmd += '-resize 1920x1080';
+    else if(op.includes('Text')) cmd += '-font Helvetica -pointsize 48 -fill white -annotate +20+60 "Your text"';
+    else if(op.includes('Compose')) cmd += 'overlay.png -gravity SouthEast -composite';
+    else if(op.includes('Custom')) cmd += '<your flags here>';
+    else cmd += '-quality 85 -strip -profile sRGB';
+    cmd += ' ./output/photo_out.png';
+    document.getElementById('cmdout').textContent = cmd;
+  });
+});
+</script>
