@@ -13,6 +13,7 @@ export type SingleStoreState = {
   selectedFile: string | null;
   selectedFunction: string;
   functionParams: Record<string, unknown>;
+  functionParamsByFunction: Record<string, Record<string, unknown>>;
   isManualPreview: boolean;
   previewRequestId: number;
   previewZoom: number;
@@ -28,6 +29,8 @@ export type SingleStoreState = {
   setPreviewZoom: (previewZoom: number) => void;
   setRunState: (runState: SingleRunState) => void;
   setRunStatus: (status: SingleRunStatus, message?: string) => void;
+  resetCurrentFunctionParams: () => void;
+  resetAllFunctionParams: () => void;
   resetRunState: () => void;
 };
 
@@ -42,6 +45,7 @@ export const useSingleStore = create<SingleStoreState>((set) => ({
   selectedFile: null,
   selectedFunction: DEFAULT_SELECTED_FUNCTION,
   functionParams: {},
+  functionParamsByFunction: {},
   isManualPreview: true,
   previewRequestId: 0,
   previewZoom: 100,
@@ -49,13 +53,43 @@ export const useSingleStore = create<SingleStoreState>((set) => ({
   fileMetadata: null,
   setFileMetadata: (fileMetadata: ImageMetadata | null) => set({ fileMetadata }),
   setSelectedFile: (selectedFile) => set({ selectedFile }),
-  setSelectedFunction: (selectedFunction) => set({ selectedFunction }),
-  setFunctionParams: (functionParams) => set({ functionParams }),
+  setSelectedFunction: (selectedFunction) =>
+    set((state) => {
+      if (state.selectedFunction === selectedFunction) {
+        return state;
+      }
+
+      const nextParamsByFunction = {
+        ...state.functionParamsByFunction,
+        [state.selectedFunction]: state.functionParams,
+      };
+
+      return {
+        selectedFunction,
+        functionParamsByFunction: nextParamsByFunction,
+        functionParams: nextParamsByFunction[selectedFunction] ?? {},
+      };
+    }),
+  setFunctionParams: (functionParams) =>
+    set((state) => ({
+      functionParams,
+      functionParamsByFunction: {
+        ...state.functionParamsByFunction,
+        [state.selectedFunction]: functionParams,
+      },
+    })),
   updateFunctionParam: (key, value) =>
     set((state) => ({
       functionParams: {
         ...state.functionParams,
         [key]: value,
+      },
+      functionParamsByFunction: {
+        ...state.functionParamsByFunction,
+        [state.selectedFunction]: {
+          ...state.functionParams,
+          [key]: value,
+        },
       },
     })),
   setIsManualPreview: (isManualPreview) => set({ isManualPreview }),
@@ -71,6 +105,19 @@ export const useSingleStore = create<SingleStoreState>((set) => ({
         status,
         message,
       },
+    }),
+  resetCurrentFunctionParams: () =>
+    set((state) => ({
+      functionParams: {},
+      functionParamsByFunction: {
+        ...state.functionParamsByFunction,
+        [state.selectedFunction]: {},
+      },
+    })),
+  resetAllFunctionParams: () =>
+    set({
+      functionParams: {},
+      functionParamsByFunction: {},
     }),
   resetRunState: () => set({ runState: initialRunState }),
 }));

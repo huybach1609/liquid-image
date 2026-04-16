@@ -4,6 +4,15 @@ type BuildSingleCliPreviewArgs = {
   functionParams: Record<string, unknown>;
 };
 
+type BuildSingleCliPipelineArgs = {
+  selectedFile: string | null;
+  operations: Array<{
+    selectedFunction: string;
+    functionParams: Record<string, unknown>;
+  }>;
+  outputParams?: Record<string, unknown>;
+};
+
 function getBaseName(filePath: string): string {
   const normalized = filePath.replace(/\\/g, "/");
   const parts = normalized.split("/");
@@ -45,22 +54,22 @@ function mapOutputFormatToExt(outputFormat: string): string {
   return normalized || "png";
 }
 
-export function buildSingleCliPreview({
-  selectedFile,
-  selectedFunction,
-  functionParams,
-}: BuildSingleCliPreviewArgs): string {
-  const inputBaseName = selectedFile ? getBaseName(selectedFile) : "photo.jpg";
-
-  const outputDir = normalizeOutputDir(getStringParam(functionParams, "outputDir", "./output"));
+function buildOutputPath(functionParams: Record<string, unknown>): string {
+  const outputDir = normalizeOutputDir(
+    getStringParam(functionParams, "outputDir", "./output"),
+  );
   const outputName = getStringParam(functionParams, "outputName", "photo_out");
   const outputFormat = getStringParam(functionParams, "outputFormat", "png");
   const outputExt = mapOutputFormatToExt(outputFormat);
-  const outputPath = `${outputDir}/${outputName}.${outputExt}`;
+  return `${outputDir}/${outputName}.${outputExt}`;
+}
 
-  const parts: string[] = [`magick`, quoteIfNeeded(inputBaseName)];
+export function buildSingleOperationArgs(
+  selectedFunction: string,
+  functionParams: Record<string, unknown>,
+): string[] {
+  const parts: string[] = [];
 
-  // Operation-specific flags.
   switch (selectedFunction) {
     case "Convert": {
       const quality = getNumberParam(functionParams, "quality", 85);
@@ -79,13 +88,10 @@ export function buildSingleCliPreview({
     }
     case "Crop": {
       const ratio = getStringParam(functionParams, "cropAspectRatio", "Free");
-      // Preset crop rectangles (preview-only). Real values can be driven later by width/height params.
       if (ratio === "1:1") {
         parts.push("-gravity", "Center", "-crop", "800x800+0+0", "+repage");
       } else if (ratio === "16:9") {
         parts.push("-gravity", "Center", "-crop", "1280x720+0+0", "+repage");
-      } else {
-        // Free -> no-op
       }
       break;
     }
@@ -128,7 +134,6 @@ export function buildSingleCliPreview({
     case "Border": {
       const size = Math.round(getNumberParam(functionParams, "borderSize", 10));
       const color = getStringParam(functionParams, "borderColor", "black");
-      // -border uses uniform size, so we use NxN by previewing with a square.
       parts.push("-bordercolor", quoteIfNeeded(color), "-border", `${size}x${size}`);
       break;
     }
@@ -190,22 +195,49 @@ export function buildSingleCliPreview({
       const blendMode = getStringParam(functionParams, "composeBlendMode", "over");
       const opacity = Math.round(getNumberParam(functionParams, "composeOpacity", 100));
 
-      // Template-inspired compose preview (overlay + composite).
       parts.push(quoteIfNeeded(overlayPath));
       parts.push("-gravity", "SouthEast");
       parts.push("-compose", blendMode);
-      // Preview-only: we pass opacity as a compose:args hint.
       parts.push("-define", `compose:args=${Math.max(0, Math.min(1, opacity / 100))}`);
       parts.push("-composite");
       break;
     }
     default: {
-      // Unknown operation: no-op, but still show a valid preview command.
       break;
     }
   }
 
+  return parts;
+}
+
+export function buildSingleCliPipeline({
+  selectedFile,
+  operations,
+  outputParams,
+}: BuildSingleCliPipelineArgs): string {
+  const inputBaseName = selectedFile ? getBaseName(selectedFile) : "photo.jpg";
+  const effectiveOutputParams = outputParams ?? operations.at(-1)?.functionParams ?? {};
+  const outputPath = buildOutputPath(effectiveOutputParams);
+
+  const parts: string[] = ["magick", quoteIfNeeded(inputBaseName)];
+  for (const operation of operations) {
+    parts.push(
+      ...buildSingleOperationArgs(operation.selectedFunction, operation.functionParams),
+    );
+  }
   parts.push(quoteIfNeeded(outputPath));
   return parts.join(" ");
+}
+
+export function buildSingleCliPreview({
+  selectedFile,
+  selectedFunction,
+  functionParams,
+}: BuildSingleCliPreviewArgs): string {
+  return buildSingleCliPipeline({
+    selectedFile,
+    operations: [{ selectedFunction, functionParams }],
+    outputParams: functionParams,
+  });
 }
 

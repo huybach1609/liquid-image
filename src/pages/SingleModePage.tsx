@@ -1,4 +1,4 @@
-import { useMemo, type ComponentType, type ReactNode } from "react";
+import { useMemo, useState, type ComponentType, type ReactNode } from "react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 
 import BlackWhiteFunction from "@/shared/components/functions/BlackWhite";
@@ -47,7 +47,10 @@ import { formatFileSize } from "@/lib/utils";
 import { CanvasPreview } from "@/features/single/components/CanvasPreview";
 import { SingleCliPreview } from "@/features/single/components/SingleCliPreview";
 import { usePreviewPipeline } from "@/features/single/hooks/usePreviewPipeline";
-import { buildSingleCliPreview } from "@/features/single/buildSingleCliPreview";
+import {
+  buildSingleCliPipeline,
+  buildSingleCliPreview,
+} from "@/features/single/buildSingleCliPreview";
 
 function getFileNameFromPath(filePath: string): string {
   const normalized = filePath.replace(/\\/g, "/");
@@ -138,6 +141,9 @@ const SINGLE_FUNCTION_ITEMS: SingleFunctionItem[] = [
 ];
 
 export function SingleModePage() {
+  const [cliPreviewMode, setCliPreviewMode] = useState<"function" | "all">(
+    "function",
+  );
   const selectedFile = useSingleStore((state) => state.selectedFile);
   const fileMetadata = useSingleStore((state) => state.fileMetadata);
   const setSelectedFile = useSingleStore((state) => state.setSelectedFile);
@@ -151,6 +157,9 @@ export function SingleModePage() {
   const previewZoom = useSingleStore((state) => state.previewZoom);
   const setPreviewZoom = useSingleStore((state) => state.setPreviewZoom);
   const functionParams = useSingleStore((state) => state.functionParams);
+  const functionParamsByFunction = useSingleStore(
+    (state) => state.functionParamsByFunction,
+  );
   const runState = useSingleStore((state) => state.runState);
   const isManualPreview = useSingleStore((state) => state.isManualPreview);
   const previewRequestId = useSingleStore((state) => state.previewRequestId);
@@ -158,6 +167,12 @@ export function SingleModePage() {
     (state) => state.setIsManualPreview,
   );
   const requestPreview = useSingleStore((state) => state.requestPreview);
+  const resetCurrentFunctionParams = useSingleStore(
+    (state) => state.resetCurrentFunctionParams,
+  );
+  const resetAllFunctionParams = useSingleStore(
+    (state) => state.resetAllFunctionParams,
+  );
 
   const isRunning = runState.status === "running";
   const message = runState.message;
@@ -177,15 +192,59 @@ export function SingleModePage() {
     previewRequestId,
   });
 
-  const commandPreview = useMemo(
+  const editedFunctionNames = useMemo(
     () =>
-      buildSingleCliPreview({
-        selectedFile,
-        selectedFunction: selectedFunctionName,
-        functionParams,
-      }),
-    [selectedFile, selectedFunctionName, functionParams],
+      Object.entries(functionParamsByFunction)
+        .filter(([, params]) => Object.keys(params).length > 0)
+        .map(([name]) => name),
+    [functionParamsByFunction],
   );
+
+  const commandPreviews = useMemo(() => {
+    if (cliPreviewMode === "all") {
+      const targetFunctions =
+        editedFunctionNames.length > 0 ? editedFunctionNames : [selectedFunctionName];
+
+      const mergedCommand = targetFunctions
+        .map((functionName) => ({
+          selectedFunction: functionName,
+          functionParams: functionParamsByFunction[functionName] ?? {},
+        }));
+
+      const pipelineCommand = buildSingleCliPipeline({
+        selectedFile,
+        operations: mergedCommand,
+        outputParams:
+          functionParamsByFunction[targetFunctions[targetFunctions.length - 1]] ??
+          functionParams,
+      });
+
+      return [
+        {
+          label: "All edited functions",
+          command: pipelineCommand,
+        },
+      ];
+    }
+
+    return [
+      {
+        label: selectedFunctionName,
+        command: buildSingleCliPreview({
+          selectedFile,
+          selectedFunction: selectedFunctionName,
+          functionParams,
+        }),
+      },
+    ];
+  }, [
+    cliPreviewMode,
+    editedFunctionNames,
+    functionParams,
+    functionParamsByFunction,
+    selectedFile,
+    selectedFunctionName,
+  ]);
 
   const handleSelectFile = async () => {
     const picked = await openDialog({
@@ -234,6 +293,8 @@ export function SingleModePage() {
         <nav className="py-2">
           {SINGLE_FUNCTION_ITEMS.map((item) => {
             const isSelected = selectedFunctionName === item.name;
+            const isEdited =
+              Object.keys(functionParamsByFunction[item.name] ?? {}).length > 0;
             return (
               <Tooltip key={item.name} delayDuration={700}>
                 <TooltipTrigger asChild>
@@ -248,7 +309,16 @@ export function SingleModePage() {
                     onClick={() => setSelectedFunctionName(item.name)}
                   >
                     {item.icon}
-                    {item.name}
+                    <span className="inline-flex items-center gap-1.5">
+                      {item.name}
+                      {isEdited ? (
+                        <span
+                          className="size-1.5 rounded-full bg-primary/80"
+                          aria-label={`${item.name} has edited settings`}
+                          title="Edited settings"
+                        />
+                      ) : null}
+                    </span>
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right">
@@ -383,14 +453,60 @@ export function SingleModePage() {
       </div>
 
       <aside className="grid min-h-0 grid-rows-[auto_1fr_auto] border-l border-border/70">
-        <div className="flex h-14 items-center border-b border-border/70 px-4 text-xs font-medium tracking-[0.08em] text-muted-foreground uppercase">
-          {selectedFunction.name} - Options
+        <div className="flex h-14 items-center justify-between gap-2 border-b border-border/70 px-4">
+          <span className="text-xs font-medium tracking-[0.08em] text-muted-foreground uppercase">
+            {selectedFunction.name} - Options
+          </span>
+          <div className="inline-flex items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-[11px]"
+              onClick={resetCurrentFunctionParams}
+            >
+              Reset current
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-[11px]"
+              onClick={resetAllFunctionParams}
+            >
+              Reset all
+            </Button>
+          </div>
         </div>
         <div className="space-y-3 overflow-auto px-4 py-3">
           <SelectedFunctionComponent />
         </div>
         <div className="border-t border-border/70 px-4 py-3">
-          <SingleCliPreview commandPreview={commandPreview} />
+          <div className="mb-2 inline-flex rounded-md border border-border/80 bg-muted/30 p-0.5">
+            <button
+              type="button"
+              className={`rounded px-2 py-1 text-[11px] transition-colors ${
+                cliPreviewMode === "function"
+                  ? "bg-background text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              onClick={() => setCliPreviewMode("function")}
+            >
+              See function
+            </button>
+            <button
+              type="button"
+              className={`rounded px-2 py-1 text-[11px] transition-colors ${
+                cliPreviewMode === "all"
+                  ? "bg-background text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              onClick={() => setCliPreviewMode("all")}
+            >
+              See all
+            </button>
+          </div>
+          <SingleCliPreview commandPreviews={commandPreviews} />
         </div>
       </aside>
     </section>
