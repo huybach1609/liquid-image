@@ -1,5 +1,4 @@
 import type { AppMode } from "@/shared/types/common";
-import { Button } from "@/shared/components/ui/button";
 
 type ModeSwitchProps = {
   mode: AppMode;
@@ -7,24 +6,30 @@ type ModeSwitchProps = {
 };
 
 export function ModeSwitch({ mode, onModeChange }: ModeSwitchProps) {
+  const items: Array<{ id: AppMode; label: string }> = [
+    { id: "single", label: "Single" },
+    { id: "batch", label: "Batch" },
+  ];
+
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-border/80 bg-card p-1">
-      <Button
-        type="button"
-        size="sm"
-        variant={mode === "single" ? "default" : "ghost"}
-        onClick={() => onModeChange("single")}
-      >
-        Single
-      </Button>
-      <Button
-        type="button"
-        size="sm"
-        variant={mode === "batch" ? "default" : "ghost"}
-        onClick={() => onModeChange("batch")}
-      >
-        Batch
-      </Button>
+    <div className="inline-flex rounded-md border border-border/70 bg-muted/50">
+      {items.map((item) => {
+        const isActive = mode === item.id;
+        return (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => onModeChange(item.id)}
+            className={`rounded-[6px] px-3 py-1 text-xs font-medium transition-colors ${
+              isActive
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {item.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
