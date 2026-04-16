@@ -1,15 +1,6 @@
 import { useState } from "react";
 
-import { ModeSwitch } from "@/app/ModeSwitch";
-import { ThemeToggle } from "@/shared/components/theme-toggle";
-import type { AppMode } from "@/shared/types/common";
-
-type BatchModePageProps = {
-  mode: AppMode;
-  onModeChange: (mode: AppMode) => void;
-};
-
-export function BatchModePage({ mode, onModeChange }: BatchModePageProps) {
+export function BatchModePage() {
   const [activeTab, setActiveTab] = useState<"output" | "log" | "settings">("output");
 
   return (
@@ -60,8 +51,6 @@ export function BatchModePage({ mode, onModeChange }: BatchModePageProps) {
         <header className="flex items-center gap-2 border-b border-border/70 px-4 py-3">
           <p className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Pipeline</p>
           <div className="ml-auto flex items-center gap-2">
-            <ModeSwitch mode={mode} onModeChange={onModeChange} />
-            <ThemeToggle />
             <button type="button" className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm">
               Save preset
             </button>

@@ -1,32 +1,208 @@
-import { useState } from "react";
+import { useMemo, type ComponentType, type ReactNode } from "react";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
 
-import { ThemeToggle } from "@/shared/components/theme-toggle";
-import { greet } from "@/shared/tauri/commands";
-import { normalizeTauriError } from "@/shared/tauri/errors";
-import { ModeSwitch } from "@/app/ModeSwitch";
-import type { AppMode } from "@/shared/types/common";
+import BlackWhiteFunction from "@/shared/components/functions/BlackWhite";
+import BorderFunction from "@/shared/components/functions/Border";
+import ComposeFunction from "@/shared/components/functions/Compose";
+import ContrastFunction from "@/shared/components/functions/Contrast";
+import ConvertFunction from "@/shared/components/functions/Convert";
+import { CropFunction } from "@/shared/components/functions/Crop";
+import MirrorFunction from "@/shared/components/functions/Mirror";
+import NormalizeColorFunction from "@/shared/components/functions/NormalizeColor";
+import RotateFunction from "@/shared/components/functions/Rotate";
+import ScaleResizeFunction from "@/shared/components/functions/ScaleResize";
+import TextLogoFunction from "@/shared/components/functions/TextLogo";
+import VignetteFunction from "@/shared/components/functions/Vignette";
+import {
+  ALargeSmall,
+  Blend,
+  Contrast,
+  CropIcon,
+  Disc3,
+  FlipHorizontal2,
+  ImageIcon,
+  ImageUpscale,
+  Palette,
+  PlusIcon,
+  Rotate3d,
+  SquareRoundCorner,
+  SquaresUnite,
+} from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/shared/components/ui/tooltip";
+import { useSingleStore } from "@/features/single/state/single.store";
+import { Button } from "@/shared/components/ui/button";
+import { getImageMetadata } from "@/shared/tauri/commands";
+import { formatFileSize } from "@/lib/utils";
+import { CanvasPreview } from "@/features/single/components/CanvasPreview";
+import { usePreviewPipeline } from "@/features/single/hooks/usePreviewPipeline";
 
-type SingleModePageProps = {
-  mode: AppMode;
-  onModeChange: (mode: AppMode) => void;
+function getFileNameFromPath(filePath: string): string {
+  const normalized = filePath.replace(/\\/g, "/");
+  const parts = normalized.split("/");
+  return parts[parts.length - 1] || filePath;
+}
+
+type SingleFunctionItem = {
+  name: string;
+  component: ComponentType;
+  icon?: ReactNode;
+  note?: string;
 };
 
-export function SingleModePage({ mode, onModeChange }: SingleModePageProps) {
-  const [name, setName] = useState("");
-  const [message, setMessage] = useState("");
-  const [isRunning, setIsRunning] = useState(false);
+const SINGLE_FUNCTION_ITEMS: SingleFunctionItem[] = [
+  {
+    name: "Convert",
+    component: ConvertFunction,
+    icon: <ImageIcon className="size-4" />,
+    note: "Convert image to different format",
+  },
+  {
+    name: "Crop",
+    component: CropFunction,
+    icon: <CropIcon className="size-4" />,
+    note: "Crop image to a specific size",
+  },
+  {
+    name: "Mirror",
+    component: MirrorFunction,
+    icon: <FlipHorizontal2 className="size-4" />,
+    note: "Flip image horizontally",
+  },
+  {
+    name: "Black & white",
+    component: BlackWhiteFunction,
+    icon: <Blend className="size-4" />,
+    note: "Convert image to black and white",
+  },
+  {
+    name: "Contrast",
+    component: ContrastFunction,
+    icon: <Contrast className="size-4" />,
+    note: "Adjust image contrast",
+  },
+  {
+    name: "Normalize colors",
+    component: NormalizeColorFunction,
+    icon: <Palette className="size-4" />,
+    note: "Normalize image colors",
+  },
+  {
+    name: "Vignette",
+    component: VignetteFunction,
+    icon: <Disc3 className="size-4" />,
+    note: "Add vignette effect",
+  },
+  {
+    name: "Border",
+    component: BorderFunction,
+    icon: <SquareRoundCorner className="size-4" />,
+    note: "Add border to image",
+  },
+  {
+    name: "Rotate",
+    component: RotateFunction,
+    icon: <Rotate3d className="size-4" />,
+    note: "Rotate image",
+  },
+  {
+    name: "Scale / resize",
+    component: ScaleResizeFunction,
+    icon: <ImageUpscale className="size-4" />,
+    note: "Scale/resize image",
+  },
+  {
+    name: "Text / logo",
+    component: TextLogoFunction,
+    icon: <ALargeSmall className="size-4" />,
+    note: "Add text or logo to image",
+  },
+  {
+    name: "Compose",
+    component: ComposeFunction,
+    icon: <SquaresUnite className="size-4" />,
+    note: "Compose images",
+  },
+];
 
-  async function handleRunSingle() {
-    setIsRunning(true);
-    try {
-      const result = await greet(name);
-      setMessage(result);
-    } catch (error) {
-      setMessage(normalizeTauriError(error));
-    } finally {
-      setIsRunning(false);
+export function SingleModePage() {
+  const selectedFile = useSingleStore((state) => state.selectedFile);
+  const fileMetadata = useSingleStore((state) => state.fileMetadata);
+  const setSelectedFile = useSingleStore((state) => state.setSelectedFile);
+  const setFileMetadata = useSingleStore((state) => state.setFileMetadata);
+  const selectedFunctionName = useSingleStore(
+    (state) => state.selectedFunction,
+  );
+  const setSelectedFunctionName = useSingleStore(
+    (state) => state.setSelectedFunction,
+  );
+  const previewZoom = useSingleStore((state) => state.previewZoom);
+  const setPreviewZoom = useSingleStore((state) => state.setPreviewZoom);
+  const functionParams = useSingleStore((state) => state.functionParams);
+  const runState = useSingleStore((state) => state.runState);
+  const isManualPreview = useSingleStore((state) => state.isManualPreview);
+  const previewRequestId = useSingleStore((state) => state.previewRequestId);
+  const setIsManualPreview = useSingleStore((state) => state.setIsManualPreview);
+  const requestPreview = useSingleStore((state) => state.requestPreview);
+
+  const isRunning = runState.status === "running";
+  const message = runState.message;
+  const selectedFunction = useMemo(
+    () =>
+      SINGLE_FUNCTION_ITEMS.find(
+        (item) => item.name === selectedFunctionName,
+      ) ?? SINGLE_FUNCTION_ITEMS[0],
+    [selectedFunctionName],
+  );
+  const SelectedFunctionComponent = selectedFunction.component;
+  const previewState = usePreviewPipeline({
+    selectedFile,
+    selectedFunction: selectedFunctionName,
+    functionParams,
+    isManualPreview,
+    previewRequestId,
+  });
+
+  const handleSelectFile = async () => {
+    const picked = await openDialog({
+      filters: [
+        {
+          name: "Image",
+          extensions: [
+            "png",
+            "jpg",
+            "jpeg",
+            "gif",
+            "webp",
+            "tiff",
+            "bmp",
+            "heic",
+          ],
+        },
+      ],
+    });
+
+    if (!picked) {
+      return;
     }
-  }
+
+    const selectedPath = Array.isArray(picked) ? picked[0] : picked;
+    if (!selectedPath) {
+      return;
+    }
+
+    setSelectedFile(selectedPath);
+    const meta = await getImageMetadata(selectedPath);
+    setFileMetadata(meta ?? null);
+  };
+
+  const handleDetachFile = () => {
+    setSelectedFile(null);
+    setFileMetadata(null);
+  };
 
   return (
     <section className="grid h-full grid-cols-[180px_1fr_240px] border border-border/70 bg-card">
@@ -35,49 +211,82 @@ export function SingleModePage({ mode, onModeChange }: SingleModePageProps) {
           Operations
         </div>
         <nav className="py-2">
-          {[
-            "Convert",
-            "Crop",
-            "Mirror",
-            "Black & white",
-            "Contrast",
-            "Normalize colors",
-            "Vignette",
-            "Border",
-            "Rotate",
-            "Scale / resize",
-            "Text / logo",
-            "Compose",
-          ].map((item, index) => (
-            <button
-              key={item}
-              type="button"
-              className={`flex w-full items-center px-5 py-2 text-left text-[13px] ${
-                index === 1
-                  ? "border-r-2 border-primary bg-background font-medium text-foreground"
-                  : "text-muted-foreground hover:bg-background hover:text-foreground"
-              }`}
-            >
-              {item}
-            </button>
-          ))}
+          {SINGLE_FUNCTION_ITEMS.map((item) => {
+            const isSelected = selectedFunctionName === item.name;
+            return (
+              <Tooltip key={item.name} delayDuration={700}>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-pressed={isSelected}
+                    className={`flex w-full items-center gap-2 border-r-2 px-5 py-2 text-left text-[13px] leading-5 transition-colors outline-none ${
+                      isSelected
+                        ? "border-primary bg-background/80 font-medium text-primary"
+                        : "border-transparent text-muted-foreground hover:bg-background/70 hover:text-foreground"
+                    }`}
+                    onClick={() => setSelectedFunctionName(item.name)}
+                  >
+                    {item.icon}
+                    {item.name}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>{item.note}</p>
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
         </nav>
       </aside>
 
       <div className="grid min-w-0 grid-rows-[auto_1fr_auto]">
         <header className="flex h-14 items-center gap-2 border-b border-border/70 px-4">
-          <button type="button" className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm">
-            photo.jpg
-          </button>
-          <button type="button" className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm">
-            + Add file
-          </button>
+          {selectedFile ? (
+            <div className="group inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground">
+              <span>{getFileNameFromPath(selectedFile)}</span>
+              <button
+                type="button"
+                aria-label="Detach selected file"
+                onClick={handleDetachFile}
+                className="inline-flex size-4 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+              >
+                ×
+              </button>
+            </div>
+          ) : (
+            <Button
+              type="button"
+              className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground"
+              onClick={handleSelectFile}
+            >
+              <PlusIcon className="size-4" />
+              Select file
+            </Button>
+          )}
           <div className="ml-auto flex items-center gap-2">
-            <ModeSwitch mode={mode} onModeChange={onModeChange} />
-            <ThemeToggle />
             <button
               type="button"
-              onClick={handleRunSingle}
+              onClick={() => setIsManualPreview(!isManualPreview)}
+              className={`rounded-lg border px-3 py-1.5 text-sm ${
+                isManualPreview
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-background text-foreground"
+              }`}
+            >
+              {isManualPreview ? "Manual preview" : "Auto preview"}
+            </button>
+            {isManualPreview ? (
+              <button
+                type="button"
+                disabled={!selectedFile || previewState.isPending}
+                onClick={requestPreview}
+                className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground disabled:opacity-50"
+              >
+                {previewState.isPending ? "Previewing..." : "Preview"}
+              </button>
+            ) : null}
+            <button
+              type="button"
               disabled={isRunning}
               className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-50"
             >
@@ -87,60 +296,62 @@ export function SingleModePage({ mode, onModeChange }: SingleModePageProps) {
         </header>
 
         <div className="relative flex items-center justify-center bg-muted/25">
-          <div className="flex h-[240px] w-[280px] flex-col items-center justify-center rounded-lg border border-border bg-background text-center">
-            <p className="text-sm text-muted-foreground">Drop image or click to open</p>
-            <p className="mt-2 text-xs text-muted-foreground">png · jpg · gif · webp · tiff · bmp</p>
-          </div>
-          <div className="absolute right-3 bottom-3 flex gap-2">
-            <button type="button" className="rounded-lg border border-border bg-background px-3 py-1 text-xs">
-              100%
-            </button>
-            <button type="button" className="rounded-lg border border-border bg-background px-3 py-1 text-xs">
-              Fit
-            </button>
-          </div>
+          <CanvasPreview
+            originUrl={previewState.originUrl}
+            previewUrl={previewState.previewUrl}
+            isPending={previewState.isPending}
+            error={previewState.error}
+            zoomPercent={previewZoom}
+            onZoomChange={setPreviewZoom}
+          />
         </div>
 
         <footer className="flex items-center justify-between border-t border-border/70 px-4 py-3">
+          {fileMetadata && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="rounded-md border border-border bg-muted/40 px-2 py-1">photo.jpg</span>
-            <span className="rounded-md border border-border bg-muted/40 px-2 py-1">3840 × 2160</span>
-            <span className="rounded-md border border-border bg-muted/40 px-2 py-1">4.2 MB</span>
-          </div>
-          <p className="text-xs text-muted-foreground">{message || "ImageMagick 7.1"}</p>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="rounded-md border border-border bg-muted/40 px-2 py-1">
+                  { getFileNameFromPath(selectedFile ?? "photo.jpg")}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>{selectedFile ?? "photo.jpg"}</p>
+              </TooltipContent>
+            </Tooltip>
+            <span className="rounded-md border border-border bg-muted/40 px-2 py-1">
+              {fileMetadata?.width} × {fileMetadata?.height}
+            </span>
+            {previewState.width && previewState.height ? (
+              <span className="rounded-md border border-border bg-muted/40 px-2 py-1">
+                preview {previewState.width} × {previewState.height}
+              </span>
+            ) : null}
+            <span className="rounded-md border border-border bg-muted/40 px-2 py-1">
+              {formatFileSize(fileMetadata?.fileSizeBytes)}
+              </span>
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">
+            {message || "ImageMagick 7.1"}
+          </p>
         </footer>
       </div>
 
       <aside className="grid min-h-0 grid-rows-[auto_1fr_auto] border-l border-border/70">
         <div className="flex h-14 items-center border-b border-border/70 px-4 text-xs font-medium tracking-[0.08em] text-muted-foreground uppercase">
-          Crop - Options
+          {selectedFunction.name} - Options
         </div>
         <div className="space-y-3 overflow-auto px-4 py-3">
-          <label className="block text-xs text-muted-foreground">Output format</label>
-          <select className="h-8 w-full rounded-lg border border-input bg-background px-2 text-sm">
-            <option>PNG</option>
-            <option>JPEG</option>
-            <option>WEBP</option>
-          </select>
-          <label className="block text-xs text-muted-foreground">Quality</label>
-          <input
-            type="range"
-            min={1}
-            max={100}
-            value={85}
-            onChange={() => {}}
-            className="w-full accent-primary"
-          />
-          <label className="block text-xs text-muted-foreground">Output filename</label>
-          <input
-            value={name || "photo_out.png"}
-            onChange={(event) => setName(event.currentTarget.value)}
-            className="h-8 w-full rounded-lg border border-input bg-background px-2 text-sm"
-          />
+          <SelectedFunctionComponent />
         </div>
         <div className="border-t border-border/70 px-4 py-3">
-          <p className="mb-1 text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">CLI Preview</p>
-          <code className="text-xs text-primary">magick photo.jpg -quality 85 ./output/photo_out.png</code>
+          <p className="mb-1 text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
+            CLI Preview
+          </p>
+          <code className="text-xs text-primary">
+            magick photo.jpg -quality 85 ./output/photo_out.png
+          </code>
         </div>
       </aside>
     </section>
