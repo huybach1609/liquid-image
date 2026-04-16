@@ -1,11 +1,35 @@
+import { Slider } from "@/components/ui/slider";
+import { Button } from "../ui/button";
+import { useSingleStore } from "@/features/single/state/single.store";
+
 const RotateFunction = () => {
+  const functionParams = useSingleStore((s) => s.functionParams);
+  const updateFunctionParam = useSingleStore((s) => s.updateFunctionParam);
+
+  const rotateDegrees =
+    typeof functionParams.rotateDegrees === "number"
+      ? functionParams.rotateDegrees
+      : typeof functionParams.rotateDegrees === "string"
+        ? Number(functionParams.rotateDegrees) || 0
+        : 0;
+  const autoOrient = functionParams.rotateAutoOrient === true;
+
   return (
     <div className="space-y-3">
       <label className="block text-xs text-muted-foreground">Angle (degrees)</label>
-      <input className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" placeholder="e.g. 90" />
-      <button type="button" className="rounded-md border border-border px-3 py-2 text-xs">
+      <Slider
+        value={[rotateDegrees]}
+        onValueChange={(value) => updateFunctionParam("rotateDegrees", value[0])}
+      />
+      <span className="text-xs text-muted-foreground">{rotateDegrees}</span>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => updateFunctionParam("rotateAutoOrient", true)}
+        disabled={autoOrient}
+      >
         Auto rotate by EXIF
-      </button>
+      </Button>
     </div>
   );
 };
