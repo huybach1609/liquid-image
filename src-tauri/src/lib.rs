@@ -19,11 +19,15 @@ pub fn run() {
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
             greet,
             magick_service::convert_image,
-            magick_service::check_version
+            magick_service::check_version,
+            magick_service::get_image_metadata,
+            magick_service::generate_preview
+
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -63,3 +63,136 @@ pub async fn check_version(app: AppHandle) -> Result<MagickVersionInfo, String> 
     let raw = String::from_utf8_lossy(&output.stdout).to_string();
     Ok(parse_magick_version(&raw))
 }
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImageMetadata {
+    path: String,
+    format: String,
+    width: u32,
+    height: u32,
+    file_size_bytes: u64,
+}
+
+#[tauri::command]
+pub async fn get_image_metadata(app: tauri::AppHandle, path: String) -> Result<ImageMetadata, String> {
+    use std::fs;
+    // identify -format "%m|%w|%h"
+    let output = app.shell()
+        .sidecar("magick").map_err(|e| e.to_string())?
+        .arg("identify")
+        .arg("-format")
+        .arg("%m|%w|%h")
+        .arg(&path)
+        .output()
+        .await
+        .map_err(|e| e.to_string())?;
+    let raw = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    let parts: Vec<&str> = raw.split('|').collect();
+    if parts.len() != 3 {
+        return Err("Failed to parse image metadata".into());
+    }
+    let meta = fs::metadata(&path).map_err(|e| e.to_string())?;
+    Ok(ImageMetadata {
+        path,
+        format: parts[0].to_string(),
+        width: parts[1].parse::<u32>().map_err(|e| e.to_string())?,
+        height: parts[2].parse::<u32>().map_err(|e| e.to_string())?,
+        file_size_bytes: meta.len(),
+    })
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GeneratePreviewRequest {
+    input_path: String,
+    operation: String,
+    options_json: Option<String>,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GeneratePreviewResponse {
+    preview_path: String,
+    width: u32,
+    height: u32,
+}
+
+#[tauri::command]
+pub async fn generate_preview(
+    app: tauri::AppHandle,
+    request: GeneratePreviewRequest,
+) -> Result<GeneratePreviewResponse, String> {
+    use std::fs;
+    use std::path::PathBuf;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    let preview_root = std::env::temp_dir().join("liquid-image-preview");
+    fs::create_dir_all(&preview_root).map_err(|e| e.to_string())?;
+
+    let epoch_ms = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|e| e.to_string())?
+        .as_millis();
+
+    let operation_slug = request
+        .operation
+        .chars()
+        .filter(|ch| ch.is_ascii_alphanumeric() || *ch == '_' || *ch == '-')
+        .collect::<String>();
+    let operation_segment = if operation_slug.is_empty() {
+        "preview".to_string()
+    } else {
+        operation_slug
+    };
+    let options_suffix = request
+        .options_json
+        .as_ref()
+        .map(|s| s.len().to_string())
+        .unwrap_or_else(|| "0".to_string());
+
+    let output_path: PathBuf = preview_root.join(format!(
+        "preview-{}-{}-{}.jpg",
+        operation_segment, options_suffix, epoch_ms
+    ));
+
+    app.shell()
+        .sidecar("magick")
+        .map_err(|e| e.to_string())?
+        .arg(&request.input_path)
+        .arg("-auto-orient")
+        .arg("-resize")
+        .arg("1600x1600>")
+        .arg("-quality")
+        .arg("88")
+        .arg(&output_path)
+        .output()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let identify_output = app
+        .shell()
+        .sidecar("magick")
+        .map_err(|e| e.to_string())?
+        .arg("identify")
+        .arg("-format")
+        .arg("%w|%h")
+        .arg(&output_path)
+        .output()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let raw_dims = String::from_utf8_lossy(&identify_output.stdout)
+        .trim()
+        .to_string();
+    let parts: Vec<&str> = raw_dims.split('|').collect();
+    if parts.len() != 2 {
+        return Err("Failed to parse preview dimensions".into());
+    }
+
+    Ok(GeneratePreviewResponse {
+        preview_path: output_path.to_string_lossy().to_string(),
+        width: parts[0].parse::<u32>().map_err(|e| e.to_string())?,
+        height: parts[1].parse::<u32>().map_err(|e| e.to_string())?,
+    })
+}
