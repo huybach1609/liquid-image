@@ -42,7 +42,7 @@ export const useSingleStore = create<SingleStoreState>((set) => ({
   selectedFile: null,
   selectedFunction: DEFAULT_SELECTED_FUNCTION,
   functionParams: {},
-  isManualPreview: false,
+  isManualPreview: true,
   previewRequestId: 0,
   previewZoom: 100,
   runState: initialRunState,

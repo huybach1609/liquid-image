@@ -16,6 +16,7 @@ import VignetteFunction from "@/shared/components/functions/Vignette";
 import {
   ALargeSmall,
   Blend,
+  ChevronDown,
   Contrast,
   CropIcon,
   Disc3,
@@ -33,12 +34,20 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/shared/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useSingleStore } from "@/features/single/state/single.store";
 import { Button } from "@/shared/components/ui/button";
 import { getImageMetadata } from "@/shared/tauri/commands";
 import { formatFileSize } from "@/lib/utils";
 import { CanvasPreview } from "@/features/single/components/CanvasPreview";
+import { SingleCliPreview } from "@/features/single/components/SingleCliPreview";
 import { usePreviewPipeline } from "@/features/single/hooks/usePreviewPipeline";
+import { buildSingleCliPreview } from "@/features/single/buildSingleCliPreview";
 
 function getFileNameFromPath(filePath: string): string {
   const normalized = filePath.replace(/\\/g, "/");
@@ -145,7 +154,9 @@ export function SingleModePage() {
   const runState = useSingleStore((state) => state.runState);
   const isManualPreview = useSingleStore((state) => state.isManualPreview);
   const previewRequestId = useSingleStore((state) => state.previewRequestId);
-  const setIsManualPreview = useSingleStore((state) => state.setIsManualPreview);
+  const setIsManualPreview = useSingleStore(
+    (state) => state.setIsManualPreview,
+  );
   const requestPreview = useSingleStore((state) => state.requestPreview);
 
   const isRunning = runState.status === "running";
@@ -165,6 +176,16 @@ export function SingleModePage() {
     isManualPreview,
     previewRequestId,
   });
+
+  const commandPreview = useMemo(
+    () =>
+      buildSingleCliPreview({
+        selectedFile,
+        selectedFunction: selectedFunctionName,
+        functionParams,
+      }),
+    [selectedFile, selectedFunctionName, functionParams],
+  );
 
   const handleSelectFile = async () => {
     const picked = await openDialog({
@@ -264,34 +285,57 @@ export function SingleModePage() {
             </Button>
           )}
           <div className="ml-auto flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setIsManualPreview(!isManualPreview)}
-              className={`rounded-lg border px-3 py-1.5 text-sm ${
-                isManualPreview
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border bg-background text-foreground"
-              }`}
-            >
-              {isManualPreview ? "Manual preview" : "Auto preview"}
-            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-lg px-3"
+                >
+                  {isManualPreview ? "Manual preview" : "Auto preview"}
+                  <ChevronDown className="ml-1 size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onSelect={() => setIsManualPreview(false)}
+                  className="cursor-pointer"
+                >
+                  Auto preview
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => setIsManualPreview(true)}
+                  className="cursor-pointer"
+                >
+                  Manual preview
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {isManualPreview ? (
-              <button
+              <Button
                 type="button"
-                disabled={!selectedFile || previewState.isPending}
+                size="sm"
+                disabled={!selectedFile || !isManualPreview || previewState.isPending}
                 onClick={requestPreview}
-                className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground disabled:opacity-50"
+                className="rounded-lg"
               >
-                {previewState.isPending ? "Previewing..." : "Preview"}
-              </button>
+                {isManualPreview
+                  ? previewState.isPending
+                    ? "Previewing..."
+                    : "Preview"
+                  : "Preview"}
+              </Button>
             ) : null}
-            <button
+
+            <Button
               type="button"
               disabled={isRunning}
               className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-50"
             >
               {isRunning ? "Running..." : "Run"}
-            </button>
+            </Button>
           </div>
         </header>
 
@@ -308,27 +352,27 @@ export function SingleModePage() {
 
         <footer className="flex items-center justify-between border-t border-border/70 px-4 py-3">
           {fileMetadata && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="rounded-md border border-border bg-muted/40 px-2 py-1">
-                  { getFileNameFromPath(selectedFile ?? "photo.jpg")}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                <p>{selectedFile ?? "photo.jpg"}</p>
-              </TooltipContent>
-            </Tooltip>
-            <span className="rounded-md border border-border bg-muted/40 px-2 py-1">
-              {fileMetadata?.width} × {fileMetadata?.height}
-            </span>
-            {previewState.width && previewState.height ? (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="rounded-md border border-border bg-muted/40 px-2 py-1">
+                    {getFileNameFromPath(selectedFile ?? "photo.jpg")}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>{selectedFile ?? "photo.jpg"}</p>
+                </TooltipContent>
+              </Tooltip>
               <span className="rounded-md border border-border bg-muted/40 px-2 py-1">
-                preview {previewState.width} × {previewState.height}
+                {fileMetadata?.width} × {fileMetadata?.height}
               </span>
-            ) : null}
-            <span className="rounded-md border border-border bg-muted/40 px-2 py-1">
-              {formatFileSize(fileMetadata?.fileSizeBytes)}
+              {previewState.width && previewState.height ? (
+                <span className="rounded-md border border-border bg-muted/40 px-2 py-1">
+                  preview {previewState.width} × {previewState.height}
+                </span>
+              ) : null}
+              <span className="rounded-md border border-border bg-muted/40 px-2 py-1">
+                {formatFileSize(fileMetadata?.fileSizeBytes)}
               </span>
             </div>
           )}
@@ -346,12 +390,7 @@ export function SingleModePage() {
           <SelectedFunctionComponent />
         </div>
         <div className="border-t border-border/70 px-4 py-3">
-          <p className="mb-1 text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
-            CLI Preview
-          </p>
-          <code className="text-xs text-primary">
-            magick photo.jpg -quality 85 ./output/photo_out.png
-          </code>
+          <SingleCliPreview commandPreview={commandPreview} />
         </div>
       </aside>
     </section>

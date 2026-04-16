@@ -4,13 +4,11 @@ type SingleCliPreviewProps = {
 
 export function SingleCliPreview({ commandPreview }: SingleCliPreviewProps) {
   return (
-    <section className="rounded-lg border border-border bg-card p-3">
-      <header className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+    <>
+      <p className="mb-1 text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
         CLI Preview
-      </header>
-      <code className="block rounded-md bg-muted px-2 py-1.5 text-xs text-muted-foreground">
-        {commandPreview}
-      </code>
-    </section>
+      </p>
+      <code className="text-xs text-primary">{commandPreview}</code>
+    </>
   );
 }
