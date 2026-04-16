@@ -1,65 +1,70 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ImageMagick — Batch Mode</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font-sans);font-size:13px;color:var(--color-text-primary);background:var(--color-background-tertiary)}
-.app{display:flex;height:660px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;background:var(--color-background-primary)}
-.col{display:flex;flex-direction:column;border-right:0.5px solid var(--color-border-tertiary)}
+body{font-family:system-ui,sans-serif;font-size:13px;color:#1a1a1a;background:#f5f5f3;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.app{display:flex;height:660px;border:0.5px solid rgba(0,0,0,0.12);border-radius:12px;overflow:hidden;background:#fff;width:100%;max-width:900px}
+.col{display:flex;flex-direction:column;border-right:0.5px solid rgba(0,0,0,0.1)}
 .col:last-child{border-right:none}
-.col-head{padding:11px 14px;font-size:11px;font-weight:500;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.06em;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0}
+.col-head{padding:11px 14px;font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:.06em;border-bottom:0.5px solid rgba(0,0,0,0.1);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0}
 .col-body{flex:1;overflow-y:auto;padding:10px}
-.btn{background:transparent;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:4px 10px;font-size:12px;cursor:pointer;color:var(--color-text-primary);font-family:var(--font-sans)}
-.btn:hover{background:var(--color-background-secondary)}
+.btn{background:transparent;border:0.5px solid rgba(0,0,0,0.2);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer;color:#1a1a1a;font-family:inherit}
+.btn:hover{background:#f5f5f3}
 .btn-sm{padding:3px 8px;font-size:11px}
 .btn-primary{background:#7F77DD;border-color:#7F77DD;color:#fff}
 .btn-primary:hover{background:#534AB7;border-color:#534AB7}
-.btn-danger{background:transparent;border-color:var(--color-border-danger);color:var(--color-text-danger)}
-.file-item{display:flex;align-items:center;gap:8px;padding:7px 9px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);margin-bottom:6px;background:var(--color-background-primary)}
-.file-thumb{width:36px;height:28px;background:var(--color-background-secondary);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:var(--color-text-tertiary);font-weight:500}
+.file-item{display:flex;align-items:center;gap:8px;padding:7px 9px;border:0.5px solid rgba(0,0,0,0.1);border-radius:8px;margin-bottom:6px;background:#fff}
+.file-thumb{width:36px;height:28px;background:#f5f5f3;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:#888;font-weight:500}
 .file-info{flex:1;min-width:0}
 .file-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.file-meta{font-size:11px;color:var(--color-text-tertiary)}
+.file-meta{font-size:11px;color:#888}
 .file-status{width:16px;height:16px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px}
 .status-done{background:#EAF3DE;color:#3B6D11}
 .status-err{background:#FCEBEB;color:#A32D2D}
-.status-wait{background:var(--color-background-secondary);color:var(--color-text-tertiary)}
+.status-wait{background:#f5f5f3;color:#888}
 .status-run{background:#E6F1FB;color:#185FA5}
-.step-card{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);margin-bottom:8px;overflow:hidden}
-.step-head{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--color-background-secondary);cursor:pointer;user-select:none}
+.step-card{border:0.5px solid rgba(0,0,0,0.1);border-radius:8px;margin-bottom:8px;overflow:hidden}
+.step-head{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#f9f9f8;cursor:pointer;user-select:none}
 .step-num{width:20px;height:20px;border-radius:50%;background:#7F77DD;color:#fff;font-size:10px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .step-label{flex:1;font-size:12px;font-weight:500}
-.step-badge{font-size:10px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:2px 7px;color:var(--color-text-secondary)}
-.step-body{padding:10px;border-top:0.5px solid var(--color-border-tertiary)}
+.step-badge{font-size:10px;background:#fff;border:0.5px solid rgba(0,0,0,0.1);border-radius:8px;padding:2px 7px;color:#666}
+.step-body{padding:10px;border-top:0.5px solid rgba(0,0,0,0.1)}
 .field{margin-bottom:10px}
-.field label{display:block;font-size:11px;color:var(--color-text-secondary);margin-bottom:4px;font-weight:500}
-.field select,.field input[type=text],.field input[type=number]{width:100%;padding:4px 7px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px;font-family:var(--font-sans)}
+.field label{display:block;font-size:11px;color:#666;margin-bottom:4px;font-weight:500}
+.field select,.field input[type=text],.field input[type=number]{width:100%;padding:4px 7px;border:0.5px solid rgba(0,0,0,0.12);border-radius:8px;background:#fff;color:#1a1a1a;font-size:12px;font-family:inherit}
 .field input[type=range]{width:100%}
 .field-row{display:flex;gap:8px}
 .field-row .field{flex:1;margin-bottom:0}
 .add-step-row{display:flex;gap:6px;flex-wrap:wrap;padding:4px 0 8px}
-.add-chip{border:0.5px dashed var(--color-border-secondary);border-radius:var(--border-radius-md);padding:4px 10px;font-size:11px;cursor:pointer;color:var(--color-text-secondary);background:transparent}
-.add-chip:hover{background:var(--color-background-secondary);color:var(--color-text-primary);border-style:solid}
-.cmd-bar{border-top:0.5px solid var(--color-border-tertiary);padding:10px 14px;background:var(--color-background-secondary);flex-shrink:0}
-.cmd-label{font-size:10px;color:var(--color-text-tertiary);margin-bottom:4px;font-weight:500;text-transform:uppercase;letter-spacing:.06em}
-.cmd-code{font-family:var(--font-mono);font-size:10px;color:#7F77DD;word-break:break-all;line-height:1.6}
+.add-chip{border:0.5px dashed rgba(0,0,0,0.2);border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer;color:#666;background:transparent}
+.add-chip:hover{background:#f5f5f3;color:#1a1a1a;border-style:solid}
+.cmd-bar{border-top:0.5px solid rgba(0,0,0,0.1);padding:10px 14px;background:#f9f9f8;flex-shrink:0}
+.cmd-label{font-size:10px;color:#888;margin-bottom:4px;font-weight:500;text-transform:uppercase;letter-spacing:.06em}
+.cmd-code{font-family:monospace;font-size:10px;color:#7F77DD;word-break:break-all;line-height:1.6}
 .progress-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.progress-track{flex:1;height:4px;background:var(--color-background-secondary);border-radius:2px;overflow:hidden}
-.progress-fill{height:100%;border-radius:2px;transition:width .4s}
-.log-line{font-family:var(--font-mono);font-size:11px;line-height:1.8;color:var(--color-text-secondary)}
+.progress-track{flex:1;height:4px;background:#f0f0ee;border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;border-radius:2px}
+.log-line{font-family:monospace;font-size:11px;line-height:1.8;color:#666}
 .log-line.ok{color:#3B6D11}
 .log-line.err{color:#A32D2D}
 .log-line.run{color:#185FA5}
-.tab-bar{display:flex;border-bottom:0.5px solid var(--color-border-tertiary);flex-shrink:0}
-.tab{padding:9px 14px;font-size:12px;cursor:pointer;color:var(--color-text-secondary);border-bottom:2px solid transparent;margin-bottom:-0.5px}
-.tab.active{color:var(--color-text-primary);font-weight:500;border-bottom-color:#7F77DD}
-.tab:hover:not(.active){color:var(--color-text-primary)}
+.tab-bar{display:flex;border-bottom:0.5px solid rgba(0,0,0,0.1);flex-shrink:0}
+.tab{padding:9px 14px;font-size:12px;cursor:pointer;color:#888;border-bottom:2px solid transparent;margin-bottom:-0.5px}
+.tab.active{color:#1a1a1a;font-weight:500;border-bottom-color:#7F77DD}
+.tab:hover:not(.active){color:#1a1a1a}
 .pane{display:none;flex:1;flex-direction:column;overflow:hidden}
 .pane.active{display:flex}
-.footer{padding:10px 16px;border-top:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0}
-.stat{font-size:11px;color:var(--color-text-tertiary)}
-.stat b{color:var(--color-text-primary);font-weight:500}
+.footer{padding:10px 12px;border-top:0.5px solid rgba(0,0,0,0.1);display:flex;align-items:center;flex-direction:column;gap:8px;flex-shrink:0}
+.stat{font-size:11px;color:#888}
+.stat b{color:#1a1a1a;font-weight:500}
+.divider{height:0.5px;background:rgba(0,0,0,0.1);margin:10px 0}
 </style>
-
-<h2 class="sr-only">ImageMagick batch mode UI — three-column layout with file queue, pipeline builder, and output/progress pane</h2>
+</head>
+<body>
 
 <div class="app">
 
@@ -69,25 +74,23 @@ body{font-family:var(--font-sans);font-size:13px;color:var(--color-text-primary)
       <button class="btn btn-sm">+ Add files</button>
     </div>
     <div class="col-body">
-
       <div style="margin-bottom:8px">
         <div class="field">
           <label>Source folder</label>
-          <input type="text" value="~/photos/raw/" style="font-size:11px">
+          <input type="text" value="~/photos/raw/">
         </div>
         <div class="field-row">
           <div class="field">
             <label>Filter</label>
-            <select style="font-size:11px"><option>*.jpg</option><option>*.png</option><option>*.*</option></select>
+            <select><option>*.jpg</option><option>*.png</option><option>*.*</option></select>
           </div>
           <div class="field">
             <label>Recurse</label>
-            <select style="font-size:11px"><option>No</option><option>Yes</option></select>
+            <select><option>No</option><option>Yes</option></select>
           </div>
         </div>
       </div>
-
-      <div style="height:0.5px;background:var(--color-border-tertiary);margin:10px 0 8px"></div>
+      <div class="divider"></div>
 
       <div class="file-item">
         <div class="file-thumb">JPG</div>
@@ -137,11 +140,10 @@ body{font-family:var(--font-sans);font-size:13px;color:var(--color-text-primary)
         </div>
         <div class="file-status status-err">✕</div>
       </div>
-
     </div>
-    <div style="padding:10px;border-top:0.5px solid var(--color-border-tertiary);flex-shrink:0">
+    <div style="padding:10px;border-top:0.5px solid rgba(0,0,0,0.1);flex-shrink:0">
       <div class="progress-row">
-        <div class="progress-track" style="flex:1"><div class="progress-fill" style="width:42%;background:#7F77DD"></div></div>
+        <div class="progress-track"><div class="progress-fill" style="width:42%;background:#7F77DD"></div></div>
         <span class="stat"><b>3</b>/7</span>
       </div>
       <div class="stat">2 done · 1 running · 1 error</div>
@@ -163,15 +165,15 @@ body{font-family:var(--font-sans);font-size:13px;color:var(--color-text-primary)
           <div class="step-num">1</div>
           <span class="step-label">Resize</span>
           <span class="step-badge">1920×1080 · fit</span>
-          <span style="font-size:11px;color:var(--color-text-tertiary)">▾</span>
+          <span style="font-size:11px;color:#888">▾</span>
         </div>
         <div class="step-body">
           <div class="field-row">
-            <div class="field"><label>Width</label><input type="number" value="1920" style="font-size:11px"></div>
-            <div class="field"><label>Height</label><input type="number" value="1080" style="font-size:11px"></div>
-            <div class="field"><label>Mode</label><select style="font-size:11px"><option>Fit</option><option>Fill</option><option>Exact</option><option>Width only</option><option>Height only</option></select></div>
+            <div class="field"><label>Width</label><input type="number" value="1920"></div>
+            <div class="field"><label>Height</label><input type="number" value="1080"></div>
+            <div class="field"><label>Mode</label><select><option>Fit</option><option>Fill</option><option>Exact</option><option>Width only</option><option>Height only</option></select></div>
           </div>
-          <div class="field"><label>Filter</label><select style="font-size:11px"><option>Lanczos</option><option>Mitchell</option><option>Bilinear</option><option>Nearest</option></select></div>
+          <div class="field"><label>Filter</label><select><option>Lanczos</option><option>Mitchell</option><option>Bilinear</option><option>Nearest</option></select></div>
         </div>
       </div>
 
@@ -180,12 +182,12 @@ body{font-family:var(--font-sans);font-size:13px;color:var(--color-text-primary)
           <div class="step-num">2</div>
           <span class="step-label">Normalize colors</span>
           <span class="step-badge">auto</span>
-          <span style="font-size:11px;color:var(--color-text-tertiary)">▾</span>
+          <span style="font-size:11px;color:#888">▸</span>
         </div>
         <div class="step-body" style="display:none">
-          <div class="field"><label>Method</label><select style="font-size:11px"><option>Normalize (−normalize)</option><option>Auto-level (−auto-level)</option><option>Contrast stretch</option></select></div>
-          <div class="field"><label>Black point %<span style="float:right" id="bp">0.1</span></label><input type="range" min="0" max="5" step="0.1" value="0.1" oninput="document.getElementById('bp').textContent=parseFloat(this.value).toFixed(1)"></div>
-          <div class="field"><label>White point %<span style="float:right" id="wp">0.1</span></label><input type="range" min="0" max="5" step="0.1" value="0.1" oninput="document.getElementById('wp').textContent=parseFloat(this.value).toFixed(1)"></div>
+          <div class="field"><label>Method</label><select><option>Normalize (−normalize)</option><option>Auto-level (−auto-level)</option><option>Contrast stretch</option></select></div>
+          <div class="field"><label>Black point % <span style="float:right" id="bp">0.1</span></label><input type="range" min="0" max="5" step="0.1" value="0.1" oninput="document.getElementById('bp').textContent=parseFloat(this.value).toFixed(1)"></div>
+          <div class="field"><label>White point % <span style="float:right" id="wp">0.1</span></label><input type="range" min="0" max="5" step="0.1" value="0.1" oninput="document.getElementById('wp').textContent=parseFloat(this.value).toFixed(1)"></div>
         </div>
       </div>
 
@@ -194,19 +196,19 @@ body{font-family:var(--font-sans);font-size:13px;color:var(--color-text-primary)
           <div class="step-num">3</div>
           <span class="step-label">Convert</span>
           <span class="step-badge">→ WEBP · q85</span>
-          <span style="font-size:11px;color:var(--color-text-tertiary)">▾</span>
+          <span style="font-size:11px;color:#888">▸</span>
         </div>
         <div class="step-body" style="display:none">
           <div class="field-row">
-            <div class="field"><label>Format</label><select style="font-size:11px"><option>WEBP</option><option>PNG</option><option>JPEG</option><option>AVIF</option></select></div>
-            <div class="field"><label>Quality<span style="float:right" id="qv">85</span></label><input type="range" min="1" max="100" value="85" step="1" oninput="document.getElementById('qv').textContent=this.value"></div>
+            <div class="field"><label>Format</label><select><option>WEBP</option><option>PNG</option><option>JPEG</option><option>AVIF</option></select></div>
+            <div class="field"><label>Quality <span style="float:right" id="qv">85</span></label><input type="range" min="1" max="100" value="85" step="1" oninput="document.getElementById('qv').textContent=this.value"></div>
           </div>
-          <div class="field"><label>Strip metadata</label><select style="font-size:11px"><option>Yes (−strip)</option><option>No</option></select></div>
+          <div class="field"><label>Strip metadata</label><select><option>Yes (−strip)</option><option>No</option></select></div>
         </div>
       </div>
 
       <div style="margin-top:10px">
-        <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:6px;font-weight:500">Add step</div>
+        <div style="font-size:11px;color:#888;margin-bottom:6px;font-weight:500">Add step</div>
         <div class="add-step-row">
           <div class="add-chip">+ Crop</div>
           <div class="add-chip">+ Mirror</div>
@@ -220,8 +222,8 @@ body{font-family:var(--font-sans);font-size:13px;color:var(--color-text-primary)
           <div class="add-chip" style="border-color:#7F77DD;color:#534AB7">+ Custom flag</div>
         </div>
       </div>
-
     </div>
+
     <div class="cmd-bar">
       <div class="cmd-label">Mogrify preview (per file)</div>
       <div class="cmd-code">mogrify -path ./out/ -resize 1920x1080 -filter Lanczos -normalize -quality 85 -strip -format webp *.jpg</div>
@@ -236,13 +238,11 @@ body{font-family:var(--font-sans);font-size:13px;color:var(--color-text-primary)
     </div>
 
     <div class="pane active" id="pane-output">
-      <div class="col-head" style="border-top:none">
-        Destination
-      </div>
+      <div class="col-head" style="border-top:none">Destination</div>
       <div class="col-body">
-        <div class="field"><label>Output folder</label><input type="text" value="./out/" style="font-size:11px"></div>
+        <div class="field"><label>Output folder</label><input type="text" value="./out/"></div>
         <div class="field"><label>Naming pattern</label>
-          <select style="font-size:11px">
+          <select>
             <option>Same name</option>
             <option>{name}_out</option>
             <option>{name}_{op}</option>
@@ -250,14 +250,14 @@ body{font-family:var(--font-sans);font-size:13px;color:var(--color-text-primary)
             <option>Custom…</option>
           </select>
         </div>
-        <div class="field"><label>On conflict</label><select style="font-size:11px"><option>Overwrite</option><option>Skip</option><option>Rename (+1)</option></select></div>
-        <div style="height:0.5px;background:var(--color-border-tertiary);margin:10px 0"></div>
-        <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:8px;font-weight:500">Concurrency</div>
-        <div class="field"><label>Workers<span style="float:right" id="wv">4</span></label><input type="range" min="1" max="16" value="4" step="1" oninput="document.getElementById('wv').textContent=this.value"></div>
-        <div class="field"><label>On error</label><select style="font-size:11px"><option>Skip & continue</option><option>Stop all</option><option>Retry once</option></select></div>
-        <div style="height:0.5px;background:var(--color-border-tertiary);margin:10px 0"></div>
-        <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:8px;font-weight:500">After run</div>
-        <div class="field"><label>Action</label><select style="font-size:11px"><option>Do nothing</option><option>Open folder</option><option>Show notification</option><option>Run script…</option></select></div>
+        <div class="field"><label>On conflict</label><select><option>Overwrite</option><option>Skip</option><option>Rename (+1)</option></select></div>
+        <div class="divider"></div>
+        <div style="font-size:11px;color:#666;margin-bottom:8px;font-weight:500">Concurrency</div>
+        <div class="field"><label>Workers <span style="float:right" id="wv">4</span></label><input type="range" min="1" max="16" value="4" step="1" oninput="document.getElementById('wv').textContent=this.value"></div>
+        <div class="field"><label>On error</label><select><option>Skip & continue</option><option>Stop all</option><option>Retry once</option></select></div>
+        <div class="divider"></div>
+        <div style="font-size:11px;color:#666;margin-bottom:8px;font-weight:500">After run</div>
+        <div class="field"><label>Action</label><select><option>Do nothing</option><option>Open folder</option><option>Show notification</option><option>Run script…</option></select></div>
       </div>
     </div>
 
@@ -266,23 +266,23 @@ body{font-family:var(--font-sans);font-size:13px;color:var(--color-text-primary)
         <div class="log-line ok">✓ sunset_01.jpg → sunset_01.webp</div>
         <div class="log-line ok">✓ portrait_02.jpg → portrait_02.webp</div>
         <div class="log-line run">↻ landscape_03.jpg — step 2/3…</div>
-        <div class="log-line" style="color:var(--color-text-tertiary)">  citynight_04.jpg — queued</div>
-        <div class="log-line" style="color:var(--color-text-tertiary)">  logo_source.png — queued</div>
+        <div class="log-line" style="color:#aaa">  citynight_04.jpg — queued</div>
+        <div class="log-line" style="color:#aaa">  logo_source.png — queued</div>
         <div class="log-line err">✕ scan_corrupt.tif — error: unsupported bit depth (48)</div>
       </div>
     </div>
 
     <div class="pane" id="pane-settings">
       <div class="col-body">
-        <div class="field"><label>ImageMagick binary</label><input type="text" value="/usr/local/bin/magick" style="font-size:11px"></div>
-        <div class="field"><label>Memory limit</label><select style="font-size:11px"><option>256 MB</option><option>512 MB</option><option>1 GB</option><option>2 GB</option></select></div>
-        <div class="field"><label>Disk cache</label><select style="font-size:11px"><option>1 GB</option><option>2 GB</option><option>4 GB</option></select></div>
-        <div class="field"><label>Preview before run</label><select style="font-size:11px"><option>First file only</option><option>All files</option><option>Disabled</option></select></div>
+        <div class="field"><label>ImageMagick binary</label><input type="text" value="/usr/local/bin/magick"></div>
+        <div class="field"><label>Memory limit</label><select><option>256 MB</option><option>512 MB</option><option>1 GB</option><option>2 GB</option></select></div>
+        <div class="field"><label>Disk cache</label><select><option>1 GB</option><option>2 GB</option><option>4 GB</option></select></div>
+        <div class="field"><label>Preview before run</label><select><option>First file only</option><option>All files</option><option>Disabled</option></select></div>
       </div>
     </div>
 
-    <div class="footer" style="gap:8px;flex-direction:column;align-items:stretch;padding:10px 12px">
-      <div style="display:flex;gap:6px">
+    <div class="footer">
+      <div style="display:flex;gap:6px;width:100%">
         <button class="btn" style="flex:1">Dry run</button>
         <button class="btn btn-primary" style="flex:1">Run batch →</button>
       </div>
@@ -307,3 +307,5 @@ function switchTab(id,tab){
   document.getElementById('pane-'+id).classList.add('active');
 }
 </script>
+</body>
+</html>
