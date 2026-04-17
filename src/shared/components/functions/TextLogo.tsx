@@ -1,7 +1,6 @@
 import { useSingleStore } from "@/features/single/state/single.store";
 import { Input } from "../ui/input";
 import { Select, SelectItem, SelectValue, SelectTrigger, SelectContent } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 
 const TextLogoFunction = () => {
   const functionParams = useSingleStore((s) => s.functionParams);

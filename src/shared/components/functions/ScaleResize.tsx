@@ -1,3 +1,4 @@
+import { Slider } from "@/components/ui/slider";
 import { useSingleStore } from "@/features/single/state/single.store";
 
 const ScaleResizeFunction = () => {
@@ -20,19 +21,17 @@ const ScaleResizeFunction = () => {
   return (
     <div className="space-y-3">
       <label className="block text-xs text-muted-foreground">Width</label>
-      <input
-        className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-        placeholder="e.g. 1920"
-        value={resizeWidth}
-        onChange={(e) => updateFunctionParam("resizeWidth", e.target.value)}
+      <Slider
+        value={[Number(resizeWidth)]}
+        onValueChange={(value) => updateFunctionParam("resizeWidth", value[0])}
       />
+      <span className="text-xs text-muted-foreground">{resizeWidth}</span>
       <label className="block text-xs text-muted-foreground">Height</label>
-      <input
-        className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-        placeholder="e.g. 1080"
-        value={resizeHeight}
-        onChange={(e) => updateFunctionParam("resizeHeight", e.target.value)}
+      <Slider
+        value={[Number(resizeHeight)]}
+        onValueChange={(value) => updateFunctionParam("resizeHeight", value[0])}
       />
+      <span className="text-xs text-muted-foreground">{resizeHeight}</span>
     </div>
   );
 };

@@ -1,0 +1,583 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;font-size:13px;color:#1a1a1a;background:#f5f5f3;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.app{display:flex;height:680px;border:0.5px solid rgba(0,0,0,0.12);border-radius:12px;overflow:hidden;background:#fff;width:100%;max-width:980px}
+.sidebar{width:190px;min-width:190px;border-right:0.5px solid rgba(0,0,0,0.1);background:#f9f9f8;display:flex;flex-direction:column}
+.sidebar-top{padding:14px 14px 10px;border-bottom:0.5px solid rgba(0,0,0,0.1)}
+.sidebar-title{font-size:13px;font-weight:500;margin-bottom:2px}
+.sidebar-sub{font-size:11px;color:#888}
+.nav-section{padding:10px 8px 4px;font-size:10px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:.07em}
+.nav-item{display:flex;align-items:center;gap:9px;padding:7px 10px;cursor:pointer;border-radius:8px;margin:1px 6px;font-size:12px;color:#666}
+.nav-item:hover{background:#fff;color:#1a1a1a}
+.nav-item.active{background:#fff;color:#1a1a1a;font-weight:500;border:0.5px solid rgba(0,0,0,0.08)}
+.nav-icon{width:16px;height:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.main-head{padding:12px 18px;border-bottom:0.5px solid rgba(0,0,0,0.1);display:flex;align-items:center;justify-content:space-between}
+.main-title{font-size:13px;font-weight:500}
+.main-body{flex:1;overflow-y:auto;padding:14px 18px}
+.btn{background:transparent;border:0.5px solid rgba(0,0,0,0.2);border-radius:8px;padding:4px 11px;font-size:12px;cursor:pointer;color:#1a1a1a;font-family:inherit}
+.btn:hover{background:#f5f5f3}
+.btn-primary{background:#7F77DD;border-color:#7F77DD;color:#fff}
+.btn-primary:hover{background:#534AB7;border-color:#534AB7}
+.btn-danger{color:#A32D2D;border-color:#E24B4A}
+.btn-danger:hover{background:#FCEBEB}
+.section{margin-bottom:16px}
+.section-label{font-size:10px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.setting-group{border:0.5px solid rgba(0,0,0,0.1);border-radius:8px;overflow:hidden;background:#fff}
+.setting-row{display:flex;align-items:center;padding:9px 11px;border-bottom:0.5px solid rgba(0,0,0,0.1);gap:10px}
+.setting-row:last-child{border-bottom:none}
+.setting-info{flex:1;min-width:0}
+.setting-name{font-size:12px;font-weight:500;margin-bottom:1px}
+.setting-desc{font-size:11px;color:#666;line-height:1.4}
+.setting-control{flex-shrink:0}
+select,input[type=text]{padding:4px 7px;border:0.5px solid rgba(0,0,0,0.12);border-radius:8px;background:#fff;color:#1a1a1a;font-size:12px;font-family:inherit}
+.toggle{width:36px;height:20px;border-radius:10px;border:0.5px solid rgba(0,0,0,0.2);cursor:pointer;position:relative;transition:background .15s;background:#f5f5f3;flex-shrink:0}
+.toggle.on{background:#7F77DD;border-color:#7F77DD}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .15s}
+.toggle.on::after{transform:translateX(16px)}
+.path-row{display:flex;align-items:center;gap:6px}
+.path-input{flex:1;padding:4px 8px;border:0.5px solid rgba(0,0,0,0.1);border-radius:8px;background:#f9f9f8;color:#666;font-size:11px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+.badge-new{display:inline-block;font-size:9px;padding:1px 5px;border-radius:3px;background:#EEEDFE;color:#534AB7;font-weight:500;margin-left:5px;vertical-align:middle}
+.shortcut{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:10px;background:#f5f5f3;border:0.5px solid rgba(0,0,0,0.12);border-radius:4px;padding:2px 6px;color:#666}
+.color-swatch{width:18px;height:18px;border-radius:50%;border:0.5px solid rgba(0,0,0,0.2);cursor:pointer;flex-shrink:0}
+.color-row{display:flex;gap:6px;align-items:center}
+.about-card{background:#f9f9f8;border:0.5px solid rgba(0,0,0,0.1);border-radius:8px;padding:11px 12px;display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.about-icon{width:32px;height:32px;border-radius:8px;background:#7F77DD;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pane{display:none}
+.pane.active{display:block}
+</style>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-top">
+      <div class="sidebar-title">Settings</div>
+      <div class="sidebar-sub">ImageMagick GUI v1.0</div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding-bottom:8px">
+      <div class="nav-section">General</div>
+      <div class="nav-item active" onclick="show('general',this)">
+        <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.2"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></span>
+        General
+      </div>
+      <div class="nav-item" onclick="show('appearance',this)">
+        <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M8 2C5 2 2 5 2 8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></span>
+        Appearance
+      </div>
+      <div class="nav-item" onclick="show('files',this)">
+        <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="1" width="9" height="13" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M8 1v4h4" stroke="currentColor" stroke-width="1.2"/></svg></span>
+        Files & output
+      </div>
+      <div class="nav-item" onclick="show('processing',this)">
+        <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="4" width="14" height="8" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M4 8h8M4 10.5h5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></span>
+        Processing
+      </div>
+      <div class="nav-item" onclick="show('shortcuts',this)">
+        <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M4 9h2M7 9h2M10 9h2M4 7h8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></span>
+        Shortcuts
+      </div>
+      <div class="nav-section">Advanced</div>
+      <div class="nav-item" onclick="show('imagick',this)">
+        <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h8M2 12h5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></span>
+        ImageMagick
+      </div>
+      <div class="nav-item" onclick="show('notifications',this)">
+        <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 00-5 5v3l-1 2h12l-1-2V7a5 5 0 00-5-5z" stroke="currentColor" stroke-width="1.2"/><path d="M7 13.5a1 1 0 002 0" stroke="currentColor" stroke-width="1.2"/></svg></span>
+        Notifications
+      </div>
+      <div class="nav-item" onclick="show('about',this)">
+        <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M8 7v4M8 5.5v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>
+        About
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="main-head">
+      <div class="main-title" id="page-title">General</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="reset()">Reset section</button>
+        <button class="btn btn-primary" onclick="save()">Save changes</button>
+      </div>
+    </div>
+
+    <div class="main-body">
+
+      <div class="pane active" id="pane-general">
+        <div class="section">
+          <div class="section-label">Language & region</div>
+          <div class="setting-group">
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Language</div>
+                <div class="setting-desc">Ngôn ngữ hiển thị giao diện</div>
+              </div>
+              <div class="setting-control">
+                <select style="width:140px">
+                  <option>English</option>
+                  <option selected>Tiếng Việt</option>
+                  <option>中文 (简体)</option>
+                  <option>日本語</option>
+                  <option>한국어</option>
+                  <option>Français</option>
+                  <option>Deutsch</option>
+                </select>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Date format</div>
+                <div class="setting-desc">Dùng trong tên file output khi có {date}</div>
+              </div>
+              <div class="setting-control">
+                <select style="width:140px">
+                  <option>YYYY-MM-DD</option>
+                  <option>DD-MM-YYYY</option>
+                  <option>MM-DD-YYYY</option>
+                  <option>YYYYMMDD</option>
+                </select>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">File size unit</div>
+                <div class="setting-desc">Cách hiển thị kích thước file trong queue</div>
+              </div>
+              <div class="setting-control">
+                <select>
+                  <option>MB / GB</option>
+                  <option>MiB / GiB</option>
+                  <option>KB</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-label">Startup</div>
+          <div class="setting-group">
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Restore last session</div>
+                <div class="setting-desc">Mở lại pipeline và file queue của lần dùng trước</div>
+              </div>
+              <div class="setting-control"><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Check for updates on launch</div>
+                <div class="setting-desc">Tự kiểm tra phiên bản mới khi khởi động</div>
+              </div>
+              <div class="setting-control"><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Launch at login</div>
+                <div class="setting-desc">Khởi động cùng hệ thống (chạy nền ở tray)</div>
+              </div>
+              <div class="setting-control"><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pane" id="pane-appearance">
+        <div class="section">
+          <div class="section-label">Theme</div>
+          <div class="setting-group">
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Color theme</div>
+                <div class="setting-desc">Giao diện sáng hoặc tối</div>
+              </div>
+              <div class="setting-control">
+                <select style="width:130px">
+                  <option>System default</option>
+                  <option>Light</option>
+                  <option>Dark</option>
+                </select>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Accent color</div>
+                <div class="setting-desc">Màu nhấn cho nút và trạng thái active</div>
+              </div>
+              <div class="setting-control">
+                <div class="color-row">
+                  <div class="color-swatch" style="background:#7F77DD;outline:2px solid #7F77DD;outline-offset:2px"></div>
+                  <div class="color-swatch" style="background:#1D9E75"></div>
+                  <div class="color-swatch" style="background:#378ADD"></div>
+                  <div class="color-swatch" style="background:#D85A30"></div>
+                  <div class="color-swatch" style="background:#888780"></div>
+                </div>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Font size</div>
+                <div class="setting-desc">Kích thước chữ trong giao diện</div>
+              </div>
+              <div class="setting-control">
+                <select>
+                  <option>Small (12px)</option>
+                  <option selected>Default (13px)</option>
+                  <option>Large (15px)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-label">Layout</div>
+          <div class="setting-group">
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Sidebar width</div>
+                <div class="setting-desc">Độ rộng sidebar danh sách operation</div>
+              </div>
+              <div class="setting-control">
+                <select>
+                  <option>Compact (160px)</option>
+                  <option selected>Default (180px)</option>
+                  <option>Wide (220px)</option>
+                </select>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Show CLI preview</div>
+                <div class="setting-desc">Hiện thanh lệnh magick phía dưới options panel</div>
+              </div>
+              <div class="setting-control"><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Show image metadata</div>
+                <div class="setting-desc">Hiện kích thước, dung lượng ở thanh dưới canvas</div>
+              </div>
+              <div class="setting-control"><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pane" id="pane-files">
+        <div class="section">
+          <div class="section-label">Default locations</div>
+          <div class="setting-group">
+            <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:6px">
+              <div class="setting-name">Default output folder</div>
+              <div class="setting-desc" style="color:#666">Thư mục mặc định khi lưu file output</div>
+              <div class="path-row" style="width:100%">
+                <div class="path-input" style="flex:1;display:flex;align-items:center;height:28px">~/Pictures/output/</div>
+                <button class="btn" style="font-size:11px;padding:4px 10px">Browse…</button>
+                <button class="btn" style="font-size:11px;padding:4px 10px">Same as input</button>
+              </div>
+            </div>
+            <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:6px">
+              <div class="setting-name">Default preset folder</div>
+              <div class="setting-desc" style="color:#666">Nơi lưu và load pipeline preset</div>
+              <div class="path-row" style="width:100%">
+                <div class="path-input" style="flex:1;display:flex;align-items:center;height:28px">~/.config/imgui/presets/</div>
+                <button class="btn" style="font-size:11px;padding:4px 10px">Browse…</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-label">File naming</div>
+          <div class="setting-group">
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Default naming pattern</div>
+                <div class="setting-desc">Biến: {name} {date} {op} {width} {height}</div>
+              </div>
+              <div class="setting-control">
+                <input type="text" value="{name}_out" style="width:130px">
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">On filename conflict</div>
+                <div class="setting-desc">Khi file đầu ra đã tồn tại</div>
+              </div>
+              <div class="setting-control">
+                <select style="width:130px">
+                  <option>Ask me</option>
+                  <option>Overwrite</option>
+                  <option selected>Rename (+1)</option>
+                  <option>Skip</option>
+                </select>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Auto-open output folder</div>
+                <div class="setting-desc">Tự mở Finder/Explorer sau khi xử lý xong</div>
+              </div>
+              <div class="setting-control"><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-label">Recent files</div>
+          <div class="setting-group">
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Remember recent files</div>
+                <div class="setting-desc">Số file gần đây hiện trong menu File</div>
+              </div>
+              <div class="setting-control">
+                <select><option>5</option><option selected>10</option><option>20</option><option>Tắt</option></select>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info" style="flex:1">
+                <div class="setting-name">Clear recent files</div>
+              </div>
+              <div class="setting-control"><button class="btn btn-danger" style="font-size:11px">Clear</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pane" id="pane-processing">
+        <div class="section">
+          <div class="section-label">Performance</div>
+          <div class="setting-group">
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Batch workers</div>
+                <div class="setting-desc">Số luồng xử lý song song. Khuyến nghị ≤ số CPU cores</div>
+              </div>
+              <div class="setting-control">
+                <select style="width:100px">
+                  <option>1 (safe)</option>
+                  <option>2</option>
+                  <option selected>4 (recommended)</option>
+                  <option>8</option>
+                  <option>Auto</option>
+                </select>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Memory limit per job</div>
+                <div class="setting-desc">Giới hạn RAM cho mỗi tiến trình ImageMagick</div>
+              </div>
+              <div class="setting-control">
+                <select>
+                  <option>256 MB</option>
+                  <option selected>512 MB</option>
+                  <option>1 GB</option>
+                  <option>2 GB</option>
+                  <option>Unlimited</option>
+                </select>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Disk cache limit</div>
+                <div class="setting-desc">Dùng khi ảnh lớn vượt quá memory limit</div>
+              </div>
+              <div class="setting-control">
+                <select>
+                  <option>1 GB</option>
+                  <option selected>2 GB</option>
+                  <option>4 GB</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-label">Preview</div>
+          <div class="setting-group">
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Live preview<span class="badge-new">new</span></div>
+                <div class="setting-desc">Cập nhật preview real-time khi chỉnh tham số (chậm hơn với ảnh lớn)</div>
+              </div>
+              <div class="setting-control"><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Preview max resolution</div>
+                <div class="setting-desc">Giảm độ phân giải preview để nhanh hơn</div>
+              </div>
+              <div class="setting-control">
+                <select style="width:120px">
+                  <option>800px (fast)</option>
+                  <option selected>1200px</option>
+                  <option>Full size</option>
+                </select>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Dry run before batch</div>
+                <div class="setting-desc">Tự động thử trên 1 file trước khi chạy toàn bộ queue</div>
+              </div>
+              <div class="setting-control"><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-label">On error</div>
+          <div class="setting-group">
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Error handling</div>
+                <div class="setting-desc">Hành động khi một file trong batch bị lỗi</div>
+              </div>
+              <div class="setting-control">
+                <select style="width:140px">
+                  <option selected>Skip & continue</option>
+                  <option>Stop all</option>
+                  <option>Retry once</option>
+                </select>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Save error log</div>
+                <div class="setting-desc">Ghi log lỗi ra file sau mỗi batch run</div>
+              </div>
+              <div class="setting-control"><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pane" id="pane-shortcuts">
+        <div class="section">
+          <div class="section-label">Global shortcuts</div>
+          <div class="setting-group">
+            <div class="setting-row"><div class="setting-info"><div class="setting-name">Run batch</div></div><div class="setting-control"><span class="shortcut">⌘ R</span></div></div>
+            <div class="setting-row"><div class="setting-info"><div class="setting-name">Open file(s)</div></div><div class="setting-control"><span class="shortcut">⌘ O</span></div></div>
+            <div class="setting-row"><div class="setting-info"><div class="setting-name">Save preset</div></div><div class="setting-control"><span class="shortcut">⌘ S</span></div></div>
+            <div class="setting-row"><div class="setting-info"><div class="setting-name">Toggle batch mode</div></div><div class="setting-control"><span class="shortcut">⌘ B</span></div></div>
+            <div class="setting-row"><div class="setting-info"><div class="setting-name">Settings</div></div><div class="setting-control"><span class="shortcut">⌘ ,</span></div></div>
+            <div class="setting-row"><div class="setting-info"><div class="setting-name">Dry run</div></div><div class="setting-control"><span class="shortcut">⌘ ⇧ R</span></div></div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-label">Navigation</div>
+          <div class="setting-group">
+            <div class="setting-row"><div class="setting-info"><div class="setting-name">Next operation</div></div><div class="setting-control"><span class="shortcut">↓</span></div></div>
+            <div class="setting-row"><div class="setting-info"><div class="setting-name">Previous operation</div></div><div class="setting-control"><span class="shortcut">↑</span></div></div>
+            <div class="setting-row"><div class="setting-info"><div class="setting-name">Zoom in preview</div></div><div class="setting-control"><span class="shortcut">⌘ +</span></div></div>
+            <div class="setting-row"><div class="setting-info"><div class="setting-name">Zoom to fit</div></div><div class="setting-control"><span class="shortcut">⌘ 0</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pane" id="pane-imagick">
+        <div class="section">
+          <div class="section-label">Binary</div>
+          <div class="setting-group">
+            <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:6px">
+              <div class="setting-name">ImageMagick binary path</div>
+              <div class="setting-desc" style="color:#666">Đường dẫn tới lệnh <code style="font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:11px">magick</code></div>
+              <div class="path-row" style="width:100%">
+                <div class="path-input" style="flex:1;display:flex;align-items:center;height:28px">/usr/local/bin/magick</div>
+                <button class="btn" style="font-size:11px;padding:4px 10px">Detect</button>
+                <button class="btn" style="font-size:11px;padding:4px 10px">Browse…</button>
+              </div>
+              <div style="font-size:11px;color:#3B6D11">✓ ImageMagick 7.1.1-15 detected</div>
+            </div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-label">Default flags</div>
+          <div class="setting-group">
+            <div class="setting-row">
+              <div class="setting-info"><div class="setting-name">Strip metadata by default</div><div class="setting-desc">Thêm <code style="font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:11px">-strip</code> vào mọi lệnh</div></div>
+              <div class="setting-control"><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info"><div class="setting-name">Interlace PNG</div><div class="setting-desc"><code style="font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:11px">-interlace PNG</code> — progressive loading</div></div>
+              <div class="setting-control"><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info"><div class="setting-name">Color profile</div><div class="setting-desc">Profile màu mặc định cho output</div></div>
+              <div class="setting-control"><select><option selected>sRGB</option><option>Adobe RGB</option><option>CMYK</option><option>None</option></select></div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info"><div class="setting-name">Extra global flags</div><div class="setting-desc">Flags tùy chỉnh thêm vào mọi lệnh magick</div></div>
+              <div class="setting-control"><input type="text" placeholder="-limit thread 4" style="width:140px"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pane" id="pane-notifications">
+        <div class="section">
+          <div class="section-label">System notifications</div>
+          <div class="setting-group">
+            <div class="setting-row"><div class="setting-info"><div class="setting-name">Batch completed</div><div class="setting-desc">Thông báo khi toàn bộ batch xử lý xong</div></div><div class="setting-control"><div class="toggle on" onclick="this.classList.toggle('on')"></div></div></div>
+            <div class="setting-row"><div class="setting-info"><div class="setting-name">Error occurred</div><div class="setting-desc">Thông báo khi có file bị lỗi trong batch</div></div><div class="setting-control"><div class="toggle on" onclick="this.classList.toggle('on')"></div></div></div>
+            <div class="setting-row"><div class="setting-info"><div class="setting-name">Single file done</div><div class="setting-desc">Thông báo sau mỗi file đơn lẻ (không phải batch)</div></div><div class="setting-control"><div class="toggle" onclick="this.classList.toggle('on')"></div></div></div>
+            <div class="setting-row"><div class="setting-info"><div class="setting-name">Play sound</div><div class="setting-desc">Phát âm thanh kèm thông báo</div></div><div class="setting-control"><div class="toggle on" onclick="this.classList.toggle('on')"></div></div></div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-label">In-app</div>
+          <div class="setting-group">
+            <div class="setting-row"><div class="setting-info"><div class="setting-name">Show progress in dock/taskbar</div><div class="setting-desc">Hiện progress bar trên icon app ở dock</div></div><div class="setting-control"><div class="toggle on" onclick="this.classList.toggle('on')"></div></div></div>
+            <div class="setting-row"><div class="setting-info"><div class="setting-name">Tray badge (file count)</div><div class="setting-desc">Hiện số file đang xử lý trên icon tray</div></div><div class="setting-control"><div class="toggle on" onclick="this.classList.toggle('on')"></div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pane" id="pane-about">
+        <div class="about-card">
+          <div class="about-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="16" height="16" rx="4" fill="white" opacity=".2"/><path d="M6 10h8M10 6v8" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:500">ImageMagick GUI</div>
+            <div style="font-size:11px;color:#888">Version 1.0.0 · Built with Tauri 2 + React</div>
+          </div>
+          <button class="btn" style="margin-left:auto;font-size:11px">Check for updates</button>
+        </div>
+        <div class="setting-group">
+          <div class="setting-row"><div class="setting-info"><div class="setting-name">ImageMagick version</div></div><div style="font-size:11px;color:#666;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace">7.1.1-15</div></div>
+          <div class="setting-row"><div class="setting-info"><div class="setting-name">Tauri version</div></div><div style="font-size:11px;color:#666;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace">2.0.4</div></div>
+          <div class="setting-row"><div class="setting-info"><div class="setting-name">Config location</div></div><div style="font-size:11px;color:#888;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace">~/.config/imgui/</div></div>
+          <div class="setting-row"><div class="setting-info"><div class="setting-name">Log location</div></div><div style="font-size:11px;color:#888;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace">~/.local/share/imgui/</div></div>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:8px">
+          <button class="btn" style="font-size:11px">Open config folder</button>
+          <button class="btn" style="font-size:11px">View changelog</button>
+          <button class="btn btn-danger" style="font-size:11px;margin-left:auto">Reset all settings</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const titles={general:'General',appearance:'Appearance',files:'Files & output',processing:'Processing',shortcuts:'Shortcuts',imagick:'ImageMagick',notifications:'Notifications',about:'About'};
+function show(id,el){
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.pane').forEach(x=>x.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('pane-'+id).classList.add('active');
+  document.getElementById('page-title').textContent=titles[id];
+}
+function save(){
+  const btn=document.querySelector('.btn-primary');
+  const orig=btn.textContent;
+  btn.textContent='Saved ✓';
+  btn.style.background='#3B6D11';
+  btn.style.borderColor='#3B6D11';
+  setTimeout(()=>{btn.textContent=orig;btn.style.background='';btn.style.borderColor='';},1500);
+}
+function reset(){alert('Section reset to defaults');}
+</script>

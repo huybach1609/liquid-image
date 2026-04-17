@@ -1,5 +1,5 @@
 import { Label } from "@/components/ui/label";
-import { Select, SelectItem, SelectContent, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useSingleStore } from "@/features/single/state/single.store";
 
 const MirrorFunction = () => {
@@ -7,24 +7,31 @@ const MirrorFunction = () => {
   const updateFunctionParam = useSingleStore((s) => s.updateFunctionParam);
 
   const mirrorAxis =
-    typeof functionParams.mirrorAxis === "string" ? functionParams.mirrorAxis : "Horizontal";
+    typeof functionParams.mirrorAxis === "string"
+      ? functionParams.mirrorAxis
+      : "Horizontal";
 
   return (
     <div className="space-y-3">
-      <Label className="block text-xs text-muted-foreground">Direction</Label>
-      <Select
+      <Label>Direction</Label>
+     
+      <RadioGroup
         value={mirrorAxis}
         onValueChange={(value) => updateFunctionParam("mirrorAxis", value)}
       >
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Select a direction" />
-        </SelectTrigger>
-        <SelectContent position="popper">
-          <SelectItem value="Horizontal">Horizontal</SelectItem>
-          <SelectItem value="Vertical">Vertical</SelectItem>
-          <SelectItem value="Both">Both</SelectItem>
-        </SelectContent>
-      </Select>
+        <div className="flex items-center gap-2">
+          <RadioGroupItem value="Horizontal" id="Horizontal">Horizontal</RadioGroupItem>
+          <Label htmlFor="Horizontal">Horizontal</Label>
+        </div>
+        <div className="flex items-center gap-2">
+          <RadioGroupItem value="Vertical" id="Vertical">Vertical</RadioGroupItem>
+          <Label htmlFor="Vertical">Vertical</Label>
+        </div>
+        <div className="flex items-center gap-2">
+          <RadioGroupItem value="Both" id="Both">Both</RadioGroupItem>
+          <Label htmlFor="Both">Both</Label>
+        </div>
+      </RadioGroup>
     </div>
   );
 };

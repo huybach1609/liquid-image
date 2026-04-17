@@ -1,5 +1,6 @@
 import { useMemo, useState, type ComponentType, type ReactNode } from "react";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
+import { openPath } from "@tauri-apps/plugin-opener";
 
 import BlackWhiteFunction from "@/shared/components/functions/BlackWhite";
 import BorderFunction from "@/shared/components/functions/Border";
@@ -20,10 +21,13 @@ import {
   Contrast,
   CropIcon,
   Disc3,
+  Ellipsis,
   FlipHorizontal2,
+  FolderOpen,
   ImageIcon,
   ImageUpscale,
   Palette,
+  Play,
   PlusIcon,
   Rotate3d,
   SquareRoundCorner,
@@ -42,20 +46,57 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useSingleStore } from "@/features/single/state/single.store";
 import { Button } from "@/shared/components/ui/button";
-import { getImageMetadata } from "@/shared/tauri/commands";
+import { getImageMetadata, runSingle } from "@/shared/tauri/commands";
 import { formatFileSize } from "@/lib/utils";
 import { CanvasPreview } from "@/features/single/components/CanvasPreview";
 import { SingleCliPreview } from "@/features/single/components/SingleCliPreview";
 import { usePreviewPipeline } from "@/features/single/hooks/usePreviewPipeline";
 import {
+  buildSingleOperationArgs,
   buildSingleCliPipeline,
   buildSingleCliPreview,
 } from "@/features/single/buildSingleCliPreview";
+import { Spinner } from "@/components/ui/spinner";
 
 function getFileNameFromPath(filePath: string): string {
   const normalized = filePath.replace(/\\/g, "/");
   const parts = normalized.split("/");
   return parts[parts.length - 1] || filePath;
+}
+
+function getDirectoryPath(filePath: string): string {
+  const normalized = filePath.replace(/\\/g, "/");
+  const lastSlash = normalized.lastIndexOf("/");
+  if (lastSlash <= 0) {
+    return ".";
+  }
+
+  return normalized.slice(0, lastSlash);
+}
+
+function normalizeOutputDir(outputDir: unknown): string {
+  if (typeof outputDir !== "string" || outputDir.trim().length === 0) {
+    return "./output";
+  }
+
+  return outputDir.trim().replace(/[\\/]+$/, "");
+}
+
+function normalizeOutputName(outputName: unknown): string {
+  if (typeof outputName !== "string" || outputName.trim().length === 0) {
+    return "photo_out";
+  }
+
+  return outputName.trim();
+}
+
+function normalizeOutputExt(outputFormat: unknown): string {
+  if (typeof outputFormat !== "string" || outputFormat.trim().length === 0) {
+    return "png";
+  }
+
+  const normalized = outputFormat.trim().toLowerCase();
+  return normalized === "jpeg" ? "jpg" : normalized;
 }
 
 type SingleFunctionItem = {
@@ -144,6 +185,8 @@ export function SingleModePage() {
   const [cliPreviewMode, setCliPreviewMode] = useState<"function" | "all">(
     "function",
   );
+  const [outputPathOverride, setOutputPathOverride] = useState<string | null>(null);
+  const [lastOutputPath, setLastOutputPath] = useState<string | null>(null);
   const selectedFile = useSingleStore((state) => state.selectedFile);
   const fileMetadata = useSingleStore((state) => state.fileMetadata);
   const setSelectedFile = useSingleStore((state) => state.setSelectedFile);
@@ -173,6 +216,7 @@ export function SingleModePage() {
   const resetAllFunctionParams = useSingleStore(
     (state) => state.resetAllFunctionParams,
   );
+  const setRunStatus = useSingleStore((state) => state.setRunStatus);
 
   const isRunning = runState.status === "running";
   const message = runState.message;
@@ -184,13 +228,6 @@ export function SingleModePage() {
     [selectedFunctionName],
   );
   const SelectedFunctionComponent = selectedFunction.component;
-  const previewState = usePreviewPipeline({
-    selectedFile,
-    selectedFunction: selectedFunctionName,
-    functionParams,
-    isManualPreview,
-    previewRequestId,
-  });
 
   const editedFunctionNames = useMemo(
     () =>
@@ -199,24 +236,58 @@ export function SingleModePage() {
         .map(([name]) => name),
     [functionParamsByFunction],
   );
+  const previewOperations = useMemo(() => {
+    if (cliPreviewMode === "all") {
+      const targetFunctions =
+        editedFunctionNames.length > 0 ? editedFunctionNames : [selectedFunctionName];
+      return targetFunctions.map((functionName) => ({
+        selectedFunction: functionName,
+        functionParams: functionParamsByFunction[functionName] ?? {},
+      }));
+    }
+
+    return [
+      {
+        selectedFunction: selectedFunctionName,
+        functionParams,
+      },
+    ];
+  }, [
+    cliPreviewMode,
+    editedFunctionNames,
+    functionParams,
+    functionParamsByFunction,
+    selectedFunctionName,
+  ]);
+  const previewOperationLabel =
+    cliPreviewMode === "all" ? "all-edited-functions" : selectedFunctionName;
+  const previewState = usePreviewPipeline({
+    selectedFile,
+    operations: previewOperations,
+    operationLabel: previewOperationLabel,
+    isManualPreview,
+    previewRequestId,
+  });
 
   const commandPreviews = useMemo(() => {
     if (cliPreviewMode === "all") {
       const targetFunctions =
-        editedFunctionNames.length > 0 ? editedFunctionNames : [selectedFunctionName];
+        editedFunctionNames.length > 0
+          ? editedFunctionNames
+          : [selectedFunctionName];
 
-      const mergedCommand = targetFunctions
-        .map((functionName) => ({
-          selectedFunction: functionName,
-          functionParams: functionParamsByFunction[functionName] ?? {},
-        }));
+      const mergedCommand = targetFunctions.map((functionName) => ({
+        selectedFunction: functionName,
+        functionParams: functionParamsByFunction[functionName] ?? {},
+      }));
 
       const pipelineCommand = buildSingleCliPipeline({
         selectedFile,
         operations: mergedCommand,
         outputParams:
-          functionParamsByFunction[targetFunctions[targetFunctions.length - 1]] ??
-          functionParams,
+          functionParamsByFunction[
+            targetFunctions[targetFunctions.length - 1]
+          ] ?? functionParams,
       });
 
       return [
@@ -245,6 +316,13 @@ export function SingleModePage() {
     selectedFile,
     selectedFunctionName,
   ]);
+
+  const defaultOutputPath = useMemo(() => {
+    const outputDir = normalizeOutputDir(functionParams.outputDir);
+    const outputName = normalizeOutputName(functionParams.outputName);
+    const outputExt = normalizeOutputExt(functionParams.outputFormat);
+    return `${outputDir}/${outputName}.${outputExt}`;
+  }, [functionParams.outputDir, functionParams.outputName, functionParams.outputFormat]);
 
   const handleSelectFile = async () => {
     const picked = await openDialog({
@@ -282,6 +360,92 @@ export function SingleModePage() {
   const handleDetachFile = () => {
     setSelectedFile(null);
     setFileMetadata(null);
+  };
+
+  const handleChooseOutputPath = async () => {
+    const picked = await saveDialog({
+      defaultPath: outputPathOverride ?? defaultOutputPath,
+      filters: [
+        {
+          name: "Image output",
+          extensions: ["png", "jpg", "jpeg", "webp", "tiff", "bmp", "heic"],
+        },
+      ],
+    });
+
+    if (!picked) {
+      return;
+    }
+
+    const selectedPath = Array.isArray(picked) ? picked[0] : picked;
+    if (!selectedPath) {
+      return;
+    }
+
+    setOutputPathOverride(selectedPath);
+    setRunStatus("idle", `Output: ${getFileNameFromPath(selectedPath)}`);
+  };
+
+  const handleOpenOutputFolder = async () => {
+    if (!lastOutputPath) {
+      return;
+    }
+
+    try {
+      await openPath(getDirectoryPath(lastOutputPath));
+    } catch (error) {
+      console.error("[SingleModePage] Failed to open output folder", {
+        lastOutputPath,
+        outputDir: getDirectoryPath(lastOutputPath),
+        error,
+      });
+      setRunStatus("error", "Cannot open output folder");
+    }
+  };
+
+  const handleRunSingle = async () => {
+    if (!selectedFile || isRunning) {
+      return;
+    }
+
+    const targetFunctions =
+      cliPreviewMode === "all"
+        ? editedFunctionNames.length > 0
+          ? editedFunctionNames
+          : [selectedFunctionName]
+        : [selectedFunctionName];
+
+    const outputParams =
+      functionParamsByFunction[targetFunctions[targetFunctions.length - 1]] ??
+      functionParams;
+    const outputDir = normalizeOutputDir(outputParams.outputDir);
+    const outputName = normalizeOutputName(outputParams.outputName);
+    const outputExt = normalizeOutputExt(outputParams.outputFormat);
+    const computedOutputPath = `${outputDir}/${outputName}.${outputExt}`;
+    const outputPath = outputPathOverride ?? computedOutputPath;
+
+    const args: string[] = [];
+    for (const functionName of targetFunctions) {
+      const params = functionParamsByFunction[functionName] ?? {};
+      args.push(...buildSingleOperationArgs(functionName, params));
+    }
+
+    try {
+      setRunStatus("running", "Running ImageMagick...");
+      const response = await runSingle({
+        inputPath: selectedFile,
+        outputPath,
+        args,
+      });
+      setLastOutputPath(response.outputPath);
+      setRunStatus(
+        "success",
+        `Done: ${getFileNameFromPath(response.outputPath)} (${response.width}x${response.height})`,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to run command";
+      setRunStatus("error", message);
+    }
   };
 
   return (
@@ -387,7 +551,9 @@ export function SingleModePage() {
               <Button
                 type="button"
                 size="sm"
-                disabled={!selectedFile || !isManualPreview || previewState.isPending}
+                disabled={
+                  !selectedFile || !isManualPreview || previewState.isPending
+                }
                 onClick={requestPreview}
                 className="rounded-lg"
               >
@@ -401,10 +567,23 @@ export function SingleModePage() {
 
             <Button
               type="button"
-              disabled={isRunning}
-              className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-50"
+              disabled={isRunning || !selectedFile}
+              className="size-7"
+              variant="outline"
+              onClick={handleChooseOutputPath}
+              title={outputPathOverride ?? defaultOutputPath}
             >
-              {isRunning ? "Running..." : "Run"}
+              <FolderOpen className="size-4" />
+            </Button>
+
+            <Button
+              type="button"
+              disabled={isRunning || !selectedFile}
+              className="size-7"
+              variant={isRunning ? "default" : "outline"}
+              onClick={handleRunSingle}
+            >
+              {isRunning ? <Spinner /> : <Play />}
             </Button>
           </div>
         </header>
@@ -449,6 +628,17 @@ export function SingleModePage() {
           <p className="text-xs text-muted-foreground">
             {message || "ImageMagick 7.1"}
           </p>
+          {runState.status === "success" && lastOutputPath ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="ml-3 h-7"
+              onClick={handleOpenOutputFolder}
+            >
+              Open output folder
+            </Button>
+          ) : null}
         </footer>
       </div>
 
@@ -457,32 +647,32 @@ export function SingleModePage() {
           <span className="text-xs font-medium tracking-[0.08em] text-muted-foreground uppercase">
             {selectedFunction.name} - Options
           </span>
-          <div className="inline-flex items-center gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-[11px]"
-              onClick={resetCurrentFunctionParams}
-            >
-              Reset current
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-[11px]"
-              onClick={resetAllFunctionParams}
-            >
-              Reset all
-            </Button>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="size-7"
+              >
+                <Ellipsis />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={resetCurrentFunctionParams}>
+                Reset {selectedFunction.name}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={resetAllFunctionParams}>
+                Reset all
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <div className="space-y-3 overflow-auto px-4 py-3">
           <SelectedFunctionComponent />
         </div>
         <div className="border-t border-border/70 px-4 py-3">
-          <div className="mb-2 inline-flex rounded-md border border-border/80 bg-muted/30 p-0.5">
+          {/* <div className="mb-2 inline-flex rounded-md border border-border/80 bg-muted/30 p-0.5">
             <button
               type="button"
               className={`rounded px-2 py-1 text-[11px] transition-colors ${
@@ -505,8 +695,8 @@ export function SingleModePage() {
             >
               See all
             </button>
-          </div>
-          <SingleCliPreview commandPreviews={commandPreviews} />
+          </div> */}
+          <SingleCliPreview commandPreviews={commandPreviews} cliPreviewMode={cliPreviewMode} setCliPreviewMode={setCliPreviewMode} />
         </div>
       </aside>
     </section>

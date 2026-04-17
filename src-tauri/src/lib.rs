@@ -26,7 +26,8 @@ pub fn run() {
             magick_service::convert_image,
             magick_service::check_version,
             magick_service::get_image_metadata,
-            magick_service::generate_preview
+            magick_service::generate_preview,
+            magick_service::run_single
 
         ])
         .run(tauri::generate_context!())

@@ -216,7 +216,9 @@ export function buildSingleCliPipeline({
   outputParams,
 }: BuildSingleCliPipelineArgs): string {
   const inputBaseName = selectedFile ? getBaseName(selectedFile) : "photo.jpg";
-  const effectiveOutputParams = outputParams ?? operations.at(-1)?.functionParams ?? {};
+  const lastOperation =
+    operations.length > 0 ? operations[operations.length - 1] : undefined;
+  const effectiveOutputParams = outputParams ?? lastOperation?.functionParams ?? {};
   const outputPath = buildOutputPath(effectiveOutputParams);
 
   const parts: string[] = ["magick", quoteIfNeeded(inputBaseName)];
