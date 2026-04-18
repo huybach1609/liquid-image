@@ -5,7 +5,8 @@ import { buildSingleOperationArgs } from "@/features/single/buildSingleCliPrevie
 import { generatePreview } from "@/shared/tauri/commands";
 
 type UsePreviewPipelineArgs = {
-  selectedFile: string | null;
+  /** Temp proxy path used for preview (`convertFileSrc` + `generate_preview`). */
+  previewInputPath: string | null;
   operations: Array<{
     selectedFunction: string;
     functionParams: Record<string, unknown>;
@@ -30,14 +31,14 @@ const DISCRETE_CHANGE_DEBOUNCE_MS = 60;
 const CONTINUOUS_CHANGE_DEBOUNCE_MS = 160;
 
 export function usePreviewPipeline({
-  selectedFile,
+  previewInputPath,
   operations,
   operationLabel,
   isManualPreview = false,
   previewRequestId = 0,
   debounceMs = DEFAULT_DEBOUNCE_MS,
 }: UsePreviewPipelineArgs): PreviewState {
-  const [previewPath, setPreviewPath] = useState<string | null>(null);
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [previewWidth, setPreviewWidth] = useState<number | null>(null);
   const [previewHeight, setPreviewHeight] = useState<number | null>(null);
   const [isPending, setIsPending] = useState(false);
@@ -57,12 +58,9 @@ export function usePreviewPipeline({
     [operations],
   );
   const originUrl = useMemo(
-    () => (selectedFile ? convertFileSrc(selectedFile, "asset") : null),
-    [selectedFile],
-  );
-  const previewUrl = useMemo(
-    () => (previewPath ? convertFileSrc(previewPath, "asset") : null),
-    [previewPath],
+    () =>
+      previewInputPath ? convertFileSrc(previewInputPath, "asset") : null,
+    [previewInputPath],
   );
   const signature = useMemo(
     () => `${operationLabel}|${optionsJson}|${operationArgs.join(" ")}`,
@@ -88,8 +86,8 @@ export function usePreviewPipeline({
   }, [debounceMs, isManualPreview, signature]);
 
   useEffect(() => {
-    if (!selectedFile) {
-      setPreviewPath(null);
+    if (!previewInputPath) {
+      setPreviewSrc(null);
       setPreviewWidth(null);
       setPreviewHeight(null);
       setError(null);
@@ -114,10 +112,11 @@ export function usePreviewPipeline({
           const startedAt = performance.now();
           try {
             const response = await generatePreview({
-              inputPath: selectedFile,
+              inputPath: previewInputPath,
               operation: operationLabel,
               optionsJson,
               args: operationArgs,
+              fromProxy: true,
             });
 
             if (requestRef.current !== ticket) {
@@ -130,17 +129,51 @@ export function usePreviewPipeline({
               return;
             }
 
-            setPreviewPath(response.previewPath);
-            setPreviewWidth(response.width);
-            setPreviewHeight(response.height);
-            console.debug("[preview] completed", {
-              ticket,
-              elapsedMs: Math.round(performance.now() - startedAt),
-              totalMs: response.totalMs,
-              renderMs: response.renderMs,
-              identifyMs: response.identifyMs,
-              debounceMs: effectiveDebounceMs,
-            });
+            const dataUri = response.previewDataUri;
+            
+            const decodeImageDimensions = () =>
+              new Promise<{ width: number; height: number }>((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                  resolve({ width: img.naturalWidth, height: img.naturalHeight });
+                };
+                img.onerror = () => {
+                  reject(new Error("Failed to decode preview image"));
+                };
+                img.src = dataUri;
+              });
+
+            try {
+              const { width, height } = await decodeImageDimensions();
+              if (requestRef.current !== ticket) {
+                droppedResponseCountRef.current += 1;
+                console.debug("[preview] dropped stale response after decode", {
+                  droppedResponses: droppedResponseCountRef.current,
+                  ticket,
+                  activeTicket: requestRef.current,
+                });
+                return;
+              }
+              setPreviewSrc(dataUri);
+              setPreviewWidth(width);
+              setPreviewHeight(height);
+              console.debug("[preview] completed", {
+                ticket,
+                elapsedMs: Math.round(performance.now() - startedAt),
+                totalMs: response.totalMs,
+                renderMs: response.renderMs,
+                debounceMs: effectiveDebounceMs,
+                width,
+                height,
+              });
+            } catch (decodeErr) {
+              if (requestRef.current !== ticket) {
+                return;
+              }
+              const message =
+                decodeErr instanceof Error ? decodeErr.message : "Failed to decode preview";
+              setError(message);
+            }
           } catch (err) {
             if (requestRef.current !== ticket) {
               droppedResponseCountRef.current += 1;
@@ -166,13 +199,13 @@ export function usePreviewPipeline({
     optionsJson,
     operationArgs,
     previewRequestId,
-    selectedFile,
+    previewInputPath,
     operationLabel,
   ]);
 
   return {
     originUrl,
-    previewUrl,
+    previewUrl: previewSrc,
     width: previewWidth,
     height: previewHeight,
     isPending,

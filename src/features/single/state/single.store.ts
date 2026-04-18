@@ -11,6 +11,8 @@ export type SingleRunState = {
 
 export type SingleStoreState = {
   selectedFile: string | null;
+  /** Temp WebP proxy (≈1600px) used for preview I/O; full-res path stays in `selectedFile`. */
+  proxyPath: string | null;
   selectedFunction: string;
   functionParams: Record<string, unknown>;
   functionParamsByFunction: Record<string, Record<string, unknown>>;
@@ -21,6 +23,7 @@ export type SingleStoreState = {
   fileMetadata: ImageMetadata | null;
   setFileMetadata: (fileMetadata: ImageMetadata | null) => void;
   setSelectedFile: (selectedFile: string | null) => void;
+  setProxyPath: (proxyPath: string | null) => void;
   setSelectedFunction: (selectedFunction: string) => void;
   setFunctionParams: (functionParams: Record<string, unknown>) => void;
   updateFunctionParam: (key: string, value: unknown) => void;
@@ -43,6 +46,7 @@ const initialRunState: SingleRunState = {
 
 export const useSingleStore = create<SingleStoreState>((set) => ({
   selectedFile: null,
+  proxyPath: null,
   selectedFunction: DEFAULT_SELECTED_FUNCTION,
   functionParams: {},
   functionParamsByFunction: {},
@@ -53,6 +57,7 @@ export const useSingleStore = create<SingleStoreState>((set) => ({
   fileMetadata: null,
   setFileMetadata: (fileMetadata: ImageMetadata | null) => set({ fileMetadata }),
   setSelectedFile: (selectedFile) => set({ selectedFile }),
+  setProxyPath: (proxyPath) => set({ proxyPath }),
   setSelectedFunction: (selectedFunction) =>
     set((state) => {
       if (state.selectedFunction === selectedFunction) {

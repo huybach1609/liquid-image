@@ -27,9 +27,16 @@ export function SingleCliPreview({
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <p className="mb-1 text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase flex items-center gap-1 justify-between">
-            <span>CLI Preview </span><span className="text-primary lowercase flex gap-1 "><div>{cliPreviewMode}</div> <ChevronDown className="size-4" /></span>
-          </p>
+          <button
+            type="button"
+            className="mb-1 flex w-full cursor-pointer items-center justify-between gap-1 border-0 bg-transparent p-0 text-left text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase hover:text-foreground"
+          >
+            <span>CLI Preview </span>
+            <span className="flex gap-1 lowercase text-primary">
+              <span>{cliPreviewMode}</span>
+              <ChevronDown className="size-4" />
+            </span>
+          </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuRadioGroup

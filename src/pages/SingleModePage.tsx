@@ -1,4 +1,11 @@
-import { useMemo, useState, type ComponentType, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ComponentType,
+  type ReactNode,
+} from "react";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { openPath } from "@tauri-apps/plugin-opener";
 
@@ -44,9 +51,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAppStore } from "@/app/store/app.store";
 import { useSingleStore } from "@/features/single/state/single.store";
 import { Button } from "@/shared/components/ui/button";
-import { getImageMetadata, runSingle } from "@/shared/tauri/commands";
+import {
+  createImageProxy,
+  getImageMetadata,
+  removeProxyFile,
+  runSingle,
+} from "@/shared/tauri/commands";
 import { formatFileSize } from "@/lib/utils";
 import { CanvasPreview } from "@/features/single/components/CanvasPreview";
 import { SingleCliPreview } from "@/features/single/components/SingleCliPreview";
@@ -187,9 +200,12 @@ export function SingleModePage() {
   );
   const [outputPathOverride, setOutputPathOverride] = useState<string | null>(null);
   const [lastOutputPath, setLastOutputPath] = useState<string | null>(null);
+  const [isPreparingProxy, setIsPreparingProxy] = useState(false);
   const selectedFile = useSingleStore((state) => state.selectedFile);
+  const proxyPath = useSingleStore((state) => state.proxyPath);
   const fileMetadata = useSingleStore((state) => state.fileMetadata);
   const setSelectedFile = useSingleStore((state) => state.setSelectedFile);
+  const setProxyPath = useSingleStore((state) => state.setProxyPath);
   const setFileMetadata = useSingleStore((state) => state.setFileMetadata);
   const selectedFunctionName = useSingleStore(
     (state) => state.selectedFunction,
@@ -217,6 +233,7 @@ export function SingleModePage() {
     (state) => state.resetAllFunctionParams,
   );
   const setRunStatus = useSingleStore((state) => state.setRunStatus);
+  const openImageMenuRequestId = useAppStore((state) => state.openImageMenuRequestId);
 
   const isRunning = runState.status === "running";
   const message = runState.message;
@@ -262,7 +279,7 @@ export function SingleModePage() {
   const previewOperationLabel =
     cliPreviewMode === "all" ? "all-edited-functions" : selectedFunctionName;
   const previewState = usePreviewPipeline({
-    selectedFile,
+    previewInputPath: proxyPath,
     operations: previewOperations,
     operationLabel: previewOperationLabel,
     isManualPreview,
@@ -324,7 +341,48 @@ export function SingleModePage() {
     return `${outputDir}/${outputName}.${outputExt}`;
   }, [functionParams.outputDir, functionParams.outputName, functionParams.outputFormat]);
 
-  const handleSelectFile = async () => {
+  const ingestSelectedImagePath = useCallback(
+    async (selectedPath: string) => {
+      const previousProxy = useSingleStore.getState().proxyPath;
+      if (previousProxy) {
+        try {
+          await removeProxyFile(previousProxy);
+        } catch {
+          /* best-effort cleanup */
+        }
+      }
+
+      setSelectedFile(selectedPath);
+      setProxyPath(null);
+      setIsPreparingProxy(true);
+
+      try {
+        try {
+          const proxy = await createImageProxy(selectedPath);
+          setProxyPath(proxy);
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : "Failed to create preview proxy";
+          console.error("Failed to create preview proxy", error);
+          setRunStatus("error", message);
+          setProxyPath(null);
+        }
+
+        const meta = await getImageMetadata(selectedPath);
+        setFileMetadata(meta ?? null);
+      } finally {
+        setIsPreparingProxy(false);
+      }
+    },
+    [
+      setSelectedFile,
+      setProxyPath,
+      setRunStatus,
+      setFileMetadata,
+    ],
+  );
+
+  const pickAndOpenSingleImage = useCallback(async () => {
     const picked = await openDialog({
       filters: [
         {
@@ -352,13 +410,29 @@ export function SingleModePage() {
       return;
     }
 
-    setSelectedFile(selectedPath);
-    const meta = await getImageMetadata(selectedPath);
-    setFileMetadata(meta ?? null);
+    await ingestSelectedImagePath(selectedPath);
+  }, [ingestSelectedImagePath]);
+
+  const handleSelectFile = () => {
+    void pickAndOpenSingleImage();
   };
 
+  useEffect(() => {
+    if (openImageMenuRequestId === 0) {
+      return;
+    }
+    void pickAndOpenSingleImage();
+  }, [openImageMenuRequestId, pickAndOpenSingleImage]);
+
   const handleDetachFile = () => {
+    const p = useSingleStore.getState().proxyPath;
+    if (p) {
+      void removeProxyFile(p).catch(() => {
+        /* best-effort */
+      });
+    }
     setSelectedFile(null);
+    setProxyPath(null);
     setFileMetadata(null);
   };
 
@@ -496,14 +570,26 @@ export function SingleModePage() {
 
       <div className="grid min-w-0 grid-rows-[auto_1fr_auto]">
         <header className="flex h-14 items-center gap-2 border-b border-border/70 px-4">
-          {selectedFile ? (
-            <div className="group inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground">
-              <span>{getFileNameFromPath(selectedFile)}</span>
+          {/* {selectedFile ? (
+            <div
+              className="group inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground"
+              aria-busy={isPreparingProxy}
+            >
+              {isPreparingProxy ? (
+                <Spinner className="size-4 shrink-0 text-muted-foreground" />
+              ) : null}
+              <span className="min-w-0 truncate">{getFileNameFromPath(selectedFile)}</span>
+              {isPreparingProxy ? (
+                <span className="shrink-0 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+                  Preparing preview…
+                </span>
+              ) : null}
               <button
                 type="button"
                 aria-label="Detach selected file"
+                disabled={isPreparingProxy}
                 onClick={handleDetachFile}
-                className="inline-flex size-4 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+                className="inline-flex size-4 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity hover:text-foreground enabled:group-hover:opacity-100 disabled:pointer-events-none disabled:opacity-0"
               >
                 ×
               </button>
@@ -517,7 +603,7 @@ export function SingleModePage() {
               <PlusIcon className="size-4" />
               Select file
             </Button>
-          )}
+          )} */}
           <div className="ml-auto flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -552,7 +638,11 @@ export function SingleModePage() {
                 type="button"
                 size="sm"
                 disabled={
-                  !selectedFile || !isManualPreview || previewState.isPending
+                  !selectedFile ||
+                  !proxyPath ||
+                  isPreparingProxy ||
+                  !isManualPreview ||
+                  previewState.isPending
                 }
                 onClick={requestPreview}
                 className="rounded-lg"
@@ -567,7 +657,7 @@ export function SingleModePage() {
 
             <Button
               type="button"
-              disabled={isRunning || !selectedFile}
+              disabled={isRunning || !selectedFile || isPreparingProxy}
               className="size-7"
               variant="outline"
               onClick={handleChooseOutputPath}
@@ -578,7 +668,7 @@ export function SingleModePage() {
 
             <Button
               type="button"
-              disabled={isRunning || !selectedFile}
+              disabled={isRunning || !selectedFile || isPreparingProxy}
               className="size-7"
               variant={isRunning ? "default" : "outline"}
               onClick={handleRunSingle}
@@ -593,6 +683,7 @@ export function SingleModePage() {
             originUrl={previewState.originUrl}
             previewUrl={previewState.previewUrl}
             isPending={previewState.isPending}
+            isSourcePreparing={isPreparingProxy}
             error={previewState.error}
             zoomPercent={previewZoom}
             onZoomChange={setPreviewZoom}

@@ -1,5 +1,7 @@
 import { Slider } from "@/components/ui/slider";
+import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/shared/components/ui/button";
+import { SquareSplitHorizontal } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -22,6 +24,8 @@ type CanvasPreviewProps = {
   originUrl: string | null;
   previewUrl: string | null;
   isPending: boolean;
+  /** True while the temp proxy file is being created (no `originUrl` yet). */
+  isSourcePreparing?: boolean;
   error: string | null;
   zoomPercent: number;
   onZoomChange: (nextZoom: number) => void;
@@ -36,6 +40,7 @@ export function CanvasPreview({
   originUrl,
   previewUrl,
   isPending,
+  isSourcePreparing = false,
   error,
   zoomPercent,
   onZoomChange,
@@ -73,16 +78,19 @@ export function CanvasPreview({
     }
   }, [zoomPercent]);
 
-  const stopDragging = useCallback((event: PointerEvent<HTMLDivElement>) => {
-    if (!isDragging) {
-      return;
-    }
-    setIsDragging(false);
-    dragStartRef.current = null;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-  }, [isDragging]);
+  const stopDragging = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
+      if (!isDragging) {
+        return;
+      }
+      setIsDragging(false);
+      dragStartRef.current = null;
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+    },
+    [isDragging],
+  );
 
   const handleWheel = useCallback(
     (event: WheelEvent<HTMLDivElement>) => {
@@ -137,21 +145,35 @@ export function CanvasPreview({
     [canPan, panOffset.x, panOffset.y],
   );
 
-  const handlePointerMove = useCallback((event: PointerEvent<HTMLDivElement>) => {
-    if (!isDragging || !dragStartRef.current) {
-      return;
-    }
-    const deltaX = event.clientX - dragStartRef.current.pointerX;
-    const deltaY = event.clientY - dragStartRef.current.pointerY;
-    setPanOffset({
-      x: dragStartRef.current.offsetX + deltaX,
-      y: dragStartRef.current.offsetY + deltaY,
-    });
-  }, [isDragging]);
+  const handlePointerMove = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
+      if (!isDragging || !dragStartRef.current) {
+        return;
+      }
+      const deltaX = event.clientX - dragStartRef.current.pointerX;
+      const deltaY = event.clientY - dragStartRef.current.pointerY;
+      setPanOffset({
+        x: dragStartRef.current.offsetX + deltaX,
+        y: dragStartRef.current.offsetY + deltaY,
+      });
+    },
+    [isDragging],
+  );
 
   const handleSetPreviewMode = useCallback(() => setCompareMode("preview"), []);
   const handleSetSplitMode = useCallback(() => setCompareMode("split"), []);
   const handleFit = useCallback(() => onZoomChange(100), [onZoomChange]);
+
+  if (isSourcePreparing) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-3 border border-border/40 bg-background">
+        <Spinner className="size-8 text-muted-foreground" />
+        <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          Preparing preview…
+        </p>
+      </div>
+    );
+  }
 
   if (!hasSource) {
     return (
@@ -224,27 +246,17 @@ export function CanvasPreview({
           size="sm"
           type="button"
           className={
-            compareMode === "preview"
-              ? "border-primary bg-primary/35 text-primary backdrop-blur-2xl"
-              : "border-border bg-background text-muted-foreground "
-          }
-          onClick={handleSetPreviewMode}
-          disabled={!hasPreview}
-        >
-          Preview
-        </Button>
-        <Button
-          size="sm"
-          type="button"
-          className={
             compareMode === "split"
-              ? "border-primary bg-primary/35 text-primary backdrop-blur-2xl"
-              : "border-border bg-background text-muted-foreground"
+              ? "border-primary bg-primary/35 text-primary backdrop-blur-2xl size-7"
+              : "border-border bg-background text-muted-foreground size-7"
           }
-          onClick={handleSetSplitMode}
-          disabled={!canCompare}
+          onClick={
+            compareMode === "split"
+              ? handleSetPreviewMode
+              : handleSetSplitMode
+          }
         >
-          Split
+          <SquareSplitHorizontal className="size-4" strokeWidth={3} />
         </Button>
       </div>
 

@@ -6,6 +6,10 @@ export async function greet(name: string): Promise<string> {
   return invoke<string>("greet", { name });
 }
 
+export async function menubarUsesNative(): Promise<boolean> {
+  return invoke<boolean>("menubar_uses_native");
+}
+
 export async function checkVersion(): Promise<MagickVersionInfo> {
   return invoke<MagickVersionInfo>("check_version");
 }
@@ -21,20 +25,27 @@ export async function getImageMetadata(path: string): Promise<ImageMetadata> {
   return invoke<ImageMetadata>("get_image_metadata", { path });
 }
 
+export async function createImageProxy(inputPath: string): Promise<string> {
+  return invoke<string>("create_image_proxy", { inputPath });
+}
+
+export async function removeProxyFile(path: string): Promise<void> {
+  return invoke<void>("remove_proxy_file", { path });
+}
+
 export type GeneratePreviewRequest = {
   inputPath: string;
   operation: string;
   optionsJson?: string;
   args?: string[];
+  /** When true, `inputPath` is the temp WebP proxy (skip decode/resize on the Rust side). */
+  fromProxy?: boolean;
 };
 
 export type GeneratePreviewResponse = {
-  previewPath: string;
-  width: number;
-  height: number;
+  previewDataUri: string;
   totalMs: number;
   renderMs: number;
-  identifyMs: number;
 };
 
 export async function generatePreview(
