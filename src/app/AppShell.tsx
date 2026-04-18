@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
 import { ModeSwitch } from "@/app/ModeSwitch";
+import { WebMenubar } from "@/app/menubar/WebMenubar";
+import { useMenubarBridge } from "@/app/menubar/useMenubarBridge";
+import { useAppStore } from "@/app/store/app.store";
 import { BatchModePage } from "@/pages/BatchModePage";
 import { SingleModePage } from "@/pages/SingleModePage";
-import { ThemeToggle } from "@/shared/components/theme-toggle";
-import { AppMode } from "@/shared/types/common";
+import { menubarUsesNative } from "@/shared/tauri/commands";
 import { TooltipProvider } from "@/shared/components/ui/tooltip";
 import {
   DropdownMenu,
@@ -17,9 +19,18 @@ import { Button } from "@/shared/components/ui/button";
 import { Cog } from "lucide-react";
 
 export function AppShell() {
-  const [mode, setMode] = useState<AppMode>("single");
+  const mode = useAppStore((s) => s.mode);
+  const [nativeMenubar, setNativeMenubar] = useState<boolean | null>(null);
   const isFullFrameMode = mode === "single" || mode === "batch";
   const appWindow = getCurrentWindow();
+
+  useMenubarBridge();
+
+  useEffect(() => {
+    void menubarUsesNative()
+      .then(setNativeMenubar)
+      .catch(() => setNativeMenubar(false));
+  }, []);
 
   return (
     <main
@@ -32,7 +43,7 @@ export function AppShell() {
       <TooltipProvider>
         <header className="grid h-[38px] select-none grid-cols-[minmax(0,1fr)_auto] items-center border-b-[0.5px] border-b-border/70 bg-background/95">
           <div
-            className="flex h-full min-w-0 items-center px-3"
+            className="flex h-full min-w-0 flex-1 items-center gap-3 px-3"
             data-tauri-drag-region
             onMouseDown={(event) => {
               if (event.button === 0) {
@@ -40,9 +51,18 @@ export function AppShell() {
               }
             }}
           >
-            <span className="text-foreground/80 truncate text-[11px] font-medium uppercase tracking-[0.04em]">
+            <span className="shrink-0 text-foreground/80 text-[11px] font-medium uppercase tracking-[0.04em]">
               liquid-image
             </span>
+            {nativeMenubar === false ? (
+              <div
+                className="shrink-0 border-l border-border/70 pl-3"
+                data-tauri-drag-region={false}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <WebMenubar />
+              </div>
+            ) : null}
           </div>
           <div className="flex h-full items-stretch">
             <DropdownMenu>
@@ -59,10 +79,7 @@ export function AppShell() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-fit">
                 <DropdownMenuItem className="cursor-default p-2 focus:bg-transparent">
-                  <ModeSwitch mode={mode} onModeChange={setMode} />
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <ThemeToggle />
+                  <ModeSwitch />
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   Settings

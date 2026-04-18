@@ -1,11 +1,18 @@
+import { useAppStore } from "@/app/store/app.store";
 import type { AppMode } from "@/shared/types/common";
 
-type ModeSwitchProps = {
-  mode: AppMode;
-  onModeChange: (mode: AppMode) => void;
+export type ModeSwitchProps = {
+  mode?: AppMode;
+  onModeChange?: (mode: AppMode) => void;
 };
 
-export function ModeSwitch({ mode, onModeChange }: ModeSwitchProps) {
+export function ModeSwitch(props: ModeSwitchProps = {}) {
+  const { mode: modeProp, onModeChange: onModeChangeProp } = props;
+  const modeFromStore = useAppStore((s) => s.mode);
+  const setModeStore = useAppStore((s) => s.setMode);
+  const mode = modeProp ?? modeFromStore;
+  const setMode = onModeChangeProp ?? setModeStore;
+
   const items: Array<{ id: AppMode; label: string }> = [
     { id: "single", label: "Single" },
     { id: "batch", label: "Batch" },
@@ -19,7 +26,7 @@ export function ModeSwitch({ mode, onModeChange }: ModeSwitchProps) {
           <button
             key={item.id}
             type="button"
-            onClick={() => onModeChange(item.id)}
+            onClick={() => setMode(item.id)}
             className={`rounded-[6px] px-3 py-1 text-xs font-medium transition-colors ${
               isActive
                 ? "bg-background text-foreground shadow-sm"

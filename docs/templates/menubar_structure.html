@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ImageMagick GUI — Menubar structure</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --font-sans:system-ui,sans-serif;
+  --font-mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+  --color-text-primary:#1a1a1a;
+  --color-text-secondary:#666;
+  --color-text-tertiary:#888;
+  --color-background-primary:#fff;
+  --color-background-secondary:#f9f9f8;
+  --color-background-page:#f5f5f3;
+  --color-border-secondary:rgba(0,0,0,0.12);
+  --color-border-tertiary:rgba(0,0,0,0.1);
+  --color-accent:#7F77DD;
+  --color-accent-hover:#534AB7;
+  --border-radius-lg:12px;
+  --border-radius-md:8px;
+}
+
+html{font-size:100%}
+body{
+  font-family:var(--font-sans);
+  font-size:13px;
+  color:var(--color-text-primary);
+  background:var(--color-background-page);
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+}
+
+.wrap{
+  display:flex;
+  flex-direction:column;
+  gap:20px;
+  width:100%;
+  max-width:960px;
+}
+
+.win{
+  border:0.5px solid var(--color-border-secondary);
+  border-radius:var(--border-radius-lg);
+  overflow:visible;
+  background:var(--color-background-primary);
+  position:relative;
+}
+
+.titlebar{
+  height:30px;
+  background:var(--color-background-secondary);
+  border-bottom:0.5px solid var(--color-border-tertiary);
+  display:flex;
+  align-items:center;
+  padding:0 10px;
+  gap:6px;
+  border-radius:var(--border-radius-lg) var(--border-radius-lg) 0 0;
+}
+
+.dots{display:flex;gap:4px}
+.dots span{width:10px;height:10px;border-radius:50%;display:block}
+
+.menubar{
+  height:28px;
+  border-bottom:0.5px solid var(--color-border-tertiary);
+  display:flex;
+  align-items:center;
+  padding:0 6px;
+  gap:1px;
+  background:var(--color-background-primary);
+  position:relative;
+  z-index:10;
+}
+
+.menu-item{
+  padding:4px 9px;
+  border-radius:8px;
+  cursor:pointer;
+  font-size:12px;
+  color:var(--color-text-primary);
+  user-select:none;
+  white-space:nowrap;
+  position:relative;
+}
+
+.menu-item:hover,.menu-item.open{background:var(--color-background-secondary)}
+.menu-item.open{background:var(--color-accent);color:#fff}
+.menu-item.open:hover{background:var(--color-accent-hover)}
+
+.dropdown{
+  display:none;
+  position:absolute;
+  top:calc(100% + 2px);
+  left:0;
+  min-width:220px;
+  background:var(--color-background-primary);
+  border:0.5px solid var(--color-border-secondary);
+  border-radius:var(--border-radius-md);
+  padding:4px;
+  z-index:100;
+}
+
+.dropdown.show{display:block}
+.dropdown.right{left:auto;right:0}
+
+.di{
+  display:flex;
+  align-items:center;
+  padding:5px 8px;
+  border-radius:8px;
+  cursor:pointer;
+  gap:8px;
+  font-size:12px;
+  color:var(--color-text-primary);
+  position:relative;
+}
+
+.di:hover{background:var(--color-background-page)}
+.di.disabled{color:var(--color-text-tertiary);cursor:default}
+.di.disabled:hover{background:transparent}
+
+.di-label{flex:1}
+.di-key{font-size:10px;color:var(--color-text-tertiary);font-family:var(--font-mono);white-space:nowrap}
+.di-arrow{font-size:10px;color:var(--color-text-tertiary);margin-left:auto}
+.di-check{width:12px;font-size:10px;color:var(--color-accent);flex-shrink:0}
+
+.sep{height:0.5px;background:var(--color-border-tertiary);margin:3px 4px}
+
+.sub-label{
+  padding:4px 8px 2px;
+  font-size:10px;
+  font-weight:500;
+  color:var(--color-text-tertiary);
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+
+.submenu{
+  display:none;
+  position:absolute;
+  left:calc(100% + 2px);
+  top:-4px;
+  min-width:200px;
+  background:var(--color-background-primary);
+  border:0.5px solid var(--color-border-secondary);
+  border-radius:var(--border-radius-md);
+  padding:4px;
+  z-index:101;
+}
+
+.di:hover>.submenu{display:block}
+
+.mode-badge{display:inline-block;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:500;margin-left:4px}
+.badge-single{background:#E6F1FB;color:#185FA5}
+.badge-batch{background:#EEEDFE;color:#534AB7}
+.badge-both{background:#EAF3DE;color:#3B6D11}
+
+.hint-area{
+  height:60px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-top:0.5px solid var(--color-border-tertiary);
+  background:var(--color-background-secondary);
+  border-radius:0 0 var(--border-radius-lg) var(--border-radius-lg);
+}
+
+.hint-area span{font-size:11px;color:var(--color-text-tertiary)}
+
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:4px}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--color-text-secondary)}
+.leg-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+.struct-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.struct-col{
+  border:0.5px solid var(--color-border-secondary);
+  border-radius:var(--border-radius-md);
+  overflow:hidden;
+  background:var(--color-background-primary);
+}
+
+.struct-head{
+  padding:11px 10px;
+  font-size:11px;
+  font-weight:500;
+  color:var(--color-text-tertiary);
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  background:var(--color-background-secondary);
+  border-bottom:0.5px solid var(--color-border-tertiary);
+  text-align:center;
+}
+
+.struct-body{padding:10px 8px}
+.struct-row{
+  font-size:11px;
+  padding:5px 6px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  border-radius:8px;
+  line-height:1.3;
+}
+
+.struct-row:hover{background:var(--color-background-page)}
+.struct-sep{height:0.5px;background:var(--color-border-tertiary);margin:6px 0}
+
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dot-s{background:#378ADD}
+.dot-b{background:#7F77DD}
+.dot-g{background:#1D9E75}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<div class="win">
+  <div class="titlebar">
+    <div class="dots"><span style="background:#FF5F57"></span><span style="background:#FEBC2E"></span><span style="background:#28C840"></span></div>
+    <div style="flex:1;text-align:center;font-size:11px;color:var(--color-text-tertiary)">ImageMagick GUI — Single mode</div>
+  </div>
+  <div class="menubar" id="menubar">
+    <div class="menu-item" id="m-file" onclick="toggle('file')">File
+      <div class="dropdown" id="dd-file">
+        <div class="di" onclick="void(0)"><span class="di-label">Open image…</span><span class="di-key">⌘O</span></div>
+        <div class="di"><span class="di-label">Open folder…</span><span class="di-key">⌘⇧O</span></div>
+        <div class="di"><span class="di-label">Recent files</span><span class="di-arrow">›</span>
+          <div class="submenu">
+            <div class="di" style="color:var(--color-text-tertiary);font-size:11px">photo_01.jpg</div>
+            <div class="di" style="color:var(--color-text-tertiary);font-size:11px">portrait.png</div>
+            <div class="di" style="color:var(--color-text-tertiary);font-size:11px">banner.webp</div>
+            <div class="sep"></div>
+            <div class="di"><span class="di-label">Clear recent</span></div>
+          </div>
+        </div>
+        <div class="sep"></div>
+        <div class="di"><span class="di-label">Save output as…</span><span class="di-key">⌘S</span></div>
+        <div class="di"><span class="di-label">Export CLI script…</span><span class="di-key">⌘E</span></div>
+        <div class="sep"></div>
+        <div class="di"><span class="di-label">Close file</span><span class="di-key">⌘W</span></div>
+        <div class="sep"></div>
+        <div class="di"><span class="di-label">Settings…</span><span class="di-key">⌘,</span></div>
+        <div class="di"><span class="di-label">Quit</span><span class="di-key">⌘Q</span></div>
+      </div>
+    </div>
+
+    <div class="menu-item" id="m-edit" onclick="toggle('edit')">Edit
+      <div class="dropdown" id="dd-edit">
+        <div class="di"><span class="di-label">Undo</span><span class="di-key">⌘Z</span></div>
+        <div class="di"><span class="di-label">Redo</span><span class="di-key">⌘⇧Z</span></div>
+        <div class="sep"></div>
+        <div class="sub-label">Pipeline</div>
+        <div class="di"><span class="di-label">Add step…</span><span class="di-key">⌘N</span></div>
+        <div class="di"><span class="di-label">Remove step</span><span class="di-key">⌫</span></div>
+        <div class="di"><span class="di-label">Move step up</span><span class="di-key">⌘↑</span></div>
+        <div class="di"><span class="di-label">Move step down</span><span class="di-key">⌘↓</span></div>
+        <div class="sep"></div>
+        <div class="di"><span class="di-label">Clear pipeline</span></div>
+        <div class="di"><span class="di-label">Reset to defaults</span></div>
+      </div>
+    </div>
+
+    <div class="menu-item" id="m-mode" onclick="toggle('mode')">Mode
+      <div class="dropdown" id="dd-mode">
+        <div class="di"><span class="di-check">✓</span><span class="di-label">Single file</span><span class="di-key">⌘1</span></div>
+        <div class="di"><span class="di-check"></span><span class="di-label">Batch</span><span class="di-key">⌘2</span></div>
+        <div class="sep"></div>
+        <div class="di disabled"><span class="di-check"></span><span class="di-label">Watch folder <span style="font-size:9px;color:#854F0B;background:#FAEEDA;padding:1px 5px;border-radius:3px;font-weight:500">soon</span></span></div>
+      </div>
+    </div>
+
+    <div class="menu-item" id="m-run" onclick="toggle('run')">Run
+      <div class="dropdown" id="dd-run">
+        <div class="di"><span class="di-label">Run</span><span class="di-key">⌘R</span></div>
+        <div class="di"><span class="di-label">Dry run (first file)</span><span class="di-key">⌘⇧R</span></div>
+        <div class="sep"></div>
+        <div class="di disabled"><span class="di-label">Stop</span><span class="di-key">⌘.</span></div>
+        <div class="sep"></div>
+        <div class="di"><span class="di-label">Show live preview</span><span class="di-key">⌘P</span></div>
+        <div class="di"><span class="di-label">Copy CLI command</span><span class="di-key">⌘⇧C</span></div>
+        <div class="sep"></div>
+        <div class="di"><span class="di-label">Open output folder</span><span class="di-key">⌘⇧F</span></div>
+      </div>
+    </div>
+
+    <div class="menu-item" id="m-preset" onclick="toggle('preset')">Presets
+      <div class="dropdown" id="dd-preset">
+        <div class="di"><span class="di-label">Save preset…</span><span class="di-key">⌘S</span></div>
+        <div class="di"><span class="di-label">Load preset…</span><span class="di-key">⌘L</span></div>
+        <div class="sep"></div>
+        <div class="sub-label">Quick load</div>
+        <div class="di"><span class="di-label">Web optimise (WEBP q80)</span></div>
+        <div class="di"><span class="di-label">Thumbnail 200px</span></div>
+        <div class="di"><span class="di-label">B&W film</span></div>
+        <div class="di"><span class="di-label">Watermark logo</span></div>
+        <div class="sep"></div>
+        <div class="di"><span class="di-label">Manage presets…</span></div>
+      </div>
+    </div>
+
+    <div class="menu-item" id="m-view" onclick="toggle('view')">View
+      <div class="dropdown right" id="dd-view">
+        <div class="di"><span class="di-check">✓</span><span class="di-label">Show CLI preview</span><span class="di-key">⌘`</span></div>
+        <div class="di"><span class="di-check">✓</span><span class="di-label">Show metadata bar</span></div>
+        <div class="di"><span class="di-check"></span><span class="di-label">Show pipeline steps</span></div>
+        <div class="sep"></div>
+        <div class="sub-label">Canvas zoom</div>
+        <div class="di"><span class="di-check"></span><span class="di-label">Zoom in</span><span class="di-key">⌘+</span></div>
+        <div class="di"><span class="di-check"></span><span class="di-label">Zoom out</span><span class="di-key">⌘-</span></div>
+        <div class="di"><span class="di-check"></span><span class="di-label">Fit to window</span><span class="di-key">⌘0</span></div>
+        <div class="sep"></div>
+        <div class="di"><span class="di-check"></span><span class="di-label">Theme: system</span><span class="di-arrow">›</span>
+          <div class="submenu">
+            <div class="di"><span class="di-check">✓</span><span class="di-label">System default</span></div>
+            <div class="di"><span class="di-check"></span><span class="di-label">Light</span></div>
+            <div class="di"><span class="di-check"></span><span class="di-label">Dark</span></div>
+          </div>
+        </div>
+        <div class="sep"></div>
+        <div class="di"><span class="di-check"></span><span class="di-label">Help / shortcuts</span><span class="di-key">⌘/</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hint-area">
+    <span>↑ click menu items để xem dropdown</span>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="leg-item"><div class="leg-dot dot-s"></div>Single mode only</div>
+  <div class="leg-item"><div class="leg-dot dot-b"></div>Batch mode only</div>
+  <div class="leg-item"><div class="leg-dot dot-g"></div>Cả hai mode</div>
+</div>
+
+<div class="struct-grid">
+  <div class="struct-col">
+    <div class="struct-head">File</div>
+    <div class="struct-body">
+      <div class="struct-row"><div class="dot dot-s"></div>Open image…</div>
+      <div class="struct-row"><div class="dot dot-b"></div>Open folder…</div>
+      <div class="struct-row"><div class="dot dot-g"></div>Recent files ›</div>
+      <div class="struct-sep"></div>
+      <div class="struct-row"><div class="dot dot-s"></div>Save output as…</div>
+      <div class="struct-row"><div class="dot dot-g"></div>Export CLI script…</div>
+      <div class="struct-sep"></div>
+      <div class="struct-row"><div class="dot dot-s"></div>Close file</div>
+      <div class="struct-sep"></div>
+      <div class="struct-row"><div class="dot dot-g"></div>Settings…</div>
+      <div class="struct-row"><div class="dot dot-g"></div>Quit</div>
+    </div>
+  </div>
+
+  <div class="struct-col">
+    <div class="struct-head">Edit</div>
+    <div class="struct-body">
+      <div class="struct-row"><div class="dot dot-g"></div>Undo</div>
+      <div class="struct-row"><div class="dot dot-g"></div>Redo</div>
+      <div class="struct-sep"></div>
+      <div class="struct-row"><div class="dot dot-g"></div>Add step…</div>
+      <div class="struct-row"><div class="dot dot-g"></div>Remove step</div>
+      <div class="struct-row"><div class="dot dot-g"></div>Move step up</div>
+      <div class="struct-row"><div class="dot dot-g"></div>Move step down</div>
+      <div class="struct-sep"></div>
+      <div class="struct-row"><div class="dot dot-g"></div>Clear pipeline</div>
+      <div class="struct-row"><div class="dot dot-g"></div>Reset defaults</div>
+    </div>
+  </div>
+
+  <div class="struct-col">
+    <div class="struct-head">Mode</div>
+    <div class="struct-body">
+      <div class="struct-row"><div class="dot dot-g"></div>Single file ⌘1</div>
+      <div class="struct-row"><div class="dot dot-g"></div>Batch ⌘2</div>
+      <div class="struct-sep"></div>
+      <div class="struct-row" style="color:var(--color-text-tertiary)"><div class="dot" style="background:var(--color-border-tertiary)"></div>Watch folder*</div>
+    </div>
+  </div>
+
+  <div class="struct-col">
+    <div class="struct-head">Run</div>
+    <div class="struct-body">
+      <div class="struct-row"><div class="dot dot-g"></div>Run ⌘R</div>
+      <div class="struct-row"><div class="dot dot-g"></div>Dry run ⌘⇧R</div>
+      <div class="struct-sep"></div>
+      <div class="struct-row"><div class="dot dot-g"></div>Stop ⌘.</div>
+      <div class="struct-sep"></div>
+      <div class="struct-row"><div class="dot dot-s"></div>Live preview</div>
+      <div class="struct-row"><div class="dot dot-g"></div>Copy CLI cmd</div>
+      <div class="struct-sep"></div>
+      <div class="struct-row"><div class="dot dot-g"></div>Open output…</div>
+    </div>
+  </div>
+
+  <div class="struct-col">
+    <div class="struct-head">Presets</div>
+    <div class="struct-body">
+      <div class="struct-row"><div class="dot dot-g"></div>Save preset…</div>
+      <div class="struct-row"><div class="dot dot-g"></div>Load preset…</div>
+      <div class="struct-sep"></div>
+      <div class="struct-row"><div class="dot dot-g"></div>Web optimise</div>
+      <div class="struct-row"><div class="dot dot-g"></div>Thumbnail</div>
+      <div class="struct-row"><div class="dot dot-g"></div>B&W film</div>
+      <div class="struct-row"><div class="dot dot-g"></div>Watermark</div>
+      <div class="struct-sep"></div>
+      <div class="struct-row"><div class="dot dot-g"></div>Manage…</div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+let current = null;
+function toggle(id) {
+  const item = document.getElementById('m-' + id);
+  const dd = document.getElementById('dd-' + id);
+  const isOpen = item.classList.contains('open');
+  closeAll();
+  if (!isOpen) {
+    item.classList.add('open');
+    dd.classList.add('show');
+    current = id;
+  }
+}
+function closeAll() {
+  document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('open'));
+  document.querySelectorAll('.dropdown').forEach(el => el.classList.remove('show'));
+  current = null;
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.menu-item')) closeAll();
+});
+document.querySelectorAll('.menubar .menu-item').forEach(item => {
+  item.addEventListener('mouseenter', function() {
+    if (current && current !== this.id.replace('m-', '')) {
+      toggle(this.id.replace('m-', ''));
+    }
+  });
+});
+</script>
+</body>
+</html>

@@ -1,5 +1,4 @@
 import type { AppMode } from "@/shared/types/common";
-import { ThemeToggle } from "@/shared/components/theme-toggle";
 import { ModeSwitch } from "./ModeSwitch";
 
 type AppHeaderProps = {
@@ -22,7 +21,6 @@ export function AppHeader({
       <div className="flex items-center justify-end">
         <ModeSwitch mode={mode} onModeChange={onModeChange} />
       </div>
-      <ThemeToggle />
     </header>
   );
 }

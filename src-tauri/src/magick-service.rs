@@ -1,4 +1,5 @@
 use tauri::{command, AppHandle};
+use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
 
 #[derive(serde::Serialize)]
@@ -99,6 +100,101 @@ pub async fn get_image_metadata(app: tauri::AppHandle, path: String) -> Result<I
     })
 }
 
+#[tauri::command]
+pub async fn create_image_proxy(
+    app: tauri::AppHandle,
+    input_path: String,
+) -> Result<String, String> {
+    use std::fs;
+
+    const PREVIEW_TARGET: u32 = 1600;
+
+    if input_path.trim().is_empty() {
+        return Err("Input path is required".into());
+    }
+
+    let preview_root = std::env::temp_dir().join("liquid-image-preview");
+    fs::create_dir_all(&preview_root).map_err(|e| e.to_string())?;
+
+    // Unique name so the frontend `proxyPath` changes every load — fixed `base_proxy.webp`
+    // kept the same string and blocked `usePreviewPipeline` from re-running.
+    let id = format!(
+        "{}_{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_micros())
+            .unwrap_or(0),
+        std::process::id()
+    );
+    let proxy_path = preview_root.join(format!("proxy_{id}.webp"));
+
+    let mut command = app.shell().sidecar("magick").map_err(|e| e.to_string())?;
+
+    let lower_input = input_path.to_ascii_lowercase();
+    if lower_input.ends_with(".jpg") || lower_input.ends_with(".jpeg") {
+        let jpeg_hint = format!("jpeg:size={PREVIEW_TARGET}x{PREVIEW_TARGET}");
+        command = command.arg("-define").arg(jpeg_hint);
+    }
+
+    command = command
+        .arg(&input_path)
+        .arg("-auto-orient")
+        .arg("-thumbnail")
+        .arg(format!("{PREVIEW_TARGET}x{PREVIEW_TARGET}>"))
+        .arg("-depth")
+        .arg("8")
+        .arg("-strip")
+        .arg("-quality")
+        .arg("90")
+        .arg(&proxy_path);
+
+    let output = command.output().await.map_err(|e| e.to_string())?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        return Err(if stderr.is_empty() {
+            "Failed to create proxy".into()
+        } else {
+            stderr
+        });
+    }
+
+    Ok(proxy_path.to_string_lossy().into_owned())
+}
+
+/// Remove a preview proxy file created under `%TEMP%/liquid-image-preview/proxy_*.webp`.
+#[tauri::command]
+pub fn remove_proxy_file(path: String) -> Result<(), String> {
+    use std::fs;
+    use std::path::PathBuf;
+
+    if path.trim().is_empty() {
+        return Ok(());
+    }
+
+    let preview_root = std::env::temp_dir().join("liquid-image-preview");
+    fs::create_dir_all(&preview_root).map_err(|e| e.to_string())?;
+    let root_canon = fs::canonicalize(&preview_root).map_err(|e| e.to_string())?;
+
+    let p = PathBuf::from(path.trim());
+    let parent = p.parent().ok_or_else(|| "Invalid proxy path".to_string())?;
+    let parent_canon = fs::canonicalize(parent).map_err(|_| "Invalid proxy path".to_string())?;
+    if parent_canon != root_canon {
+        return Err("Invalid proxy path".into());
+    }
+
+    let name = p
+        .file_name()
+        .and_then(|s| s.to_str())
+        .ok_or_else(|| "Invalid proxy path".to_string())?;
+    if !name.starts_with("proxy_") || !name.ends_with(".webp") {
+        return Err("Invalid proxy path".into());
+    }
+
+    let _ = fs::remove_file(&p);
+    Ok(())
+}
+
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GeneratePreviewRequest {
@@ -106,17 +202,18 @@ pub struct GeneratePreviewRequest {
     operation: String,
     options_json: Option<String>,
     args: Option<Vec<String>>,
+    /// When true, `input_path` is already a downsampled WebP proxy — skip JPEG decode hints and resize pass.
+    #[serde(default)]
+    from_proxy: bool,
 }
 
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GeneratePreviewResponse {
-    preview_path: String,
-    width: u32,
-    height: u32,
-    total_ms: u128,
-    render_ms: u128,
-    identify_ms: u128,
+    /// WebP bytes as a `data:image/webp;base64,...` URI for direct `<img src>`.
+    preview_data_uri: String,
+    total_ms: u32,
+    render_ms: u32,
 }
 
 #[derive(serde::Deserialize)]
@@ -135,80 +232,65 @@ pub struct RunSingleResponse {
     height: u32,
 }
 
+
 #[tauri::command]
 pub async fn generate_preview(
     app: tauri::AppHandle,
-    request: GeneratePreviewRequest,
+    request: GeneratePreviewRequest, // Cần cập nhật lại struct Response bên dưới
 ) -> Result<GeneratePreviewResponse, String> {
-    use std::fs;
-    use std::path::PathBuf;
-    use std::time::{Instant, SystemTime, UNIX_EPOCH};
+    use std::time::Instant;
+    use base64::{engine::general_purpose::STANDARD, Engine as _};
 
     const PREVIEW_TARGET: u32 = 1600;
     const PREVIEW_QUALITY: u32 = 70;
     const WEBP_METHOD_FAST: u32 = 1;
 
     let total_started = Instant::now();
-    let preview_root = std::env::temp_dir().join("liquid-image-preview");
-    fs::create_dir_all(&preview_root).map_err(|e| e.to_string())?;
 
-    let epoch_ms = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_err(|e| e.to_string())?
-        .as_millis();
-
-    let operation_slug = request
-        .operation
-        .chars()
-        .filter(|ch| ch.is_ascii_alphanumeric() || *ch == '_' || *ch == '-')
-        .collect::<String>();
-    let operation_segment = if operation_slug.is_empty() {
-        "preview".to_string()
-    } else {
-        operation_slug
-    };
-    let options_suffix = request
-        .options_json
-        .as_ref()
-        .map(|s| s.len().to_string())
-        .unwrap_or_else(|| "0".to_string());
-
-    let output_path: PathBuf = preview_root.join(format!(
-        "preview-{}-{}-{}.jpg",
-        operation_segment, options_suffix, epoch_ms
-    ));
-    let mut preview_cli_args: Vec<String> =
-        vec!["-limit".into(), "thread".into(), "1".into()];
-
+    // Khởi tạo tiến trình magick (mirror args vào `preview_cli_args` để log đúng lệnh đã chạy)
+    let mut preview_cli_args: Vec<String> = Vec::new();
     let mut command = app
         .shell()
         .sidecar("magick")
-        .map_err(|e| e.to_string())?
-        .arg("-limit")
-        .arg("thread")
-        .arg("1");
+        .map_err(|e| e.to_string())?;
 
-    // Hint JPEG decoder to avoid decoding full-resolution pixels for preview.
-    let lower_input = request.input_path.to_ascii_lowercase();
-    if lower_input.ends_with(".jpg") || lower_input.ends_with(".jpeg") {
-        let hinted = PREVIEW_TARGET.saturating_mul(2);
-        let jpeg_hint = format!("jpeg:size={}x{}", hinted, hinted);
-        preview_cli_args.push("-define".into());
-        preview_cli_args.push(jpeg_hint.clone());
-        command = command.arg("-define").arg(jpeg_hint);
+    let from_proxy = request.from_proxy;
+
+    // 1. JPEG decode hint + resize/orientation — skipped when reading an existing proxy WebP
+    if !from_proxy {
+        let lower_input = request.input_path.to_ascii_lowercase();
+        if lower_input.ends_with(".jpg") || lower_input.ends_with(".jpeg") {
+            let jpeg_hint = format!("jpeg:size={PREVIEW_TARGET}x{PREVIEW_TARGET}");
+            preview_cli_args.extend(["-define".into(), jpeg_hint.clone()]);
+            command = command.arg("-define").arg(jpeg_hint);
+        }
+
+        preview_cli_args.push(request.input_path.clone());
+        command = command.arg(&request.input_path);
+        preview_cli_args.extend([
+            "-auto-orient".into(),
+            "-thumbnail".into(),
+            format!("{PREVIEW_TARGET}x{PREVIEW_TARGET}>"),
+        ]);
+        command = command
+            .arg("-auto-orient")
+            .arg("-thumbnail")
+            .arg(format!("{PREVIEW_TARGET}x{PREVIEW_TARGET}>"));
+    } else {
+        preview_cli_args.push(request.input_path.clone());
+        command = command.arg(&request.input_path);
     }
 
-    preview_cli_args.push(request.input_path.clone());
-    command = command.arg(&request.input_path);
-
-    for arg in request.args.as_deref().unwrap_or(&[]) {
-        preview_cli_args.push(arg.clone());
-        command = command.arg(arg);
+    // 2. Tham số hiệu ứng từ Frontend
+    if let Some(args) = &request.args {
+        for arg in args {
+            preview_cli_args.push(arg.clone());
+            command = command.arg(arg);
+        }
     }
-    preview_cli_args.extend_from_slice(&[
-        "-auto-orient".into(),
-        "-thumbnail".into(),
-        format!("{PREVIEW_TARGET}x{PREVIEW_TARGET}>"),
+
+    // 3. Ép xuất thẳng ra STDOUT thay vì ghi file
+    preview_cli_args.extend([
         "-depth".into(),
         "8".into(),
         "-strip".into(),
@@ -216,85 +298,74 @@ pub async fn generate_preview(
         PREVIEW_QUALITY.to_string(),
         "-define".into(),
         format!("webp:method={WEBP_METHOD_FAST}"),
-        output_path.to_string_lossy().to_string(),
+        "webp:-".into(),
     ]);
+    command = command
+        .arg("-depth").arg("8")
+        .arg("-strip")
+        .arg("-quality").arg(PREVIEW_QUALITY.to_string())
+        .arg("-define").arg(format!("webp:method={WEBP_METHOD_FAST}"))
+        // Dấu "-" ở cuối định dạng webp báo cho magick xuất ra stdout
+        .arg("webp:-");
 
     let render_started = Instant::now();
-    let preview_output = command
-        .arg("-auto-orient")
-        .arg("-thumbnail")
-        .arg(format!("{PREVIEW_TARGET}x{PREVIEW_TARGET}>"))
-        .arg("-depth")
-        .arg("8")
-        .arg("-strip")
-        .arg("-quality")
-        .arg(PREVIEW_QUALITY.to_string())
-        .arg("-define")
-        .arg(format!("webp:method={WEBP_METHOD_FAST}"))
-        .arg(&output_path)
-        .output()
-        .await
+
+    // `tauri_plugin_shell::Command::output()` reads stdout in *line* mode by default and also
+    // appends `\n` between chunks — that corrupts binary WebP from `magick ... webp:-`.
+    // Raw spawn + concat preserves bytes exactly.
+    let (mut rx, _child) = command
+        .set_raw_out(true)
+        .spawn()
         .map_err(|e| e.to_string())?;
+    let mut preview_stdout: Vec<u8> = Vec::new();
+    let mut preview_stderr: Vec<u8> = Vec::new();
+    let mut exit_code: Option<i32> = None;
+    while let Some(event) = rx.recv().await {
+        match event {
+            CommandEvent::Terminated(payload) => exit_code = payload.code,
+            CommandEvent::Stdout(chunk) => preview_stdout.extend(chunk),
+            CommandEvent::Stderr(chunk) => preview_stderr.extend(chunk),
+            CommandEvent::Error(e) => return Err(e),
+            _ => {}
+        }
+    }
     let render_ms = render_started.elapsed().as_millis();
 
-    if !preview_output.status.success() {
-        let stderr = String::from_utf8_lossy(&preview_output.stderr)
-            .trim()
-            .to_string();
-        if stderr.is_empty() {
-            return Err("Failed to generate preview".into());
-        }
-        return Err(stderr);
+    if exit_code != Some(0) {
+        let stderr = String::from_utf8_lossy(&preview_stderr).trim().to_string();
+        eprintln!(
+            "[preview-in-memory] cmd (failed): magick {}",
+            preview_cli_args.join(" ")
+        );
+        return Err(if stderr.is_empty() { "Failed to generate preview".into() } else { stderr });
     }
 
-    let identify_started = Instant::now();
-    let identify_output = app
-        .shell()
-        .sidecar("magick")
-        .map_err(|e| e.to_string())?
-        .arg("identify")
-        .arg("-format")
-        .arg("%w|%h")
-        .arg(&output_path)
-        .output()
-        .await
-        .map_err(|e| e.to_string())?;
-    let identify_ms = identify_started.elapsed().as_millis();
-
-    if !identify_output.status.success() {
-        let stderr = String::from_utf8_lossy(&identify_output.stderr)
-            .trim()
-            .to_string();
-        if stderr.is_empty() {
-            return Err("Failed to inspect preview output".into());
-        }
-        return Err(stderr);
-    }
-
-    let raw_dims = String::from_utf8_lossy(&identify_output.stdout)
-        .trim()
-        .to_string();
-    let parts: Vec<&str> = raw_dims.split('|').collect();
-    if parts.len() != 2 {
-        return Err("Failed to parse preview dimensions".into());
-    }
+    // 4. Encode mảng byte thành Base64 Data URI
+    // Chuỗi này có thể được dùng trực tiếp trong thẻ <img src="..."> ở React
+    let b64_image = STANDARD.encode(&preview_stdout);
+    let data_uri = format!("data:image/webp;base64,{}", b64_image);
 
     let total_ms = total_started.elapsed().as_millis();
+    
     println!(
-        "[preview] op={} render={}ms identify={}ms total={}ms",
-        request.operation, render_ms, identify_ms, total_ms
+        "[preview-in-memory] op={} render={}ms total={}ms",
+        request.operation, render_ms, total_ms
     );
-    println!("[preview] magick {}", preview_cli_args.join(" "));
+    println!(
+        "[preview-in-memory] cmd: magick {}",
+        preview_cli_args.join(" ")
+    );
 
+
+    // Trả về thẳng cho React
     Ok(GeneratePreviewResponse {
-        preview_path: output_path.to_string_lossy().to_string(),
-        width: parts[0].parse::<u32>().map_err(|e| e.to_string())?,
-        height: parts[1].parse::<u32>().map_err(|e| e.to_string())?,
-        total_ms,
-        render_ms,
-        identify_ms,
+        preview_data_uri: data_uri,
+        total_ms: total_ms.min(u128::from(u32::MAX)) as u32,
+        render_ms: render_ms.min(u128::from(u32::MAX)) as u32,
     })
 }
+
+
 
 #[tauri::command]
 pub async fn run_single(
