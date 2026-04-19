@@ -2,6 +2,10 @@ use tauri::{command, AppHandle};
 use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
 
+/// Long edge for proxy thumbnail and preview decode hint. Keep in sync with
+/// `PROXY_PREVIEW_MAX_EDGE` in `src/features/single/previewScale.ts`.
+const PREVIEW_MAX_EDGE: u32 = 1600;
+
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MagickVersionInfo {
@@ -107,8 +111,6 @@ pub async fn create_image_proxy(
 ) -> Result<String, String> {
     use std::fs;
 
-    const PREVIEW_TARGET: u32 = 1600;
-
     if input_path.trim().is_empty() {
         return Err("Input path is required".into());
     }
@@ -132,7 +134,7 @@ pub async fn create_image_proxy(
 
     let lower_input = input_path.to_ascii_lowercase();
     if lower_input.ends_with(".jpg") || lower_input.ends_with(".jpeg") {
-        let jpeg_hint = format!("jpeg:size={PREVIEW_TARGET}x{PREVIEW_TARGET}");
+        let jpeg_hint = format!("jpeg:size={PREVIEW_MAX_EDGE}x{PREVIEW_MAX_EDGE}");
         command = command.arg("-define").arg(jpeg_hint);
     }
 
@@ -140,7 +142,7 @@ pub async fn create_image_proxy(
         .arg(&input_path)
         .arg("-auto-orient")
         .arg("-thumbnail")
-        .arg(format!("{PREVIEW_TARGET}x{PREVIEW_TARGET}>"))
+        .arg(format!("{PREVIEW_MAX_EDGE}x{PREVIEW_MAX_EDGE}>"))
         .arg("-depth")
         .arg("8")
         .arg("-strip")
@@ -200,6 +202,8 @@ pub fn remove_proxy_file(path: String) -> Result<(), String> {
 pub struct GeneratePreviewRequest {
     input_path: String,
     operation: String,
+    /// Pipeline fingerprint from the frontend (not read here yet; used in TS for cache keys).
+    #[allow(dead_code)]
     options_json: Option<String>,
     args: Option<Vec<String>>,
     /// When true, `input_path` is already a downsampled WebP proxy — skip JPEG decode hints and resize pass.
@@ -315,18 +319,17 @@ pub struct RunSingleResponse {
 #[tauri::command]
 pub async fn generate_preview(
     app: tauri::AppHandle,
-    request: GeneratePreviewRequest, // Cần cập nhật lại struct Response bên dưới
+    request: GeneratePreviewRequest,
 ) -> Result<GeneratePreviewResponse, String> {
     use std::time::Instant;
     use base64::{engine::general_purpose::STANDARD, Engine as _};
 
-    const PREVIEW_TARGET: u32 = 1600;
     const PREVIEW_QUALITY: u32 = 70;
     const WEBP_METHOD_FAST: u32 = 1;
 
     let total_started = Instant::now();
 
-    // Khởi tạo tiến trình magick (mirror args vào `preview_cli_args` để log đúng lệnh đã chạy)
+    // Mirror argv into `preview_cli_args` so failure logs match the real shell invocation.
     let mut preview_cli_args: Vec<String> = Vec::new();
     let mut command = app
         .shell()
@@ -339,7 +342,7 @@ pub async fn generate_preview(
     if !from_proxy {
         let lower_input = request.input_path.to_ascii_lowercase();
         if lower_input.ends_with(".jpg") || lower_input.ends_with(".jpeg") {
-            let jpeg_hint = format!("jpeg:size={PREVIEW_TARGET}x{PREVIEW_TARGET}");
+            let jpeg_hint = format!("jpeg:size={PREVIEW_MAX_EDGE}x{PREVIEW_MAX_EDGE}");
             preview_cli_args.extend(["-define".into(), jpeg_hint.clone()]);
             command = command.arg("-define").arg(jpeg_hint);
         }
@@ -349,12 +352,12 @@ pub async fn generate_preview(
         preview_cli_args.extend([
             "-auto-orient".into(),
             "-thumbnail".into(),
-            format!("{PREVIEW_TARGET}x{PREVIEW_TARGET}>"),
+            format!("{PREVIEW_MAX_EDGE}x{PREVIEW_MAX_EDGE}>"),
         ]);
         command = command
             .arg("-auto-orient")
             .arg("-thumbnail")
-            .arg(format!("{PREVIEW_TARGET}x{PREVIEW_TARGET}>"));
+            .arg(format!("{PREVIEW_MAX_EDGE}x{PREVIEW_MAX_EDGE}>"));
     } else {
         preview_cli_args.push(request.input_path.clone());
         command = command.arg(&request.input_path);
@@ -384,7 +387,7 @@ pub async fn generate_preview(
         command = command.arg(arg);
     }
 
-    // 3. Ép xuất thẳng ra STDOUT thay vì ghi file
+    // Write WebP to stdout (`webp:-`) instead of a temp file.
     preview_cli_args.extend([
         "-depth".into(),
         "8".into(),
@@ -400,7 +403,6 @@ pub async fn generate_preview(
         .arg("-strip")
         .arg("-quality").arg(PREVIEW_QUALITY.to_string())
         .arg("-define").arg(format!("webp:method={WEBP_METHOD_FAST}"))
-        // Dấu "-" ở cuối định dạng webp báo cho magick xuất ra stdout
         .arg("webp:-");
 
     let render_started = Instant::now();
@@ -435,13 +437,11 @@ pub async fn generate_preview(
         return Err(if stderr.is_empty() { "Failed to generate preview".into() } else { stderr });
     }
 
-    // 4. Encode mảng byte thành Base64 Data URI
-    // Chuỗi này có thể được dùng trực tiếp trong thẻ <img src="..."> ở React
     let b64_image = STANDARD.encode(&preview_stdout);
     let data_uri = format!("data:image/webp;base64,{}", b64_image);
 
     let total_ms = total_started.elapsed().as_millis();
-    
+
     println!(
         "[preview-in-memory] op={} render={}ms total={}ms",
         request.operation, render_ms, total_ms
@@ -451,8 +451,6 @@ pub async fn generate_preview(
         preview_cli_args.join(" ")
     );
 
-
-    // Trả về thẳng cho React
     Ok(GeneratePreviewResponse {
         preview_data_uri: data_uri,
         total_ms: total_ms.min(u128::from(u32::MAX)) as u32,

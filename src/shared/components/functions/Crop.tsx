@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { useSingleStore } from "@/features/single/state/single.store";
 import { useSingleT } from "@/i18n/useSingleT";
+import { getNumberParam, getStringParam } from "@/lib/functionParams";
 import { cn } from "@/lib/utils";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -23,29 +24,6 @@ type CropGravity = "NW" | "Center" | "SE";
 const CROP_METHOD_IDS: CropMethod[] = ["free", "trim", "shave"];
 
 const GRAVITY_OPTIONS: CropGravity[] = ["NW", "Center", "SE"];
-
-function getStringParam(
-  params: Record<string, unknown>,
-  key: string,
-  fallback: string,
-) {
-  const v = params[key];
-  return typeof v === "string" && v.trim().length > 0 ? v : fallback;
-}
-
-function getNumberParam(
-  params: Record<string, unknown>,
-  key: string,
-  fallback: number,
-) {
-  const v = params[key];
-  if (typeof v === "number" && Number.isFinite(v)) return v;
-  if (typeof v === "string" && v.trim().length > 0) {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : fallback;
-  }
-  return fallback;
-}
 
 function parseCropMethod(v: unknown): CropMethod {
   if (v === "trim" || v === "shave" || v === "free") return v;
@@ -85,8 +63,8 @@ export const CropFunction = () => {
 
   const resetCrop = useCallback(() => {
     setCropFreeApplyReview(false);
-    setFunctionParams({
-      ...functionParams,
+    setFunctionParams((prev) => ({
+      ...prev,
       cropMethod: "free",
       cropAspectRatio: "Free",
       cropGravity: "NW",
@@ -97,8 +75,8 @@ export const CropFunction = () => {
       cropTrimFuzz: 10,
       cropShaveH: 30,
       cropShaveV: 40,
-    });
-  }, [functionParams, setCropFreeApplyReview, setFunctionParams]);
+    }));
+  }, [setCropFreeApplyReview, setFunctionParams]);
 
   const setNumberParam = (key: string, raw: string) => {
     if (raw.trim() === "") {
