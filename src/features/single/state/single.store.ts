@@ -29,7 +29,11 @@ export type SingleStoreState = {
   setSelectedFile: (selectedFile: string | null) => void;
   setProxyPath: (proxyPath: string | null) => void;
   setSelectedFunction: (selectedFunction: string) => void;
-  setFunctionParams: (functionParams: Record<string, unknown>) => void;
+  setFunctionParams: (
+    next:
+      | Record<string, unknown>
+      | ((prev: Record<string, unknown>) => Record<string, unknown>),
+  ) => void;
   updateFunctionParam: (key: string, value: unknown) => void;
   setIsManualPreview: (isManualPreview: boolean) => void;
   requestPreview: () => void;
@@ -84,14 +88,18 @@ export const useSingleStore = create<SingleStoreState>((set) => ({
           selectedFunction === "Crop" ? state.cropFreeApplyReview : false,
       };
     }),
-  setFunctionParams: (functionParams) =>
-    set((state) => ({
-      functionParams,
-      functionParamsByFunction: {
-        ...state.functionParamsByFunction,
-        [state.selectedFunction]: functionParams,
-      },
-    })),
+  setFunctionParams: (next) =>
+    set((state) => {
+      const functionParams =
+        typeof next === "function" ? next(state.functionParams) : next;
+      return {
+        functionParams,
+        functionParamsByFunction: {
+          ...state.functionParamsByFunction,
+          [state.selectedFunction]: functionParams,
+        },
+      };
+    }),
   updateFunctionParam: (key, value) =>
     set((state) => ({
       functionParams: {
