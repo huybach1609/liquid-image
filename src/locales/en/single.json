@@ -1,0 +1,159 @@
+{
+  "operations": {
+    "heading": "Operations",
+    "editedBadgeAria": "{{name}} has edited settings",
+    "editedBadgeTitle": "Edited settings"
+  },
+  "optionsPanel": {
+    "title": "{{name}} — Options"
+  },
+  "preview": {
+    "manual": "Manual preview",
+    "auto": "Auto preview",
+    "previewing": "Previewing...",
+    "preview": "Preview"
+  },
+  "output": {
+    "openOutputFolder": "Open output folder"
+  },
+  "metadata": {
+    "previewDimensions": "preview {{w}} × {{h}}"
+  },
+  "status": {
+    "imagemagickDefault": "ImageMagick 7.1",
+    "outputSet": "Output: {{file}}",
+    "runningMagick": "Running ImageMagick...",
+    "done": "Done: {{file}} ({{width}}×{{height}})"
+  },
+  "cli": {
+    "allEditedFunctions": "All edited functions",
+    "panelHeading": "CLI preview",
+    "modeFunction": "Function",
+    "modeAll": "All"
+  },
+  "dialog": {
+    "imageFilter": "Image",
+    "imageOutputFilter": "Image output"
+  },
+  "errors": {
+    "previewProxyFailed": "Failed to create preview proxy",
+    "openOutputFolder": "Cannot open output folder",
+    "runCommandFailed": "Failed to run command"
+  },
+  "reset": {
+    "current": "Reset {{name}}",
+    "all": "Reset all"
+  },
+  "cropForm": {
+    "methodHeading": "Crop method",
+    "methodAria": "Crop method",
+    "methods": {
+      "free": {
+        "name": "Free crop",
+        "desc": "Drag the frame freely on the canvas"
+      },
+      "trim": {
+        "name": "Auto trim",
+        "desc": "Automatically trim borders that match corner colors"
+      },
+      "shave": {
+        "name": "Shave edges",
+        "desc": "Symmetrically shave from all four edges"
+      }
+    },
+    "aspectRatio": "Aspect ratio",
+    "aspectPlaceholder": "Aspect ratio",
+    "aspect": {
+      "free": "Free",
+      "ratio_1_1": "1:1 (Square)",
+      "ratio_4_3": "4:3",
+      "ratio_16_9": "16:9",
+      "ratio_3_2": "3:2",
+      "ratio_9_16": "9:16 (Story)",
+      "custom": "Custom…"
+    },
+    "positionSize": "Position & size",
+    "coordX": "X",
+    "coordY": "Y",
+    "coordW": "W",
+    "coordH": "H",
+    "px": "px",
+    "freeHint": "Drag the crop frame on the canvas or enter coordinates manually.",
+    "gravity": {
+      "label": "Gravity",
+      "NW": "NW",
+      "Center": "Center",
+      "SE": "SE",
+      "NW_tooltip": "NorthWest",
+      "Center_tooltip": "Center",
+      "SE_tooltip": "SouthEast"
+      
+    },
+    "fuzzTolerance": "Fuzz tolerance",
+    "trimPctMin": "0%",
+    "trimHint": "Color tolerance — higher values trim more border that is close to the corner color.",
+    "shaveAmount": "Shave amount",
+    "shaveHorizontal": "H",
+    "shaveVertical": "V",
+    "shaveHint": "Symmetrically trim from left/right and top/bottom.",
+    "apply": "Apply crop",
+    "reset": "Reset crop",
+    "cropAgain": "Crop again"
+  },
+  "mirrorForm": {
+    "direction": "Direction",
+    "horizontal": "Horizontal",
+    "vertical": "Vertical",
+    "both": "Both"
+  },
+  "functions": {
+    "convert": {
+      "name": "Convert",
+      "note": "Convert image to different format"
+    },
+    "crop": {
+      "name": "Crop",
+      "note": "Crop image to a specific size"
+    },
+    "mirror": {
+      "name": "Mirror",
+      "note": "Flip image horizontally"
+    },
+    "blackWhite": {
+      "name": "Black & white",
+      "note": "Convert image to black and white"
+    },
+    "contrast": {
+      "name": "Contrast",
+      "note": "Adjust image contrast"
+    },
+    "normalizeColors": {
+      "name": "Normalize colors",
+      "note": "Normalize image colors"
+    },
+    "vignette": {
+      "name": "Vignette",
+      "note": "Add vignette effect"
+    },
+    "border": {
+      "name": "Border",
+      "note": "Add border to image"
+    },
+    "rotate": {
+      "name": "Rotate",
+      "note": "Rotate image"
+    },
+    "scaleResize": {
+      "name": "Scale / resize",
+      "note": "Scale/resize image"
+    },
+    "textLogo": {
+      "name": "Text / logo",
+      "note": "Add text or logo to image"
+    },
+    "compose": {
+      "name": "Compose",
+      "note": "Compose images"
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
+import { LanguageSwitcher } from "@/app/LanguageSwitcher";
 import { ModeSwitch } from "@/app/ModeSwitch";
 import { WebMenubar } from "@/app/menubar/WebMenubar";
 import { useMenubarBridge } from "@/app/menubar/useMenubarBridge";
@@ -9,16 +10,10 @@ import { BatchModePage } from "@/pages/BatchModePage";
 import { SingleModePage } from "@/pages/SingleModePage";
 import { menubarUsesNative } from "@/shared/tauri/commands";
 import { TooltipProvider } from "@/shared/components/ui/tooltip";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/shared/components/ui/button";
-import { Cog } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export function AppShell() {
+  const { t } = useTranslation("common");
   const mode = useAppStore((s) => s.mode);
   const [nativeMenubar, setNativeMenubar] = useState<boolean | null>(null);
   const isFullFrameMode = mode === "single" || mode === "batch";
@@ -65,11 +60,18 @@ export function AppShell() {
             ) : null}
           </div>
           <div className="flex h-full items-stretch">
-           
+            <div
+              className="flex items-center gap-1 border-l-[0.5px] border-l-border/70 px-1"
+              data-tauri-drag-region={false}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <ModeSwitch />
+              <LanguageSwitcher />
+            </div>
             <button
               className="text-foreground/75 inline-flex h-full w-[42px] cursor-pointer items-center justify-center border-0 border-l-[0.5px] border-l-border/70 bg-transparent text-xs leading-none transition-colors duration-120 ease-in hover:bg-primary/10 hover:text-primary"
               type="button"
-              aria-label="Minimize window"
+              aria-label={t("window.minimize")}
               onClick={() => void appWindow.minimize()}
             >
               -
@@ -77,7 +79,7 @@ export function AppShell() {
             <button
               className="text-foreground/75 inline-flex h-full w-[42px] cursor-pointer items-center justify-center border-0 border-l-[0.5px] border-l-border/70 bg-transparent text-xs leading-none transition-colors duration-120 ease-in hover:bg-primary/10 hover:text-primary"
               type="button"
-              aria-label="Toggle maximize window"
+              aria-label={t("window.maximize")}
               onClick={() => void appWindow.toggleMaximize()}
             >
               □
@@ -85,7 +87,7 @@ export function AppShell() {
             <button
               className="text-foreground/75 inline-flex h-full w-[42px] cursor-pointer items-center justify-center border-0 border-l-[0.5px] border-l-border/70 bg-transparent text-xs leading-none transition-colors duration-120 ease-in hover:bg-destructive/15 hover:text-destructive"
               type="button"
-              aria-label="Close window"
+              aria-label={t("window.close")}
               onClick={() => void appWindow.close()}
             >
               ×

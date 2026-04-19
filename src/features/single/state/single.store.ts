@@ -19,6 +19,10 @@ export type SingleStoreState = {
   isManualPreview: boolean;
   previewRequestId: number;
   previewZoom: number;
+  /**
+   * Free crop: after "Apply crop", hide canvas overlay + free-form options until "Crop again".
+   */
+  cropFreeApplyReview: boolean;
   runState: SingleRunState;
   fileMetadata: ImageMetadata | null;
   setFileMetadata: (fileMetadata: ImageMetadata | null) => void;
@@ -29,6 +33,7 @@ export type SingleStoreState = {
   updateFunctionParam: (key: string, value: unknown) => void;
   setIsManualPreview: (isManualPreview: boolean) => void;
   requestPreview: () => void;
+  setCropFreeApplyReview: (value: boolean) => void;
   setPreviewZoom: (previewZoom: number) => void;
   setRunState: (runState: SingleRunState) => void;
   setRunStatus: (status: SingleRunStatus, message?: string) => void;
@@ -53,10 +58,12 @@ export const useSingleStore = create<SingleStoreState>((set) => ({
   isManualPreview: true,
   previewRequestId: 0,
   previewZoom: 100,
+  cropFreeApplyReview: false,
   runState: initialRunState,
   fileMetadata: null,
   setFileMetadata: (fileMetadata: ImageMetadata | null) => set({ fileMetadata }),
-  setSelectedFile: (selectedFile) => set({ selectedFile }),
+  setSelectedFile: (selectedFile) =>
+    set({ selectedFile, cropFreeApplyReview: false }),
   setProxyPath: (proxyPath) => set({ proxyPath }),
   setSelectedFunction: (selectedFunction) =>
     set((state) => {
@@ -73,6 +80,8 @@ export const useSingleStore = create<SingleStoreState>((set) => ({
         selectedFunction,
         functionParamsByFunction: nextParamsByFunction,
         functionParams: nextParamsByFunction[selectedFunction] ?? {},
+        cropFreeApplyReview:
+          selectedFunction === "Crop" ? state.cropFreeApplyReview : false,
       };
     }),
   setFunctionParams: (functionParams) =>
@@ -102,6 +111,7 @@ export const useSingleStore = create<SingleStoreState>((set) => ({
     set((state) => ({
       previewRequestId: state.previewRequestId + 1,
     })),
+  setCropFreeApplyReview: (cropFreeApplyReview) => set({ cropFreeApplyReview }),
   setPreviewZoom: (previewZoom) => set({ previewZoom }),
   setRunState: (runState) => set({ runState }),
   setRunStatus: (status, message = "") =>
@@ -118,11 +128,13 @@ export const useSingleStore = create<SingleStoreState>((set) => ({
         ...state.functionParamsByFunction,
         [state.selectedFunction]: {},
       },
+      cropFreeApplyReview: false,
     })),
   resetAllFunctionParams: () =>
     set({
       functionParams: {},
       functionParamsByFunction: {},
+      cropFreeApplyReview: false,
     }),
   resetRunState: () => set({ runState: initialRunState }),
 }));

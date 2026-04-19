@@ -205,6 +205,85 @@ pub struct GeneratePreviewRequest {
     /// When true, `input_path` is already a downsampled WebP proxy — skip JPEG decode hints and resize pass.
     #[serde(default)]
     from_proxy: bool,
+    /// Full-resolution image width (px). With `from_proxy`, used to rescale `-shave` from UI/original space into proxy space.
+    #[serde(default)]
+    original_width: Option<u32>,
+    /// Full-resolution image height (px). Same as `original_width` for `-shave` rescaling.
+    #[serde(default)]
+    original_height: Option<u32>,
+}
+
+fn args_slice_contains_shave(args: &[String]) -> bool {
+    args.windows(2).any(|w| w[0] == "-shave")
+}
+
+fn parse_shave_geometry(token: &str) -> Option<(u32, u32)> {
+    let (a, b) = token.split_once('x')?;
+    let h = a.parse().ok()?;
+    let v = b.parse().ok()?;
+    Some((h, v))
+}
+
+/// UI `-shave` values are in **original/full** pixels. Preview runs on the proxy — scale down:
+/// `final_h = round(ui_h * proxy_w / orig_w)`, `final_v = round(ui_v * proxy_h / orig_h)`.
+fn rescale_shave_tokens_for_proxy_preview(
+    args: &mut [String],
+    proxy_w: u32,
+    proxy_h: u32,
+    orig_w: u32,
+    orig_h: u32,
+) {
+    if orig_w == 0 || orig_h == 0 || proxy_w == 0 || proxy_h == 0 {
+        return;
+    }
+    let scale_x = proxy_w as f64 / orig_w as f64;
+    let scale_y = proxy_h as f64 / orig_h as f64;
+    let mut i = 0usize;
+    while i + 1 < args.len() {
+        if args[i] == "-shave" {
+            if let Some((ui_h, ui_v)) = parse_shave_geometry(&args[i + 1]) {
+                let nh = ((ui_h as f64) * scale_x).round().max(0.0) as u32;
+                let nv = ((ui_v as f64) * scale_y).round().max(0.0) as u32;
+                args[i + 1] = format!("{nh}x{nv}");
+            }
+            i += 2;
+            continue;
+        }
+        i += 1;
+    }
+}
+
+async fn identify_image_wh(app: &tauri::AppHandle, path: &str) -> Result<(u32, u32), String> {
+    let output = app
+        .shell()
+        .sidecar("magick")
+        .map_err(|e| e.to_string())?
+        .arg("identify")
+        .arg("-format")
+        .arg("%w|%h")
+        .arg(path)
+        .output()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        return Err(if stderr.is_empty() {
+            "identify failed".into()
+        } else {
+            stderr
+        });
+    }
+
+    let raw = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    let parts: Vec<&str> = raw.split('|').collect();
+    if parts.len() != 2 {
+        return Err("Failed to parse dimensions".into());
+    }
+    Ok((
+        parts[0].parse::<u32>().map_err(|e| e.to_string())?,
+        parts[1].parse::<u32>().map_err(|e| e.to_string())?,
+    ))
 }
 
 #[derive(serde::Serialize)]
@@ -281,12 +360,28 @@ pub async fn generate_preview(
         command = command.arg(&request.input_path);
     }
 
-    // 2. Tham số hiệu ứng từ Frontend
-    if let Some(args) = &request.args {
-        for arg in args {
-            preview_cli_args.push(arg.clone());
-            command = command.arg(arg);
+    // 2. Effect argv from frontend (optionally rescale `-shave` for proxy preview — UI is full-res px)
+    let mut effect_args: Vec<String> = request.args.clone().unwrap_or_default();
+    if from_proxy && args_slice_contains_shave(&effect_args) {
+        if let (Some(orig_w), Some(orig_h)) = (request.original_width, request.original_height) {
+            match identify_image_wh(&app, &request.input_path).await {
+                Ok((proxy_w, proxy_h)) => {
+                    rescale_shave_tokens_for_proxy_preview(
+                        &mut effect_args,
+                        proxy_w,
+                        proxy_h,
+                        orig_w,
+                        orig_h,
+                    );
+                }
+                Err(e) => eprintln!("[preview] proxy identify for -shave rescale: {e}"),
+            }
         }
+    }
+
+    for arg in &effect_args {
+        preview_cli_args.push(arg.clone());
+        command = command.arg(arg);
     }
 
     // 3. Ép xuất thẳng ra STDOUT thay vì ghi file
@@ -365,7 +460,15 @@ pub async fn generate_preview(
     })
 }
 
-
+/// Renders one argv token for debug logs (quotes when needed, like a POSIX shell).
+fn format_cli_token_for_log(s: &str) -> String {
+    if s.is_empty() || s.chars().any(char::is_whitespace) {
+        let escaped = s.replace('\\', "\\\\").replace('"', "\\\"");
+        format!("\"{escaped}\"")
+    } else {
+        s.to_owned()
+    }
+}
 
 #[tauri::command]
 pub async fn run_single(
@@ -396,6 +499,20 @@ pub async fn run_single(
     for arg in &request.args {
         command = command.arg(arg);
     }
+
+    let run_cli_display = std::iter::once(format_cli_token_for_log(&request.input_path))
+        .chain(
+            request
+                .args
+                .iter()
+                .map(|a| format_cli_token_for_log(a.as_str())),
+        )
+        .chain(std::iter::once(format_cli_token_for_log(
+            &request.output_path,
+        )))
+        .collect::<Vec<_>>()
+        .join(" ");
+    println!("[run_single] magick {}", run_cli_display);
 
     let run_output = command
         .arg(&request.output_path)

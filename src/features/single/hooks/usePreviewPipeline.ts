@@ -15,6 +15,8 @@ type UsePreviewPipelineArgs = {
   isManualPreview?: boolean;
   previewRequestId?: number;
   debounceMs?: number;
+  /** Full-res size of the source image — enables correct `-shave` scaling on the proxy in Rust. */
+  fullImageDimensions?: { width: number; height: number } | null;
 };
 
 export type PreviewState = {
@@ -37,6 +39,7 @@ export function usePreviewPipeline({
   isManualPreview = false,
   previewRequestId = 0,
   debounceMs = DEFAULT_DEBOUNCE_MS,
+  fullImageDimensions = null,
 }: UsePreviewPipelineArgs): PreviewState {
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [previewWidth, setPreviewWidth] = useState<number | null>(null);
@@ -117,6 +120,16 @@ export function usePreviewPipeline({
               optionsJson,
               args: operationArgs,
               fromProxy: true,
+              ...(fullImageDimensions &&
+              Number.isFinite(fullImageDimensions.width) &&
+              Number.isFinite(fullImageDimensions.height) &&
+              fullImageDimensions.width > 0 &&
+              fullImageDimensions.height > 0
+                ? {
+                    originalWidth: Math.round(fullImageDimensions.width),
+                    originalHeight: Math.round(fullImageDimensions.height),
+                  }
+                : {}),
             });
 
             if (requestRef.current !== ticket) {
@@ -201,6 +214,7 @@ export function usePreviewPipeline({
     previewRequestId,
     previewInputPath,
     operationLabel,
+    fullImageDimensions,
   ]);
 
   return {

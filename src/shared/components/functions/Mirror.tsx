@@ -1,8 +1,10 @@
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useSingleStore } from "@/features/single/state/single.store";
+import { useSingleT } from "@/i18n/useSingleT";
 
 const MirrorFunction = () => {
+  const { t } = useSingleT();
   const functionParams = useSingleStore((s) => s.functionParams);
   const updateFunctionParam = useSingleStore((s) => s.updateFunctionParam);
 
@@ -13,23 +15,29 @@ const MirrorFunction = () => {
 
   return (
     <div className="space-y-3">
-      <Label>Direction</Label>
-     
+      <Label>{t("mirrorForm.direction")}</Label>
+
       <RadioGroup
         value={mirrorAxis}
         onValueChange={(value) => updateFunctionParam("mirrorAxis", value)}
       >
         <div className="flex items-center gap-2">
-          <RadioGroupItem value="Horizontal" id="Horizontal">Horizontal</RadioGroupItem>
-          <Label htmlFor="Horizontal">Horizontal</Label>
+          <RadioGroupItem value="Horizontal" id="mirror-horizontal" />
+          <Label htmlFor="mirror-horizontal" className="font-normal">
+            {t("mirrorForm.horizontal")}
+          </Label>
         </div>
         <div className="flex items-center gap-2">
-          <RadioGroupItem value="Vertical" id="Vertical">Vertical</RadioGroupItem>
-          <Label htmlFor="Vertical">Vertical</Label>
+          <RadioGroupItem value="Vertical" id="mirror-vertical" />
+          <Label htmlFor="mirror-vertical" className="font-normal">
+            {t("mirrorForm.vertical")}
+          </Label>
         </div>
         <div className="flex items-center gap-2">
-          <RadioGroupItem value="Both" id="Both">Both</RadioGroupItem>
-          <Label htmlFor="Both">Both</Label>
+          <RadioGroupItem value="Both" id="mirror-both" />
+          <Label htmlFor="mirror-both" className="font-normal">
+            {t("mirrorForm.both")}
+          </Label>
         </div>
       </RadioGroup>
     </div>

@@ -5,12 +5,15 @@ import { SquareSplitHorizontal } from "lucide-react";
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type PointerEvent,
   type WheelEvent,
 } from "react";
+import ReactCrop, { type PixelCrop } from "react-image-crop";
+import "react-image-crop/dist/ReactCrop.css";
 
 type Point = { x: number; y: number };
 type DragStart = {
@@ -18,6 +21,14 @@ type DragStart = {
   pointerY: number;
   offsetX: number;
   offsetY: number;
+};
+
+/** Rectangle in **natural** pixels of the preview proxy (`originUrl` image). */
+export type NaturalCropRect = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 };
 
 type CanvasPreviewProps = {
@@ -29,12 +40,103 @@ type CanvasPreviewProps = {
   error: string | null;
   zoomPercent: number;
   onZoomChange: (nextZoom: number) => void;
+  /**
+   * When set, shows `react-image-crop` on the proxy/origin image (Crop → free method).
+   * Coordinates are written via `onFreeCropComplete` in natural proxy pixels (same space as `cropX`…`cropH`).
+   */
+  freeCrop?: {
+    enabled: boolean;
+    aspect?: number;
+    natural: NaturalCropRect;
+    onComplete: (rect: NaturalCropRect) => void;
+  };
 };
 
 const ZOOM_MIN = 25;
 const ZOOM_MAX = 300;
 const ZOOM_STEP = 10;
 const DEFAULT_PAN_OFFSET: Point = { x: 0, y: 0 };
+
+function objectContainMetrics(
+  elW: number,
+  elH: number,
+  naturalW: number,
+  naturalH: number,
+) {
+  if (
+    naturalW <= 0 ||
+    naturalH <= 0 ||
+    elW <= 0 ||
+    elH <= 0 ||
+    !Number.isFinite(naturalW) ||
+    !Number.isFinite(naturalH)
+  ) {
+    return { scale: 1, offsetX: 0, offsetY: 0 };
+  }
+  const scale = Math.min(elW / naturalW, elH / naturalH);
+  const drawnW = naturalW * scale;
+  const drawnH = naturalH * scale;
+  const offsetX = (elW - drawnW) / 2;
+  const offsetY = (elH - drawnH) / 2;
+  return { scale, offsetX, offsetY };
+}
+
+function naturalToPixelCrop(
+  r: NaturalCropRect,
+  elW: number,
+  elH: number,
+  naturalW: number,
+  naturalH: number,
+): PixelCrop {
+  const { scale, offsetX, offsetY } = objectContainMetrics(
+    elW,
+    elH,
+    naturalW,
+    naturalH,
+  );
+  return {
+    unit: "px",
+    x: offsetX + r.x * scale,
+    y: offsetY + r.y * scale,
+    width: r.width * scale,
+    height: r.height * scale,
+  };
+}
+
+function pixelCropToNatural(
+  crop: PixelCrop,
+  elW: number,
+  elH: number,
+  naturalW: number,
+  naturalH: number,
+): NaturalCropRect {
+  const { scale, offsetX, offsetY } = objectContainMetrics(
+    elW,
+    elH,
+    naturalW,
+    naturalH,
+  );
+  if (scale <= 0 || !Number.isFinite(scale)) {
+    return { x: 0, y: 0, width: naturalW, height: naturalH };
+  }
+  const x = Math.round((crop.x - offsetX) / scale);
+  const y = Math.round((crop.y - offsetY) / scale);
+  const width = Math.round(crop.width / scale);
+  const height = Math.round(crop.height / scale);
+  const maxW = Math.max(1, naturalW);
+  const maxH = Math.max(1, naturalH);
+  const cx = Math.max(0, Math.min(x, maxW - 1));
+  const cy = Math.max(0, Math.min(y, maxH - 1));
+  const cw = Math.max(1, Math.min(width, maxW - cx));
+  const ch = Math.max(1, Math.min(height, maxH - cy));
+  return { x: cx, y: cy, width: cw, height: ch };
+}
+
+function fullNaturalRect(naturalW: number, naturalH: number): NaturalCropRect {
+  const w = Math.max(1, Math.round(naturalW));
+  const h = Math.max(1, Math.round(naturalH));
+  return { x: 0, y: 0, width: w, height: h };
+}
 
 export function CanvasPreview({
   originUrl,
@@ -44,6 +146,7 @@ export function CanvasPreview({
   error,
   zoomPercent,
   onZoomChange,
+  freeCrop,
 }: CanvasPreviewProps) {
   const [compareMode, setCompareMode] = useState<"preview" | "split">(
     "preview",
@@ -52,6 +155,11 @@ export function CanvasPreview({
   const [panOffset, setPanOffset] = useState<Point>(DEFAULT_PAN_OFFSET);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartRef = useRef<DragStart | null>(null);
+  const freeCropImgRef = useRef<HTMLImageElement | null>(null);
+  const [freeCropPixel, setFreeCropPixel] = useState<PixelCrop | undefined>(
+    undefined,
+  );
+  const [freeCropDragging, setFreeCropDragging] = useState(false);
   const hasSource = Boolean(originUrl);
   const hasPreview = Boolean(previewUrl);
   const canCompare = hasSource && hasPreview;
@@ -77,6 +185,66 @@ export function CanvasPreview({
       setPanOffset(DEFAULT_PAN_OFFSET);
     }
   }, [zoomPercent]);
+
+  const applyNaturalToFreeCropPixel = useCallback(() => {
+    const img = freeCropImgRef.current;
+    if (!img || !freeCrop?.enabled || img.naturalWidth <= 0) {
+      return;
+    }
+    const nw = img.naturalWidth;
+    const nh = img.naturalHeight;
+    const elW = img.clientWidth;
+    const elH = img.clientHeight;
+    const natural =
+      freeCrop.natural.width > 0 && freeCrop.natural.height > 0
+        ? freeCrop.natural
+        : fullNaturalRect(nw, nh);
+    setFreeCropPixel(naturalToPixelCrop(natural, elW, elH, nw, nh));
+  }, [freeCrop]);
+
+  useLayoutEffect(() => {
+    if (!freeCrop?.enabled) {
+      setFreeCropPixel(undefined);
+      setFreeCropDragging(false);
+    }
+  }, [freeCrop?.enabled]);
+
+  useLayoutEffect(() => {
+    if (!freeCrop?.enabled || freeCropDragging) {
+      return;
+    }
+    applyNaturalToFreeCropPixel();
+  }, [
+    freeCrop?.enabled,
+    freeCrop?.natural?.x,
+    freeCrop?.natural?.y,
+    freeCrop?.natural?.width,
+    freeCrop?.natural?.height,
+    freeCropDragging,
+    originUrl,
+    applyNaturalToFreeCropPixel,
+  ]);
+
+  useEffect(() => {
+    if (!freeCrop?.enabled) {
+      return;
+    }
+    const img = freeCropImgRef.current;
+    if (!img) {
+      return;
+    }
+    const ro = new ResizeObserver(() => {
+      if (!freeCropDragging) {
+        applyNaturalToFreeCropPixel();
+      }
+    });
+    ro.observe(img);
+    return () => ro.disconnect();
+  }, [
+    freeCrop?.enabled,
+    freeCropDragging,
+    applyNaturalToFreeCropPixel,
+  ]);
 
   const stopDragging = useCallback(
     (event: PointerEvent<HTMLDivElement>) => {
@@ -205,37 +373,122 @@ export function CanvasPreview({
           transformOrigin: "center",
         }}
       >
-        <img
-          src={originUrl ?? undefined}
-          alt="Original"
-          className="h-full w-full object-contain"
-          draggable={false}
-        />
+        {/*
+          In "preview" mode with a processed image, do not stack origin + preview: both use
+          object-contain in the same box but different intrinsic sizes (e.g. after -shave) get
+          different letterboxing/scale and misalign — looks like a torn/double image. Split mode
+          still draws both for A/B compare.
 
-        {compareMode === "split" && canCompare ? (
+          Free Crop: always draw the proxy with react-image-crop; optional preview overlay
+          (pointer-events none) so compare modes still make sense.
+        */}
+        {freeCrop?.enabled ? (
           <>
-            <img
-              src={previewUrl ?? undefined}
-              alt="Preview"
-              className="pointer-events-none absolute inset-0 h-full w-full object-contain"
-              style={{ clipPath: splitClip }}
-              draggable={false}
-            />
             <div
-              className="pointer-events-none absolute inset-y-0 z-10 border-r border-primary/80"
-              style={{ left: `${splitPercent}%` }}
-            />
-          </>
-        ) : null}
+              className="relative z-20 flex h-full w-full max-h-full max-w-full items-center justify-center"
+              data-preview-control="true"
+            >
+              <ReactCrop
+                className="flex max-h-full max-w-full items-center justify-center"
+                crop={freeCropPixel}
+                aspect={freeCrop.aspect}
+                ruleOfThirds
+                onDragStart={() => setFreeCropDragging(true)}
+              onDragEnd={() => setFreeCropDragging(false)}
+              onChange={(c) => setFreeCropPixel(c)}
+              onComplete={(c) => {
+                const img = freeCropImgRef.current;
+                if (!img || img.naturalWidth <= 0) {
+                  return;
+                }
+                freeCrop.onComplete(
+                  pixelCropToNatural(
+                    c,
+                    img.clientWidth,
+                    img.clientHeight,
+                    img.naturalWidth,
+                    img.naturalHeight,
+                  ),
+                );
+              }}
+            >
+              <img
+                ref={freeCropImgRef}
+                src={originUrl ?? undefined}
+                alt="Original"
+                className="max-h-full max-w-full object-contain"
+                draggable={false}
+                onLoad={applyNaturalToFreeCropPixel}
+              />
+              </ReactCrop>
+            </div>
 
-        {compareMode === "preview" && hasPreview ? (
-          <img
-            src={previewUrl ?? undefined}
-            alt="Preview"
-            className="absolute inset-0 h-full w-full object-contain"
-            draggable={false}
-          />
-        ) : null}
+            {compareMode === "split" && canCompare ? (
+              <>
+                <img
+                  key={previewUrl ?? "preview"}
+                  src={previewUrl ?? undefined}
+                  alt="Preview"
+                  className="pointer-events-none absolute inset-0 z-10 h-full w-full object-contain"
+                  style={{ clipPath: splitClip }}
+                  draggable={false}
+                />
+                <div
+                  className="pointer-events-none absolute inset-y-0 z-10 border-r border-primary/80"
+                  style={{ left: `${splitPercent}%` }}
+                />
+              </>
+            ) : null}
+
+            {compareMode === "preview" && hasPreview ? (
+              <img
+                key={previewUrl}
+                src={previewUrl ?? undefined}
+                alt="Preview"
+                className="pointer-events-none absolute inset-0 z-10 h-full w-full object-contain opacity-55"
+                draggable={false}
+              />
+            ) : null}
+          </>
+        ) : (
+          <>
+            {!(compareMode === "preview" && hasPreview) ? (
+              <img
+                src={originUrl ?? undefined}
+                alt="Original"
+                className="h-full w-full object-contain"
+                draggable={false}
+              />
+            ) : null}
+
+            {compareMode === "split" && canCompare ? (
+              <>
+                <img
+                  key={previewUrl ?? "preview"}
+                  src={previewUrl ?? undefined}
+                  alt="Preview"
+                  className="pointer-events-none absolute inset-0 h-full w-full object-contain"
+                  style={{ clipPath: splitClip }}
+                  draggable={false}
+                />
+                <div
+                  className="pointer-events-none absolute inset-y-0 z-10 border-r border-primary/80"
+                  style={{ left: `${splitPercent}%` }}
+                />
+              </>
+            ) : null}
+
+            {compareMode === "preview" && hasPreview ? (
+              <img
+                key={previewUrl}
+                src={previewUrl ?? undefined}
+                alt="Preview"
+                className="h-full w-full object-contain"
+                draggable={false}
+              />
+            ) : null}
+          </>
+        )}
       </div>
 
       <div

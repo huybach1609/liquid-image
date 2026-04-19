@@ -35,7 +35,6 @@ import {
   ImageUpscale,
   Palette,
   Play,
-  PlusIcon,
   Rotate3d,
   SquareRoundCorner,
   SquaresUnite,
@@ -61,15 +60,21 @@ import {
   runSingle,
 } from "@/shared/tauri/commands";
 import { formatFileSize } from "@/lib/utils";
-import { CanvasPreview } from "@/features/single/components/CanvasPreview";
+import {
+  CanvasPreview,
+  type NaturalCropRect,
+} from "@/features/single/components/CanvasPreview";
 import { SingleCliPreview } from "@/features/single/components/SingleCliPreview";
 import { usePreviewPipeline } from "@/features/single/hooks/usePreviewPipeline";
 import {
   buildSingleOperationArgs,
   buildSingleCliPipeline,
   buildSingleCliPreview,
+  estimateProxyDimensions,
+  type PreviewToFullImageScale,
 } from "@/features/single/buildSingleCliPreview";
 import { Spinner } from "@/components/ui/spinner";
+import { useTranslation } from "react-i18next";
 
 function getFileNameFromPath(filePath: string): string {
   const normalized = filePath.replace(/\\/g, "/");
@@ -112,89 +117,111 @@ function normalizeOutputExt(outputFormat: unknown): string {
   return normalized === "jpeg" ? "jpg" : normalized;
 }
 
-type SingleFunctionItem = {
-  name: string;
+type FunctionSlug =
+  | "convert"
+  | "crop"
+  | "mirror"
+  | "blackWhite"
+  | "contrast"
+  | "normalizeColors"
+  | "vignette"
+  | "border"
+  | "rotate"
+  | "scaleResize"
+  | "textLogo"
+  | "compose";
+
+type SingleFunctionCatalogEntry = {
+  /** Stable id used in store and ImageMagick routing (English labels). */
+  id: string;
+  slug: FunctionSlug;
   component: ComponentType;
-  icon?: ReactNode;
-  note?: string;
+  icon: ReactNode;
 };
 
-const SINGLE_FUNCTION_ITEMS: SingleFunctionItem[] = [
+const SINGLE_FUNCTION_CATALOG: readonly SingleFunctionCatalogEntry[] = [
   {
-    name: "Convert",
+    id: "Convert",
+    slug: "convert",
     component: ConvertFunction,
     icon: <ImageIcon className="size-4" />,
-    note: "Convert image to different format",
   },
   {
-    name: "Crop",
+    id: "Crop",
+    slug: "crop",
     component: CropFunction,
     icon: <CropIcon className="size-4" />,
-    note: "Crop image to a specific size",
   },
   {
-    name: "Mirror",
+    id: "Mirror",
+    slug: "mirror",
     component: MirrorFunction,
     icon: <FlipHorizontal2 className="size-4" />,
-    note: "Flip image horizontally",
   },
   {
-    name: "Black & white",
+    id: "Black & white",
+    slug: "blackWhite",
     component: BlackWhiteFunction,
     icon: <Blend className="size-4" />,
-    note: "Convert image to black and white",
   },
   {
-    name: "Contrast",
+    id: "Contrast",
+    slug: "contrast",
     component: ContrastFunction,
     icon: <Contrast className="size-4" />,
-    note: "Adjust image contrast",
   },
   {
-    name: "Normalize colors",
+    id: "Normalize colors",
+    slug: "normalizeColors",
     component: NormalizeColorFunction,
     icon: <Palette className="size-4" />,
-    note: "Normalize image colors",
   },
   {
-    name: "Vignette",
+    id: "Vignette",
+    slug: "vignette",
     component: VignetteFunction,
     icon: <Disc3 className="size-4" />,
-    note: "Add vignette effect",
   },
   {
-    name: "Border",
+    id: "Border",
+    slug: "border",
     component: BorderFunction,
     icon: <SquareRoundCorner className="size-4" />,
-    note: "Add border to image",
   },
   {
-    name: "Rotate",
+    id: "Rotate",
+    slug: "rotate",
     component: RotateFunction,
     icon: <Rotate3d className="size-4" />,
-    note: "Rotate image",
   },
   {
-    name: "Scale / resize",
+    id: "Scale / resize",
+    slug: "scaleResize",
     component: ScaleResizeFunction,
     icon: <ImageUpscale className="size-4" />,
-    note: "Scale/resize image",
   },
   {
-    name: "Text / logo",
+    id: "Text / logo",
+    slug: "textLogo",
     component: TextLogoFunction,
     icon: <ALargeSmall className="size-4" />,
-    note: "Add text or logo to image",
   },
   {
-    name: "Compose",
+    id: "Compose",
+    slug: "compose",
     component: ComposeFunction,
     icon: <SquaresUnite className="size-4" />,
-    note: "Compose images",
   },
 ];
 
+function slugForFunctionId(functionId: string): FunctionSlug {
+  return (
+    SINGLE_FUNCTION_CATALOG.find((e) => e.id === functionId)?.slug ?? "convert"
+  );
+}
+
 export function SingleModePage() {
+  const { t } = useTranslation("single");
   const [cliPreviewMode, setCliPreviewMode] = useState<"function" | "all">(
     "function",
   );
@@ -232,19 +259,37 @@ export function SingleModePage() {
   const resetAllFunctionParams = useSingleStore(
     (state) => state.resetAllFunctionParams,
   );
+  const setFunctionParams = useSingleStore((state) => state.setFunctionParams);
   const setRunStatus = useSingleStore((state) => state.setRunStatus);
   const openImageMenuRequestId = useAppStore((state) => state.openImageMenuRequestId);
 
   const isRunning = runState.status === "running";
   const message = runState.message;
-  const selectedFunction = useMemo(
+
+  const selectedCatalogEntry = useMemo(
     () =>
-      SINGLE_FUNCTION_ITEMS.find(
-        (item) => item.name === selectedFunctionName,
-      ) ?? SINGLE_FUNCTION_ITEMS[0],
+      SINGLE_FUNCTION_CATALOG.find((e) => e.id === selectedFunctionName) ??
+      SINGLE_FUNCTION_CATALOG[0],
     [selectedFunctionName],
   );
-  const SelectedFunctionComponent = selectedFunction.component;
+  const selectedFunctionLabels = useMemo(
+    () => ({
+      name: t(`functions.${selectedCatalogEntry.slug}.name`),
+      note: t(`functions.${selectedCatalogEntry.slug}.note`),
+    }),
+    [selectedCatalogEntry.slug, t],
+  );
+  const SelectedFunctionComponent = selectedCatalogEntry.component;
+
+  const functionNavItems = useMemo(
+    () =>
+      SINGLE_FUNCTION_CATALOG.map((entry) => ({
+        ...entry,
+        label: t(`functions.${entry.slug}.name`),
+        description: t(`functions.${entry.slug}.note`),
+      })),
+    [t],
+  );
 
   const editedFunctionNames = useMemo(
     () =>
@@ -284,7 +329,116 @@ export function SingleModePage() {
     operationLabel: previewOperationLabel,
     isManualPreview,
     previewRequestId,
+    fullImageDimensions:
+      fileMetadata &&
+      fileMetadata.width > 0 &&
+      fileMetadata.height > 0
+        ? { width: fileMetadata.width, height: fileMetadata.height }
+        : null,
   });
+
+  const previewToFullScale = useMemo((): PreviewToFullImageScale | undefined => {
+    if (!fileMetadata) {
+      return undefined;
+    }
+    let previewW = previewState.width ?? 0;
+    let previewH = previewState.height ?? 0;
+    if (previewW <= 0 || previewH <= 0) {
+      const est = estimateProxyDimensions(fileMetadata.width, fileMetadata.height);
+      previewW = est.width;
+      previewH = est.height;
+    }
+    return {
+      fullWidth: fileMetadata.width,
+      fullHeight: fileMetadata.height,
+      previewWidth: previewW,
+      previewHeight: previewH,
+    };
+  }, [fileMetadata, previewState.width, previewState.height]);
+
+  const cropMethodRaw = functionParams.cropMethod;
+  const cropMethod =
+    cropMethodRaw === "trim" ||
+    cropMethodRaw === "shave" ||
+    cropMethodRaw === "free"
+      ? cropMethodRaw
+      : "free";
+
+  const cropFreeApplyReview = useSingleStore((s) => s.cropFreeApplyReview);
+
+  const freeCropInteractive =
+    selectedFunctionName === "Crop" && cropMethod === "free";
+
+  const cropAspectRatioStr =
+    typeof functionParams.cropAspectRatio === "string" &&
+    functionParams.cropAspectRatio.trim().length > 0
+      ? functionParams.cropAspectRatio.trim()
+      : "Free";
+
+  const freeCropAspect = useMemo(() => {
+    if (cropAspectRatioStr === "Free" || cropAspectRatioStr === "Custom") {
+      return undefined;
+    }
+    const m = cropAspectRatioStr.match(/^(\d+)\s*:\s*(\d+)$/);
+    if (!m) {
+      return undefined;
+    }
+    const a = Number(m[1]);
+    const b = Number(m[2]);
+    if (!Number.isFinite(a) || !Number.isFinite(b) || b === 0) {
+      return undefined;
+    }
+    return a / b;
+  }, [cropAspectRatioStr]);
+
+  const freeCropNatural = useMemo(
+    (): NaturalCropRect => ({
+      x: Math.round(Number(functionParams.cropX)) || 0,
+      y: Math.round(Number(functionParams.cropY)) || 0,
+      width: Math.round(Number(functionParams.cropW)) || 0,
+      height: Math.round(Number(functionParams.cropH)) || 0,
+    }),
+    [
+      functionParams.cropX,
+      functionParams.cropY,
+      functionParams.cropW,
+      functionParams.cropH,
+    ],
+  );
+
+  const handleFreeCropComplete = useCallback(
+    (rect: NaturalCropRect) => {
+      const fp = useSingleStore.getState().functionParams;
+      setFunctionParams({
+        ...fp,
+        cropX: rect.x,
+        cropY: rect.y,
+        cropW: rect.width,
+        cropH: rect.height,
+        cropGravity: "NW",
+      });
+    },
+    [setFunctionParams],
+  );
+
+  const canvasFreeCrop = useMemo(
+    () =>
+      freeCropInteractive && !cropFreeApplyReview
+        ? {
+            enabled: true as const,
+            aspect: freeCropAspect,
+            natural: freeCropNatural,
+            onComplete: handleFreeCropComplete,
+          }
+        : undefined,
+    [
+      freeCropInteractive,
+      cropFreeApplyReview,
+      freeCropAspect,
+      freeCropNatural,
+      handleFreeCropComplete,
+    ],
+  );
 
   const commandPreviews = useMemo(() => {
     if (cliPreviewMode === "all") {
@@ -305,11 +459,12 @@ export function SingleModePage() {
           functionParamsByFunction[
             targetFunctions[targetFunctions.length - 1]
           ] ?? functionParams,
+        previewToFullScale,
       });
 
       return [
         {
-          label: "All edited functions",
+          label: t("cli.allEditedFunctions"),
           command: pipelineCommand,
         },
       ];
@@ -317,11 +472,12 @@ export function SingleModePage() {
 
     return [
       {
-        label: selectedFunctionName,
+        label: t(`functions.${slugForFunctionId(selectedFunctionName)}.name`),
         command: buildSingleCliPreview({
           selectedFile,
           selectedFunction: selectedFunctionName,
           functionParams,
+          previewToFullScale,
         }),
       },
     ];
@@ -332,6 +488,8 @@ export function SingleModePage() {
     functionParamsByFunction,
     selectedFile,
     selectedFunctionName,
+    t,
+    previewToFullScale,
   ]);
 
   const defaultOutputPath = useMemo(() => {
@@ -362,7 +520,9 @@ export function SingleModePage() {
           setProxyPath(proxy);
         } catch (error) {
           const message =
-            error instanceof Error ? error.message : "Failed to create preview proxy";
+            error instanceof Error
+              ? error.message
+              : t("errors.previewProxyFailed");
           console.error("Failed to create preview proxy", error);
           setRunStatus("error", message);
           setProxyPath(null);
@@ -379,6 +539,7 @@ export function SingleModePage() {
       setProxyPath,
       setRunStatus,
       setFileMetadata,
+      t,
     ],
   );
 
@@ -386,7 +547,7 @@ export function SingleModePage() {
     const picked = await openDialog({
       filters: [
         {
-          name: "Image",
+          name: t("dialog.imageFilter"),
           extensions: [
             "png",
             "jpg",
@@ -411,11 +572,7 @@ export function SingleModePage() {
     }
 
     await ingestSelectedImagePath(selectedPath);
-  }, [ingestSelectedImagePath]);
-
-  const handleSelectFile = () => {
-    void pickAndOpenSingleImage();
-  };
+  }, [ingestSelectedImagePath, t]);
 
   useEffect(() => {
     if (openImageMenuRequestId === 0) {
@@ -424,24 +581,12 @@ export function SingleModePage() {
     void pickAndOpenSingleImage();
   }, [openImageMenuRequestId, pickAndOpenSingleImage]);
 
-  const handleDetachFile = () => {
-    const p = useSingleStore.getState().proxyPath;
-    if (p) {
-      void removeProxyFile(p).catch(() => {
-        /* best-effort */
-      });
-    }
-    setSelectedFile(null);
-    setProxyPath(null);
-    setFileMetadata(null);
-  };
-
   const handleChooseOutputPath = async () => {
     const picked = await saveDialog({
       defaultPath: outputPathOverride ?? defaultOutputPath,
       filters: [
         {
-          name: "Image output",
+          name: t("dialog.imageOutputFilter"),
           extensions: ["png", "jpg", "jpeg", "webp", "tiff", "bmp", "heic"],
         },
       ],
@@ -457,7 +602,10 @@ export function SingleModePage() {
     }
 
     setOutputPathOverride(selectedPath);
-    setRunStatus("idle", `Output: ${getFileNameFromPath(selectedPath)}`);
+    setRunStatus(
+      "idle",
+      t("status.outputSet", { file: getFileNameFromPath(selectedPath) }),
+    );
   };
 
   const handleOpenOutputFolder = async () => {
@@ -473,7 +621,7 @@ export function SingleModePage() {
         outputDir: getDirectoryPath(lastOutputPath),
         error,
       });
-      setRunStatus("error", "Cannot open output folder");
+      setRunStatus("error", t("errors.openOutputFolder"));
     }
   };
 
@@ -501,11 +649,13 @@ export function SingleModePage() {
     const args: string[] = [];
     for (const functionName of targetFunctions) {
       const params = functionParamsByFunction[functionName] ?? {};
-      args.push(...buildSingleOperationArgs(functionName, params));
+      args.push(
+        ...buildSingleOperationArgs(functionName, params, previewToFullScale),
+      );
     }
 
     try {
-      setRunStatus("running", "Running ImageMagick...");
+      setRunStatus("running", t("status.runningMagick"));
       const response = await runSingle({
         inputPath: selectedFile,
         outputPath,
@@ -514,10 +664,15 @@ export function SingleModePage() {
       setLastOutputPath(response.outputPath);
       setRunStatus(
         "success",
-        `Done: ${getFileNameFromPath(response.outputPath)} (${response.width}x${response.height})`,
+        t("status.done", {
+          file: getFileNameFromPath(response.outputPath),
+          width: response.width,
+          height: response.height,
+        }),
       );
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to run command";
+      const message =
+        error instanceof Error ? error.message : t("errors.runCommandFailed");
       setRunStatus("error", message);
     }
   };
@@ -526,15 +681,15 @@ export function SingleModePage() {
     <section className="grid h-full grid-cols-[180px_1fr_240px] border border-border/70 bg-card">
       <aside className="border-r border-border/70 bg-muted/20">
         <div className="flex h-14 items-center border-b border-border/70 px-5 text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
-          Operations
+          {t("operations.heading")}
         </div>
         <nav className="py-2">
-          {SINGLE_FUNCTION_ITEMS.map((item) => {
-            const isSelected = selectedFunctionName === item.name;
+          {functionNavItems.map((item) => {
+            const isSelected = selectedFunctionName === item.id;
             const isEdited =
-              Object.keys(functionParamsByFunction[item.name] ?? {}).length > 0;
+              Object.keys(functionParamsByFunction[item.id] ?? {}).length > 0;
             return (
-              <Tooltip key={item.name} delayDuration={700}>
+              <Tooltip key={item.id} delayDuration={700}>
                 <TooltipTrigger asChild>
                   <button
                     type="button"
@@ -544,23 +699,25 @@ export function SingleModePage() {
                         ? "border-primary bg-background/80 font-medium text-primary"
                         : "border-transparent text-muted-foreground hover:bg-background/70 hover:text-foreground"
                     }`}
-                    onClick={() => setSelectedFunctionName(item.name)}
+                    onClick={() => setSelectedFunctionName(item.id)}
                   >
                     {item.icon}
                     <span className="inline-flex items-center gap-1.5">
-                      {item.name}
+                      {item.label}
                       {isEdited ? (
                         <span
                           className="size-1.5 rounded-full bg-primary/80"
-                          aria-label={`${item.name} has edited settings`}
-                          title="Edited settings"
+                          aria-label={t("operations.editedBadgeAria", {
+                            name: item.label,
+                          })}
+                          title={t("operations.editedBadgeTitle")}
                         />
                       ) : null}
                     </span>
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right">
-                  <p>{item.note}</p>
+                  <p>{item.description}</p>
                 </TooltipContent>
               </Tooltip>
             );
@@ -613,7 +770,9 @@ export function SingleModePage() {
                   size="sm"
                   className="rounded-lg px-3"
                 >
-                  {isManualPreview ? "Manual preview" : "Auto preview"}
+                  {isManualPreview
+                    ? t("preview.manual")
+                    : t("preview.auto")}
                   <ChevronDown className="ml-1 size-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -622,13 +781,13 @@ export function SingleModePage() {
                   onSelect={() => setIsManualPreview(false)}
                   className="cursor-pointer"
                 >
-                  Auto preview
+                  {t("preview.auto")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={() => setIsManualPreview(true)}
                   className="cursor-pointer"
                 >
-                  Manual preview
+                  {t("preview.manual")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -649,9 +808,9 @@ export function SingleModePage() {
               >
                 {isManualPreview
                   ? previewState.isPending
-                    ? "Previewing..."
-                    : "Preview"
-                  : "Preview"}
+                    ? t("preview.previewing")
+                    : t("preview.preview")
+                  : t("preview.preview")}
               </Button>
             ) : null}
 
@@ -687,6 +846,7 @@ export function SingleModePage() {
             error={previewState.error}
             zoomPercent={previewZoom}
             onZoomChange={setPreviewZoom}
+            freeCrop={canvasFreeCrop}
           />
         </div>
 
@@ -708,7 +868,10 @@ export function SingleModePage() {
               </span>
               {previewState.width && previewState.height ? (
                 <span className="rounded-md border border-border bg-muted/40 px-2 py-1">
-                  preview {previewState.width} × {previewState.height}
+                  {t("metadata.previewDimensions", {
+                    w: previewState.width,
+                    h: previewState.height,
+                  })}
                 </span>
               ) : null}
               <span className="rounded-md border border-border bg-muted/40 px-2 py-1">
@@ -717,7 +880,7 @@ export function SingleModePage() {
             </div>
           )}
           <p className="text-xs text-muted-foreground">
-            {message || "ImageMagick 7.1"}
+            {message || t("status.imagemagickDefault")}
           </p>
           {runState.status === "success" && lastOutputPath ? (
             <Button
@@ -727,7 +890,7 @@ export function SingleModePage() {
               className="ml-3 h-7"
               onClick={handleOpenOutputFolder}
             >
-              Open output folder
+              {t("output.openOutputFolder")}
             </Button>
           ) : null}
         </footer>
@@ -736,7 +899,7 @@ export function SingleModePage() {
       <aside className="grid min-h-0 grid-rows-[auto_1fr_auto] border-l border-border/70">
         <div className="flex h-14 items-center justify-between gap-2 border-b border-border/70 px-4">
           <span className="text-xs font-medium tracking-[0.08em] text-muted-foreground uppercase">
-            {selectedFunction.name} - Options
+            {t("optionsPanel.title", { name: selectedFunctionLabels.name })}
           </span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -751,10 +914,10 @@ export function SingleModePage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={resetCurrentFunctionParams}>
-                Reset {selectedFunction.name}
+                {t("reset.current", { name: selectedFunctionLabels.name })}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={resetAllFunctionParams}>
-                Reset all
+                {t("reset.all")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

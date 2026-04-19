@@ -1,0 +1,16 @@
+{
+  "mode": {
+    "single": "Đơn ảnh",
+    "batch": "Hàng loạt"
+  },
+  "language": {
+    "label": "Ngôn ngữ",
+    "en": "English",
+    "vi": "Tiếng Việt"
+  },
+  "window": {
+    "minimize": "Thu nhỏ cửa sổ",
+    "maximize": "Phóng to / thu nhỏ cửa sổ",
+    "close": "Đóng cửa sổ"
+  }
+}

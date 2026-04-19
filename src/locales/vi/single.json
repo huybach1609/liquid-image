@@ -1,0 +1,159 @@
+{
+  "operations": {
+    "heading": "Thao tác",
+    "editedBadgeAria": "{{name}} đã chỉnh tham số",
+    "editedBadgeTitle": "Đã chỉnh cài đặt"
+  },
+  "optionsPanel": {
+    "title": "{{name}} — Tùy chọn"
+  },
+  "preview": {
+    "manual": "Xem trước thủ công",
+    "auto": "Xem trước tự động",
+    "previewing": "Đang tạo xem trước...",
+    "preview": "Xem trước"
+  },
+  "output": {
+    "openOutputFolder": "Mở thư mục đầu ra"
+  },
+  "metadata": {
+    "previewDimensions": "xem trước {{w}} × {{h}}"
+  },
+  "status": {
+    "imagemagickDefault": "ImageMagick 7.1",
+    "outputSet": "Đầu ra: {{file}}",
+    "runningMagick": "Đang chạy ImageMagick...",
+    "done": "Xong: {{file}} ({{width}}×{{height}})"
+  },
+  "cli": {
+    "allEditedFunctions": "Tất cả thao tác đã chỉnh",
+    "panelHeading": "Xem trước CLI",
+    "modeFunction": "Theo thao tác",
+    "modeAll": "Tất cả"
+  },
+  "dialog": {
+    "imageFilter": "Ảnh",
+    "imageOutputFilter": "Ảnh đầu ra"
+  },
+  "errors": {
+    "previewProxyFailed": "Không tạo được proxy xem trước",
+    "openOutputFolder": "Không mở được thư mục đầu ra",
+    "runCommandFailed": "Chạy lệnh thất bại"
+  },
+  "reset": {
+    "current": "Đặt lại {{name}}",
+    "all": "Đặt lại tất cả"
+  },
+  "cropForm": {
+    "methodHeading": "Kiểu cắt",
+    "methodAria": "Kiểu cắt",
+    "methods": {
+      "free": {
+        "name": "Cắt tự do",
+        "desc": "Kéo thả khung tự do trên canvas"
+      },
+      "trim": {
+        "name": "Tự cắt viền",
+        "desc": "Tự động cắt viền màu giống góc ảnh"
+      },
+      "shave": {
+        "name": "Cạo cạnh",
+        "desc": "Cạo đối xứng từ bốn cạnh"
+      }
+    },
+    "aspectRatio": "Tỷ lệ khung",
+    "aspectPlaceholder": "Tỷ lệ khung",
+    "aspect": {
+      "free": "Tự do",
+      "ratio_1_1": "1:1 (Vuông)",
+      "ratio_4_3": "4:3",
+      "ratio_16_9": "16:9",
+      "ratio_3_2": "3:2",
+      "ratio_9_16": "9:16 (Dọc)",
+      "custom": "Tùy chỉnh…"
+    },
+    "positionSize": "Vị trí & kích thước",
+    "coordX": "X",
+    "coordY": "Y",
+    "coordW": "Rộng",
+    "coordH": "Cao",
+    "px": "px",
+    "freeHint": "Kéo thả khung crop trên canvas hoặc nhập tọa độ thủ công.",
+    "gravity": {
+      "label": "Neo tâm",
+      "NW": "NW",
+      "Center": "Center",
+      "SE": "SE",
+      "NW_tooltip": "Trái trên",
+      "Center_tooltip": "Tâm",
+      "SE_tooltip": "Phải dưới"
+
+    },
+    "fuzzTolerance": "Dung sai màu (fuzz)",
+    "trimPctMin": "0%",
+    "trimHint": "Dung sai màu — càng cao càng cắt được nhiều viền gần giống màu góc.",
+    "shaveAmount": "Lượng cạo mỗi phía",
+    "shaveHorizontal": "Ngang",
+    "shaveVertical": "Dọc",
+    "shaveHint": "Cắt đối xứng từ trái/phải và trên/dưới.",
+    "apply": "Áp dụng cắt",
+    "reset": "Đặt lại cắt",
+    "cropAgain": "Cắt lại"
+  },
+  "mirrorForm": {
+    "direction": "Hướng lật",
+    "horizontal": "Ngang",
+    "vertical": "Dọc",
+    "both": "Cả hai"
+  },
+  "functions": {
+    "convert": {
+      "name": "Chuyển định dạng",
+      "note": "Chuyển ảnh sang định dạng khác"
+    },
+    "crop": {
+      "name": "Cắt",
+      "note": "Cắt ảnh theo kích thước cụ thể"
+    },
+    "mirror": {
+      "name": "Lật gương",
+      "note": "Lật ảnh theo chiều ngang"
+    },
+    "blackWhite": {
+      "name": "Đen trắng",
+      "note": "Chuyển ảnh sang đen trắng"
+    },
+    "contrast": {
+      "name": "Độ tương phản",
+      "note": "Chỉnh độ tương phản"
+    },
+    "normalizeColors": {
+      "name": "Chuẩn hóa màu",
+      "note": "Chuẩn hóa màu ảnh"
+    },
+    "vignette": {
+      "name": "Viền tối (vignette)",
+      "note": "Thêm hiệu ứng viền tối"
+    },
+    "border": {
+      "name": "Viền",
+      "note": "Thêm viền cho ảnh"
+    },
+    "rotate": {
+      "name": "Xoay",
+      "note": "Xoay ảnh"
+    },
+    "scaleResize": {
+      "name": "Thu phóng / đổi cỡ",
+      "note": "Thu phóng hoặc đổi kích thước ảnh"
+    },
+    "textLogo": {
+      "name": "Chữ / logo",
+      "note": "Thêm chữ hoặc logo lên ảnh"
+    },
+    "compose": {
+      "name": "Ghép ảnh",
+      "note": "Ghép nhiều ảnh"
+    }
+  }
+}

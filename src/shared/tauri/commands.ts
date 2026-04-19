@@ -40,6 +40,12 @@ export type GeneratePreviewRequest = {
   args?: string[];
   /** When true, `inputPath` is the temp WebP proxy (skip decode/resize on the Rust side). */
   fromProxy?: boolean;
+  /**
+   * Full-resolution dimensions of the opened image. When `fromProxy` is true, the backend
+   * rescales `-shave` from these (UI) pixels into proxy pixels for preview only.
+   */
+  originalWidth?: number;
+  originalHeight?: number;
 };
 
 export type GeneratePreviewResponse = {

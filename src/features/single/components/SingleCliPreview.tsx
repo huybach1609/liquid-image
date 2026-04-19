@@ -6,6 +6,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 type CommandPreviewItem = {
   label: string;
@@ -23,6 +24,10 @@ export function SingleCliPreview({
   cliPreviewMode,
   setCliPreviewMode,
 }: SingleCliPreviewProps) {
+  const { t } = useTranslation("single");
+  const modeLabel =
+    cliPreviewMode === "function" ? t("cli.modeFunction") : t("cli.modeAll");
+
   return (
     <>
       <DropdownMenu>
@@ -31,9 +36,9 @@ export function SingleCliPreview({
             type="button"
             className="mb-1 flex w-full cursor-pointer items-center justify-between gap-1 border-0 bg-transparent p-0 text-left text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase hover:text-foreground"
           >
-            <span>CLI Preview </span>
+            <span>{t("cli.panelHeading")}</span>
             <span className="flex gap-1 lowercase text-primary">
-              <span>{cliPreviewMode}</span>
+              <span>{modeLabel}</span>
               <ChevronDown className="size-4" />
             </span>
           </button>
@@ -43,8 +48,12 @@ export function SingleCliPreview({
             value={cliPreviewMode}
             onValueChange={(value) => setCliPreviewMode(value as "function" | "all")}
           >
-            <DropdownMenuRadioItem value="function" id="function">Function</DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="all" id="all">All</DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="function" id="function">
+              {t("cli.modeFunction")}
+            </DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="all" id="all">
+              {t("cli.modeAll")}
+            </DropdownMenuRadioItem>
           </DropdownMenuRadioGroup>
            </DropdownMenuContent>
       </DropdownMenu>

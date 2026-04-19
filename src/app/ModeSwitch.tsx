@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 import { useAppStore } from "@/app/store/app.store";
 import type { AppMode } from "@/shared/types/common";
 
@@ -7,6 +9,7 @@ export type ModeSwitchProps = {
 };
 
 export function ModeSwitch(props: ModeSwitchProps = {}) {
+  const { t } = useTranslation("common");
   const { mode: modeProp, onModeChange: onModeChangeProp } = props;
   const modeFromStore = useAppStore((s) => s.mode);
   const setModeStore = useAppStore((s) => s.setMode);
@@ -14,8 +17,8 @@ export function ModeSwitch(props: ModeSwitchProps = {}) {
   const setMode = onModeChangeProp ?? setModeStore;
 
   const items: Array<{ id: AppMode; label: string }> = [
-    { id: "single", label: "Single" },
-    { id: "batch", label: "Batch" },
+    { id: "single", label: t("mode.single") },
+    { id: "batch", label: t("mode.batch") },
   ];
 
   return (

@@ -1,0 +1,16 @@
+{
+  "mode": {
+    "single": "Single",
+    "batch": "Batch"
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "vi": "Tiếng Việt"
+  },
+  "window": {
+    "minimize": "Minimize window",
+    "maximize": "Toggle maximize window",
+    "close": "Close window"
+  }
+}
