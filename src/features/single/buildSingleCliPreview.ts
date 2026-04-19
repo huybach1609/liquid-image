@@ -87,11 +87,44 @@ export function buildSingleOperationArgs(
       break;
     }
     case "Crop": {
+      const method = getStringParam(functionParams, "cropMethod", "free").toLowerCase();
+
+      if (method === "trim") {
+        const fuzz = Math.round(getNumberParam(functionParams, "cropTrimFuzz", 10));
+        const clamped = Math.max(0, Math.min(100, fuzz));
+        parts.push("-fuzz", `${clamped}%`, "-trim", "+repage");
+        break;
+      }
+
+      if (method === "shave") {
+        const shH = Math.max(0, Math.round(getNumberParam(functionParams, "cropShaveH", 0)));
+        const shV = Math.max(0, Math.round(getNumberParam(functionParams, "cropShaveV", 0)));
+        if (shH > 0 || shV > 0) {
+          parts.push("-shave", `${shH}x${shV}`);
+        }
+        break;
+      }
+
       const ratio = getStringParam(functionParams, "cropAspectRatio", "Free");
       if (ratio === "1:1") {
         parts.push("-gravity", "Center", "-crop", "800x800+0+0", "+repage");
-      } else if (ratio === "16:9") {
+        break;
+      }
+      if (ratio === "16:9") {
         parts.push("-gravity", "Center", "-crop", "1280x720+0+0", "+repage");
+        break;
+      }
+
+      const g = getStringParam(functionParams, "cropGravity", "NW");
+      const imGravity =
+        g === "SE" ? "SouthEast" : g === "Center" ? "Center" : "NorthWest";
+
+      const x = Math.round(getNumberParam(functionParams, "cropX", 0));
+      const y = Math.round(getNumberParam(functionParams, "cropY", 0));
+      const w = Math.round(getNumberParam(functionParams, "cropW", 0));
+      const h = Math.round(getNumberParam(functionParams, "cropH", 0));
+      if (w > 0 && h > 0) {
+        parts.push("-gravity", imGravity, "-crop", `${w}x${h}+${x}+${y}`, "+repage");
       }
       break;
     }

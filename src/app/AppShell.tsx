@@ -65,30 +65,7 @@ export function AppShell() {
             ) : null}
           </div>
           <div className="flex h-full items-stretch">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  aria-label="Settings"
-                  variant="outline"
-                  size="icon-sm"
-                  className="my-auto mx-3"
-                  type="button"
-                >
-                  <Cog />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-fit">
-                <DropdownMenuItem className="cursor-default p-2 focus:bg-transparent">
-                  <ModeSwitch />
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  Settings
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => void appWindow.close()}>
-                  Close
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+           
             <button
               className="text-foreground/75 inline-flex h-full w-[42px] cursor-pointer items-center justify-center border-0 border-l-[0.5px] border-l-border/70 bg-transparent text-xs leading-none transition-colors duration-120 ease-in hover:bg-primary/10 hover:text-primary"
               type="button"
