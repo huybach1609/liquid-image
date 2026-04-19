@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crop — Options</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;font-size:13px;color:#1a1a1a;background:#f5f5f3;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.panel{width:100%;max-width:320px;border:0.5px solid rgba(0,0,0,0.12);border-radius:12px;overflow:hidden;background:#fff}
+.panel-head{padding:11px 14px;font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:.06em;border-bottom:0.5px solid rgba(0,0,0,0.1);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.menu-btn{width:28px;height:28px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#888;border:0.5px solid rgba(0,0,0,0.12);background:#fff;font-size:14px;line-height:1}
+.menu-btn:hover{background:#f5f5f3;color:#1a1a1a}
+.panel-body{padding:10px 14px 14px}
+.section{margin-bottom:12px}
+.section:last-of-type{margin-bottom:0}
+.field{margin-bottom:10px}
+.field label{display:block;font-size:11px;color:#666;margin-bottom:4px;font-weight:500}
+.field select,.field input[type=number],.field input[type=text]{width:100%;padding:4px 7px;border:0.5px solid rgba(0,0,0,0.12);border-radius:8px;background:#fff;color:#1a1a1a;font-size:12px;font-family:inherit}
+.field select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23888' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:26px}
+.field select:focus,.field input:focus{outline:none;border-color:#7F77DD}
+.field-row{display:flex;gap:8px}
+.field-row .field{flex:1;margin-bottom:0}
+.input-wrap{position:relative}
+.input-wrap input{padding-right:32px}
+.input-unit{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;color:#888;pointer-events:none}
+.slider-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.slider-row:last-child{margin-bottom:0}
+.slider-label{font-size:11px;color:#666;min-width:28px;font-weight:500}
+.slider-track{flex:1;height:4px;background:#f0f0ee;border-radius:2px;position:relative;cursor:pointer;overflow:hidden}
+.slider-fill{height:100%;background:#7F77DD;border-radius:2px;transition:width .15s}
+.slider-val{font-size:11px;color:#1a1a1a;font-family:monospace;min-width:40px;text-align:right}
+.btn{background:transparent;border:0.5px solid rgba(0,0,0,0.2);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;color:#1a1a1a;font-family:inherit;font-weight:500;width:100%}
+.btn:hover{background:#f5f5f3}
+.btn-primary{background:#7F77DD;border-color:#7F77DD;color:#fff}
+.btn-primary:hover{background:#534AB7;border-color:#534AB7}
+.divider{height:0.5px;background:rgba(0,0,0,0.1);margin:10px 0}
+.toggle-group{display:flex;gap:6px}
+.toggle-btn{flex:1;padding:5px 8px;background:#fff;border:0.5px solid rgba(0,0,0,0.12);border-radius:8px;color:#666;font-size:11px;cursor:pointer;text-align:center;font-weight:500}
+.toggle-btn.active{background:#7F77DD;border-color:#7F77DD;color:#fff}
+.toggle-btn:hover:not(.active){background:#f9f9f8;border-color:rgba(0,0,0,0.2);color:#1a1a1a}
+.hint{font-size:10px;color:#888;margin-top:4px;line-height:1.45}
+.method-card{padding:8px 10px;background:#fff;border:0.5px solid rgba(0,0,0,0.1);border-radius:8px;margin-bottom:6px;cursor:pointer;display:flex;align-items:flex-start;gap:8px}
+.method-card:last-child{margin-bottom:0}
+.method-card:hover{border-color:rgba(0,0,0,0.2);background:#f9f9f8}
+.method-card.active{border-color:#7F77DD;background:rgba(127,119,221,0.08)}
+.method-radio{width:20px;height:20px;border-radius:50%;border:0.5px solid rgba(0,0,0,0.2);margin-top:1px;flex-shrink:0;background:#fff;display:flex;align-items:center;justify-content:center}
+.method-card.active .method-radio{border-color:#7F77DD;background:#7F77DD;box-shadow:inset 0 0 0 3px #fff}
+.method-info{flex:1;min-width:0}
+.method-name{font-size:12px;font-weight:500;margin-bottom:2px;color:#1a1a1a}
+.method-desc{font-size:10px;color:#888;line-height:1.35}
+.section-title{font-size:11px;color:#666;margin-bottom:8px;font-weight:500}
+.footer{padding:10px 0 0;display:flex;flex-direction:column;gap:6px}
+.cmd-bar{border-top:0.5px solid rgba(0,0,0,0.1);margin-top:12px;padding-top:10px;background:#fff}
+.cmd-label{font-size:10px;color:#888;margin-bottom:4px;font-weight:500;text-transform:uppercase;letter-spacing:.06em}
+.cmd-code{font-family:monospace;font-size:10px;color:#7F77DD;word-break:break-all;line-height:1.6}
+</style>
+</head>
+<body>
+
+<div class="panel">
+  <div class="panel-head">
+    <span>Crop — Options</span>
+    <button type="button" class="menu-btn" aria-label="More">⋯</button>
+  </div>
+
+  <div class="panel-body">
+
+    <div class="section">
+      <div class="section-title">Crop method</div>
+
+      <div class="method-card active" onclick="setMethod(this,'free')">
+        <div class="method-radio" aria-hidden="true"></div>
+        <div class="method-info">
+          <div class="method-name">Free crop</div>
+          <div class="method-desc">Kéo thả khung tự do trên canvas</div>
+        </div>
+      </div>
+
+      <div class="method-card" onclick="setMethod(this,'trim')">
+        <div class="method-radio" aria-hidden="true"></div>
+        <div class="method-info">
+          <div class="method-name">Auto trim</div>
+          <div class="method-desc">Tự động cắt viền màu giống góc ảnh</div>
+        </div>
+      </div>
+
+      <div class="method-card" onclick="setMethod(this,'shave')">
+        <div class="method-radio" aria-hidden="true"></div>
+        <div class="method-info">
+          <div class="method-name">Shave edges</div>
+          <div class="method-desc">Cạo đối xứng từ 4 cạnh</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div id="opts-free" class="section">
+      <div class="field">
+        <label for="ar">Aspect ratio</label>
+        <select id="ar">
+          <option>Free</option>
+          <option>1:1 (Square)</option>
+          <option>4:3</option>
+          <option>16:9</option>
+          <option>3:2</option>
+          <option>9:16 (Story)</option>
+          <option>Custom…</option>
+        </select>
+      </div>
+
+      <div class="field" style="margin-top:10px">
+        <span class="section-title" style="display:block;margin-bottom:6px">Position & size</span>
+        <div class="field-row">
+          <div class="field">
+            <label for="px">X</label>
+            <div class="input-wrap">
+              <input id="px" type="number" value="120" placeholder="X">
+              <span class="input-unit">px</span>
+            </div>
+          </div>
+          <div class="field">
+            <label for="py">Y</label>
+            <div class="input-wrap">
+              <input id="py" type="number" value="80" placeholder="Y">
+              <span class="input-unit">px</span>
+            </div>
+          </div>
+        </div>
+        <div class="field-row" style="margin-top:8px">
+          <div class="field">
+            <label for="pw">W</label>
+            <div class="input-wrap">
+              <input id="pw" type="number" value="1200" placeholder="W">
+              <span class="input-unit">px</span>
+            </div>
+          </div>
+          <div class="field">
+            <label for="ph">H</label>
+            <div class="input-wrap">
+              <input id="ph" type="number" value="900" placeholder="H">
+              <span class="input-unit">px</span>
+            </div>
+          </div>
+        </div>
+        <div class="hint">Kéo thả khung crop trên canvas hoặc nhập tọa độ thủ công</div>
+      </div>
+
+      <div class="field" style="margin-top:10px;margin-bottom:0">
+        <label>Gravity</label>
+        <div class="toggle-group" style="margin-top:4px">
+          <div class="toggle-btn active">NW</div>
+          <div class="toggle-btn">Center</div>
+          <div class="toggle-btn">SE</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="opts-trim" class="section" style="display:none">
+      <div class="field" style="margin-bottom:0">
+        <label>Fuzz tolerance</label>
+        <div class="slider-row" style="margin-top:6px">
+          <span class="slider-label">0%</span>
+          <div class="slider-track" onclick="setSlider(this,event)">
+            <div class="slider-fill" style="width:10%"></div>
+          </div>
+          <span class="slider-val">10%</span>
+        </div>
+        <div class="hint">Dung sai màu — càng cao càng cắt được nhiều viền gần giống màu góc</div>
+      </div>
+    </div>
+
+    <div id="opts-shave" class="section" style="display:none">
+      <div class="field" style="margin-bottom:0">
+        <label>Shave amount</label>
+        <div class="slider-row" style="margin-top:6px">
+          <span class="slider-label">H</span>
+          <div class="slider-track" data-format="px" data-max="200" onclick="setSlider(this,event)">
+            <div class="slider-fill" style="width:15%"></div>
+          </div>
+          <span class="slider-val">30px</span>
+        </div>
+        <div class="slider-row">
+          <span class="slider-label">V</span>
+          <div class="slider-track" data-format="px" data-max="200" onclick="setSlider(this,event)">
+            <div class="slider-fill" style="width:20%"></div>
+          </div>
+          <span class="slider-val">40px</span>
+        </div>
+        <div class="hint">Cắt đối xứng từ trái/phải và trên/dưới</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="footer">
+      <button type="button" class="btn btn-primary">Apply crop</button>
+      <button type="button" class="btn">Reset crop</button>
+    </div>
+
+    <div class="cmd-bar">
+      <div class="cmd-label">CLI preview</div>
+      <div class="cmd-code">-gravity NorthWest -crop 1200x900+120+80 +repage</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function setMethod(el, method) {
+  document.querySelectorAll('.method-card').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('opts-free').style.display = 'none';
+  document.getElementById('opts-trim').style.display = 'none';
+  document.getElementById('opts-shave').style.display = 'none';
+  if(method === 'free') document.getElementById('opts-free').style.display = 'block';
+  if(method === 'trim') document.getElementById('opts-trim').style.display = 'block';
+  if(method === 'shave') document.getElementById('opts-shave').style.display = 'block';
+}
+function setSlider(track, e) {
+  const rect = track.getBoundingClientRect();
+  const pct = Math.max(0, Math.min(100, Math.round((e.clientX - rect.left) / rect.width * 100)));
+  track.querySelector('.slider-fill').style.width = pct + '%';
+  const valEl = track.parentElement.querySelector('.slider-val');
+  const fmt = track.getAttribute('data-format');
+  const max = parseInt(track.getAttribute('data-max') || '100', 10);
+  if (fmt === 'px') {
+    valEl.textContent = Math.round(pct / 100 * max) + 'px';
+  } else {
+    valEl.textContent = pct + '%';
+  }
+}
+</script>
+</body>
+</html>
