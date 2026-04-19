@@ -1,0 +1,587 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); }
+.panel {
+  display: flex;
+  height: 580px;
+  background: #1a1a1a;
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  font-size: 13px;
+  color: #ccc;
+  border: 0.5px solid #333;
+}
+.sidebar {
+  width: 160px;
+  background: #141414;
+  border-right: 0.5px solid #2a2a2a;
+  padding: 8px 0;
+  flex-shrink: 0;
+}
+.sidebar-header {
+  font-size: 11px;
+  color: #555;
+  padding: 6px 14px 4px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  cursor: pointer;
+  color: #888;
+  font-size: 12.5px;
+  border-left: 2px solid transparent;
+  transition: all 0.1s;
+}
+.sidebar-item:hover { color: #ccc; background: #1e1e1e; }
+.sidebar-item.active { color: #fff; border-left-color: #7c6fcd; background: #1f1d2e; }
+.sidebar-item svg { width: 14px; height: 14px; flex-shrink: 0; opacity: 0.7; }
+.sidebar-item.active svg { opacity: 1; }
+.canvas {
+  flex: 1;
+  background: #1a1a1a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  border-right: 0.5px solid #2a2a2a;
+}
+.drop-zone {
+  color: #555;
+  font-size: 13px;
+  text-align: center;
+}
+.drop-zone .formats {
+  font-size: 11px;
+  color: #3a3a3a;
+  margin-top: 4px;
+}
+.right-panel {
+  width: 240px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: #161616;
+}
+.right-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 0.5px solid #2a2a2a;
+  font-size: 11px;
+  color: #666;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.right-header .dots { cursor: pointer; color: #444; font-size: 16px; line-height: 1; }
+.options-body { flex: 1; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 14px; }
+.field-label {
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 5px;
+}
+.select-wrap {
+  position: relative;
+}
+.sel {
+  width: 100%;
+  background: #1e1e1e;
+  border: 0.5px solid #333;
+  border-radius: 5px;
+  color: #ddd;
+  font-size: 12px;
+  padding: 6px 28px 6px 9px;
+  appearance: none;
+  cursor: pointer;
+  font-family: var(--font-sans);
+}
+.sel:focus { outline: none; border-color: #7c6fcd; }
+.sel-arrow {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #555;
+  font-size: 10px;
+}
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.slider-row input[type=range] {
+  flex: 1;
+  accent-color: #7c6fcd;
+  height: 3px;
+}
+.slider-val {
+  font-size: 12px;
+  color: #aaa;
+  min-width: 28px;
+  text-align: right;
+}
+.text-input {
+  width: 100%;
+  background: #1e1e1e;
+  border: 0.5px solid #333;
+  border-radius: 5px;
+  color: #ddd;
+  font-size: 12px;
+  padding: 6px 9px;
+  font-family: var(--font-sans);
+}
+.text-input:focus { outline: none; border-color: #7c6fcd; }
+.section-divider {
+  height: 0.5px;
+  background: #2a2a2a;
+  margin: 2px 0;
+}
+.accordion-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  color: #777;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  font-family: var(--font-sans);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.accordion-btn:hover { color: #aaa; }
+.accordion-arrow { transition: transform 0.2s; font-size: 10px; }
+.accordion-arrow.open { transform: rotate(180deg); }
+.accordion-body { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.toggle {
+  position: relative;
+  width: 32px;
+  height: 17px;
+  flex-shrink: 0;
+}
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-track {
+  position: absolute;
+  inset: 0;
+  background: #333;
+  border-radius: 17px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.toggle input:checked + .toggle-track { background: #7c6fcd; }
+.toggle-thumb {
+  position: absolute;
+  top: 2.5px;
+  left: 2.5px;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  pointer-events: none;
+}
+.toggle input:checked ~ .toggle-thumb { transform: translateX(15px); }
+.dpi-row {
+  display: flex;
+  gap: 6px;
+}
+.dpi-btn {
+  flex: 1;
+  padding: 5px 0;
+  background: #1e1e1e;
+  border: 0.5px solid #333;
+  border-radius: 4px;
+  color: #888;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: all 0.1s;
+}
+.dpi-btn:hover { border-color: #555; color: #ccc; }
+.dpi-btn.active { border-color: #7c6fcd; color: #c4b8f7; background: #1f1d2e; }
+.cli-footer {
+  border-top: 0.5px solid #2a2a2a;
+  padding: 10px 14px;
+  background: #111;
+}
+.cli-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+.cli-fn { color: #7c6fcd; cursor: pointer; font-size: 10px; }
+.cli-code {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: #8fbc8f;
+  line-height: 1.5;
+  word-break: break-all;
+}
+.badge-row {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.badge {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: #222;
+  border: 0.5px solid #333;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+.badge:hover { border-color: #555; color: #aaa; }
+.badge.active { background: #1f1d2e; border-color: #7c6fcd; color: #c4b8f7; }
+.dynamic-hint {
+  font-size: 10.5px;
+  color: #555;
+  font-style: italic;
+}
+</style>
+
+<div class="panel">
+  <div class="sidebar">
+    <div class="sidebar-header">Operations</div>
+    <div class="sidebar-item active">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 4h12v1.5H2V4zm1.5 3h9v1.5h-9V7zm2 3h5v1.5h-5V10z"/></svg>
+      Convert
+    </div>
+    <div class="sidebar-item">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2" width="12" height="12" rx="1"/><line x1="5" y1="2" x2="5" y2="14"/><line x1="11" y1="2" x2="11" y2="14"/><line x1="2" y1="5" x2="14" y2="5"/><line x1="2" y1="11" x2="14" y2="11"/></svg>
+      Crop
+    </div>
+    <div class="sidebar-item">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 8h12M8 2v12"/><path d="M3 5l-2 3 2 3"/><path d="M13 5l2 3-2 3"/></svg>
+      Mirror
+    </div>
+    <div class="sidebar-item">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="5"/><path d="M5.5 8h5M8 5.5v5"/></svg>
+      Black & white
+    </div>
+    <div class="sidebar-item">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="5"/><path d="M8 3v5l3 2"/></svg>
+      Contrast
+    </div>
+    <div class="sidebar-item">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 13L13 3M3 3l10 10"/><circle cx="5" cy="5" r="2"/><circle cx="11" cy="11" r="2"/></svg>
+      Normalize colors
+    </div>
+    <div class="sidebar-item">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="3"/></svg>
+      Vignette
+    </div>
+    <div class="sidebar-item">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2" width="12" height="12" rx="1"/></svg>
+      Border
+    </div>
+    <div class="sidebar-item">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2v4l3-3M8 14v-4l3 3"/></svg>
+      Rotate
+    </div>
+    <div class="sidebar-item">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="4" width="14" height="8" rx="1"/><path d="M4 4V3m8 1V3"/></svg>
+      Scale / resize
+    </div>
+    <div class="sidebar-item">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 11l3-4 2 2 2-3 3 5H3z"/><rect x="1" y="1" width="14" height="14" rx="1"/></svg>
+      Text / logo
+    </div>
+    <div class="sidebar-item">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="4" width="10" height="10" rx="1"/><rect x="5" y="2" width="10" height="10" rx="1"/></svg>
+      Compose
+    </div>
+  </div>
+
+  <div class="canvas">
+    <div class="drop-zone">
+      <div style="font-size: 13px; color: #444;">Drop image or click to open</div>
+      <div class="formats">png · jpg · gif · webp · tiff · bmp</div>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <div class="right-header">
+      <span>Convert — Options</span>
+      <span class="dots">···</span>
+    </div>
+
+    <div class="options-body">
+      <div>
+        <div class="field-label">Output format</div>
+        <div class="select-wrap">
+          <select class="sel" id="fmt-sel" onchange="onFmtChange()">
+            <option>PNG</option>
+            <option>JPEG</option>
+            <option>WebP</option>
+            <option>GIF</option>
+            <option>TIFF</option>
+            <option>BMP</option>
+          </select>
+          <span class="sel-arrow">▾</span>
+        </div>
+      </div>
+
+      <div id="quality-block">
+        <div class="field-label" id="quality-label">Compression level (PNG)</div>
+        <div class="slider-row">
+          <input type="range" min="0" max="100" value="85" id="q-slider" oninput="onQChange()">
+          <span class="slider-val" id="q-val">85</span>
+        </div>
+        <div class="dynamic-hint" id="q-hint">zlib level: ~8 (85÷10)</div>
+      </div>
+
+      <div id="webp-method-block" style="display:none;">
+        <div class="field-label">Compression effort (WebP)</div>
+        <div class="badge-row" id="webp-badges">
+          <span class="badge" onclick="setWebpMethod(0)">0 fast</span>
+          <span class="badge active" onclick="setWebpMethod(1)">1</span>
+          <span class="badge" onclick="setWebpMethod(2)">2</span>
+          <span class="badge" onclick="setWebpMethod(3)">3</span>
+          <span class="badge" onclick="setWebpMethod(4)">4</span>
+          <span class="badge" onclick="setWebpMethod(5)">5</span>
+          <span class="badge" onclick="setWebpMethod(6)">6 best</span>
+        </div>
+      </div>
+
+      <div id="dither-block" style="display:none;">
+        <div class="field-label">Dithering</div>
+        <div class="badge-row">
+          <span class="badge active" onclick="setDither(this,'None')">None</span>
+          <span class="badge" onclick="setDither(this,'Floyd-Steinberg')">Floyd-Steinberg</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="field-label">Strip metadata</div>
+        <div class="select-wrap">
+          <select class="sel" id="strip-sel" onchange="updateCLI()">
+            <option>No</option>
+            <option>Yes</option>
+          </select>
+          <span class="sel-arrow">▾</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="field-label">Output filename</div>
+        <input class="text-input" type="text" value="photo_out" id="fname" oninput="updateCLI()">
+      </div>
+
+      <div>
+        <div class="field-label">Output folder</div>
+        <input class="text-input" type="text" value="./output" id="fdir" oninput="updateCLI()">
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div>
+        <button class="accordion-btn" onclick="toggleAdvanced(this)">
+          <span>Advanced options</span>
+          <span class="accordion-arrow" id="adv-arrow">▾</span>
+        </button>
+        <div class="accordion-body" id="adv-body" style="display:none;">
+          <div>
+            <div class="field-label">Color profile</div>
+            <div class="select-wrap">
+              <select class="sel" id="profile-sel" onchange="updateCLI()">
+                <option>sRGB</option>
+                <option>Adobe RGB</option>
+                <option>ProPhoto RGB</option>
+                <option>None</option>
+              </select>
+              <span class="sel-arrow">▾</span>
+            </div>
+          </div>
+
+          <div>
+            <div class="field-label">Color depth</div>
+            <div class="badge-row" id="depth-badges">
+              <span class="badge active" onclick="setDepth(8)">8-bit</span>
+              <span class="badge" onclick="setDepth(16)">16-bit</span>
+              <span class="badge" onclick="setDepth(32)">32-bit</span>
+            </div>
+          </div>
+
+          <div>
+            <div class="field-label">Resolution (DPI)</div>
+            <div class="dpi-row">
+              <button class="dpi-btn active" id="dpi72" onclick="setDpi(72)">72 web</button>
+              <button class="dpi-btn" id="dpi150" onclick="setDpi(150)">150</button>
+              <button class="dpi-btn" id="dpi300" onclick="setDpi(300)">300 print</button>
+              <input class="text-input" type="number" value="72" id="dpi-input" min="1" max="1200" style="width:52px;padding:4px 6px;font-size:11px;" oninput="onDpiInput()">
+            </div>
+          </div>
+
+          <div>
+            <div class="toggle-row">
+              <span class="field-label" style="margin:0;">Progressive / interlaced</span>
+              <label class="toggle">
+                <input type="checkbox" id="progressive-tog" onchange="updateCLI()">
+                <div class="toggle-track"></div>
+                <div class="toggle-thumb"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cli-footer">
+      <div class="cli-label">
+        <span>CLI Preview</span>
+        <span class="cli-fn">function ▾</span>
+      </div>
+      <div class="cli-code" id="cli-out">magick "photo.jpg" -quality 85 -profile "sRGB" "./output/photo_out.png"</div>
+    </div>
+  </div>
+</div>
+
+<script>
+var webpMethod = 1;
+var colorDepth = 8;
+var dpiVal = 72;
+var ditherVal = 'None';
+
+function onFmtChange() {
+  var fmt = document.getElementById('fmt-sel').value;
+  var qlabel = document.getElementById('quality-label');
+  var qhint = document.getElementById('q-hint');
+  var webpBlock = document.getElementById('webp-method-block');
+  var ditherBlock = document.getElementById('dither-block');
+
+  webpBlock.style.display = fmt === 'WebP' ? 'block' : 'none';
+  ditherBlock.style.display = (fmt === 'GIF') ? 'block' : 'none';
+
+  if (fmt === 'JPEG') {
+    qlabel.textContent = 'Quality (JPEG)';
+    qhint.textContent = '0 = smallest, 100 = lossless';
+  } else if (fmt === 'PNG') {
+    qlabel.textContent = 'Compression level (PNG)';
+    qhint.textContent = 'zlib level: ~' + Math.round(document.getElementById('q-slider').value / 10) + ' (' + document.getElementById('q-slider').value + '\u00f710)';
+  } else if (fmt === 'WebP') {
+    qlabel.textContent = 'Quality (WebP)';
+    qhint.textContent = 'Lossless quality target';
+  } else if (fmt === 'TIFF') {
+    qlabel.textContent = 'Quality (TIFF)';
+    qhint.textContent = 'Compression level';
+  } else {
+    qlabel.textContent = 'Quality';
+    qhint.textContent = '';
+  }
+  updateCLI();
+}
+
+function onQChange() {
+  var v = document.getElementById('q-slider').value;
+  document.getElementById('q-val').textContent = v;
+  var fmt = document.getElementById('fmt-sel').value;
+  if (fmt === 'PNG') {
+    document.getElementById('q-hint').textContent = 'zlib level: ~' + Math.round(v / 10) + ' (' + v + '\u00f710)';
+  }
+  updateCLI();
+}
+
+function setWebpMethod(m) {
+  webpMethod = m;
+  document.querySelectorAll('#webp-badges .badge').forEach(function(b, i) {
+    b.classList.toggle('active', i === m);
+  });
+  updateCLI();
+}
+
+function setDither(el, val) {
+  ditherVal = val;
+  document.querySelectorAll('[onclick^="setDither"]').forEach(function(b) { b.classList.remove('active'); });
+  el.classList.add('active');
+  updateCLI();
+}
+
+function setDepth(d) {
+  colorDepth = d;
+  document.querySelectorAll('#depth-badges .badge').forEach(function(b) {
+    b.classList.toggle('active', parseInt(b.textContent) === d);
+  });
+  updateCLI();
+}
+
+function setDpi(v) {
+  dpiVal = v;
+  document.getElementById('dpi-input').value = v;
+  ['dpi72','dpi150','dpi300'].forEach(function(id) {
+    document.getElementById(id).classList.toggle('active', parseInt(id.replace('dpi','')) === v);
+  });
+  updateCLI();
+}
+
+function onDpiInput() {
+  dpiVal = parseInt(document.getElementById('dpi-input').value) || 72;
+  ['dpi72','dpi150','dpi300'].forEach(function(id) {
+    document.getElementById(id).classList.toggle('active', parseInt(id.replace('dpi','')) === dpiVal);
+  });
+  updateCLI();
+}
+
+function toggleAdvanced(btn) {
+  var body = document.getElementById('adv-body');
+  var arrow = document.getElementById('adv-arrow');
+  var open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'flex';
+  arrow.classList.toggle('open', !open);
+}
+
+function updateCLI() {
+  var fmt = document.getElementById('fmt-sel').value.toLowerCase();
+  var q = document.getElementById('q-slider').value;
+  var strip = document.getElementById('strip-sel').value === 'Yes';
+  var fname = document.getElementById('fname').value || 'photo_out';
+  var fdir = document.getElementById('fdir').value || './output';
+  var profile = document.getElementById('profile-sel') ? document.getElementById('profile-sel').value : 'sRGB';
+  var progressive = document.getElementById('progressive-tog').checked;
+  var advOpen = document.getElementById('adv-body').style.display !== 'none';
+
+  var parts = ['magick "photo.jpg"'];
+  if (strip) parts.push('-strip');
+  if (fmt === 'webp') {
+    parts.push('-quality ' + q);
+    parts.push('-define webp:method=' + webpMethod);
+  } else if (fmt === 'gif') {
+    parts.push('-colors 256');
+    if (ditherVal !== 'None') parts.push('-dither FloydSteinberg');
+  } else {
+    parts.push('-quality ' + q);
+  }
+  if (progressive) parts.push('-interlace Plane');
+  if (advOpen) {
+    if (colorDepth !== 8) parts.push('-depth ' + colorDepth);
+    if (dpiVal !== 72) parts.push('-density ' + dpiVal + ' -units PixelsPerInch');
+    if (profile !== 'None') parts.push('-profile "' + profile + '"');
+  } else {
+    parts.push('-profile "' + profile + '"');
+  }
+  parts.push('"' + fdir + '/' + fname + '.' + fmt + '"');
+  document.getElementById('cli-out').textContent = parts.join(' ');
+}
+
+updateCLI();
+</script>
