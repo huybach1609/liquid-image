@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import { useState } from "react";
 
 import { Label } from "@/components/ui/label";
@@ -46,18 +47,29 @@ function getQualityHint(format: OutputFormat, quality: number): string {
     return `zlib level: ~${Math.round(quality / 10)} (${quality}÷10)`;
   }
   if (format === "JPEG") {
-    return quality >= 90 ? "High quality, larger file size" : "Balanced quality and size";
+    return quality >= 90
+      ? "High quality, larger file size"
+      : "Balanced quality and size";
   }
   return String(quality);
 }
 
 const ConvertFunction = () => {
+  const selectedFile = useSingleStore((s) => s.selectedFile);
   const functionParams = useSingleStore((s) => s.functionParams);
   const updateFunctionParam = useSingleStore((s) => s.updateFunctionParam);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isCustomDpi, setIsCustomDpi] = useState(false);
+
+  // Default to input extension if available, else PNG
+  const defaultExt = selectedFile
+    ? normalizeOutputFormat(
+        selectedFile.split(".").pop()?.toLowerCase() || "PNG",
+      )
+    : "PNG";
 
   const outputFormat = normalizeOutputFormat(
-    getStringParam(functionParams, "outputFormat", "PNG"),
+    getStringParam(functionParams, "outputFormat", defaultExt),
   );
   const quality = getNumberParam(functionParams, "quality", 85);
   const webpMethod = Math.min(
@@ -68,13 +80,12 @@ const ConvertFunction = () => {
   const stripMetadata =
     functionParams.stripMetadata === true ||
     functionParams.stripMetadata === "true";
-  const outputName = getStringParam(functionParams, "outputName", "photo_out");
-  const outputDir = getStringParam(functionParams, "outputDir", "./output");
-  const colorProfile = getStringParam(functionParams, "colorProfile", "sRGB");
-  const colorDepth = getNumberParam(functionParams, "colorDepth", 8);
-  const dpi = getNumberParam(functionParams, "dpi", 72);
+  const colorProfile = getStringParam(functionParams, "colorProfile", "None");
+  const colorDepth = getNumberParam(functionParams, "colorDepth", 0);
+  const dpi = getNumberParam(functionParams, "dpi", 0);
   const progressive =
-    functionParams.progressive === true || functionParams.progressive === "true";
+    functionParams.progressive === true ||
+    functionParams.progressive === "true";
 
   const isWebp = outputFormat === "WEBP";
   const isGif = outputFormat === "GIF";
@@ -111,7 +122,9 @@ const ConvertFunction = () => {
             min={0}
             max={100}
             value={[quality]}
-            onValueChange={(value) => updateFunctionParam("quality", value[0] ?? 85)}
+            onValueChange={(value) =>
+              updateFunctionParam("quality", value[0] ?? 85)
+            }
           />
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>{getQualityHint(outputFormat, quality)}</span>
@@ -132,7 +145,10 @@ const ConvertFunction = () => {
                   type="button"
                   size="sm"
                   variant={active ? "default" : "outline"}
-                  className={cn("h-7 text-[11px]", method === 0 || method === 6 ? "px-1" : "px-2")}
+                  className={cn(
+                    "h-6 text-[11px]",
+                    method === 0 || method === 6 ? "px-1" : "px-2",
+                  )}
                   onClick={() => updateFunctionParam("webpMethod", method)}
                 >
                   {method === 0 ? "0 fast" : method === 6 ? "6 best" : method}
@@ -166,40 +182,28 @@ const ConvertFunction = () => {
         </div>
       ) : null}
 
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">Strip metadata</Label>
-        <Select
-          value={stripMetadata ? "yes" : "no"}
-          onValueChange={(value) =>
-            updateFunctionParam("stripMetadata", value === "yes")
-          }
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select an option" />
-          </SelectTrigger>
-          <SelectContent position="popper">
-            <SelectItem value="yes">Yes (-strip)</SelectItem>
-            <SelectItem value="no">No</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-1">
-        <Label className="text-xs text-muted-foreground">Output filename</Label>
-        <Input
-          value={outputName}
-          onChange={(e) => updateFunctionParam("outputName", e.target.value)}
-          placeholder="photo_out"
-        />
-      </div>
-
-      <div className="space-y-1">
-        <Label className="text-xs text-muted-foreground">Output folder</Label>
-        <Input
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-          value={outputDir}
-          onChange={(e) => updateFunctionParam("outputDir", e.target.value)}
-        />
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant={stripMetadata ? "default" : "outline"}
+            className="h-7 text-[11px]"
+            onClick={() => updateFunctionParam("stripMetadata", true)}
+          >
+            Yes (-strip)
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={!stripMetadata ? "default" : "outline"}
+            className="h-7 text-[11px]"
+            onClick={() => updateFunctionParam("stripMetadata", false)}
+          >
+            No
+          </Button>
+        </div>
       </div>
 
       <Separator />
@@ -218,13 +222,37 @@ const ConvertFunction = () => {
 
         {showAdvanced ? (
           <div className="space-y-3 rounded-md border border-border/70 p-3">
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Color profile</Label>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label
+                  className={cn(
+                    "text-xs transition-colors",
+                    colorProfile !== "None"
+                      ? "text-primary"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  Color profile
+                </Label>
+                <Switch
+                  size="sm"
+                  checked={colorProfile !== "None"}
+                  onCheckedChange={(checked) =>
+                    updateFunctionParam(
+                      "colorProfile",
+                      checked ? "sRGB" : "None",
+                    )
+                  }
+                />
+              </div>
               <Select
+                disabled={colorProfile === "None"}
                 value={colorProfile}
-                onValueChange={(value) => updateFunctionParam("colorProfile", value)}
+                onValueChange={(value) =>
+                  updateFunctionParam("colorProfile", value)
+                }
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="h-8 w-full text-xs">
                   <SelectValue placeholder="Select a color profile" />
                 </SelectTrigger>
                 <SelectContent position="popper">
@@ -237,11 +265,28 @@ const ConvertFunction = () => {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Color depth</Label>
+              <div className="flex items-center justify-between">
+                <Label
+                  className={cn(
+                    "text-xs transition-colors",
+                    colorDepth !== 0 ? "text-primary" : "text-muted-foreground",
+                  )}
+                >
+                  Color depth
+                </Label>
+                <Switch
+                  size="sm"
+                  checked={colorDepth !== 0}
+                  onCheckedChange={(checked) =>
+                    updateFunctionParam("colorDepth", checked ? 8 : 0)
+                  }
+                />
+              </div>
               <div className="grid grid-cols-3 gap-1.5">
                 {COLOR_DEPTHS.map((depth) => (
                   <Button
                     key={depth}
+                    disabled={colorDepth === 0}
                     type="button"
                     size="sm"
                     variant={colorDepth === depth ? "default" : "outline"}
@@ -255,41 +300,93 @@ const ConvertFunction = () => {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Resolution (DPI)</Label>
-              <div className="flex items-center gap-1.5">
-                {[72, 150, 300].map((value) => (
-                  <Button
-                    key={value}
-                    type="button"
-                    size="sm"
-                    variant={dpi === value ? "default" : "outline"}
-                    className="h-7 px-2 text-[11px]"
-                    onClick={() => updateFunctionParam("dpi", value)}
-                  >
-                    {value === 72 ? "72 web" : value === 300 ? "300 print" : "150"}
-                  </Button>
-                ))}
-                <Input
-                  type="number"
-                  min={1}
-                  max={1200}
-                  className="h-7 w-20 text-xs"
-                  value={String(dpi)}
-                  onChange={(e) => {
-                    const next = Number(e.target.value);
-                    if (Number.isFinite(next)) {
-                      updateFunctionParam("dpi", Math.max(1, Math.min(1200, next)));
-                    }
-                  }}
+              <div className="flex items-center justify-between">
+                <Label
+                  className={cn(
+                    "text-xs transition-colors",
+                    dpi !== 0 ? "text-primary" : "text-muted-foreground",
+                  )}
+                >
+                  Resolution (DPI)
+                </Label>
+                <Switch
+                  size="sm"
+                  checked={dpi !== 0}
+                  onCheckedChange={(checked) =>
+                    updateFunctionParam("dpi", checked ? 72 : 0)
+                  }
                 />
               </div>
+              {isCustomDpi ? (
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    type="number"
+                    disabled={dpi === 0}
+                    min={1}
+                    max={1200}
+                    className="h-8 flex-1 text-xs"
+                    value={dpi === 0 ? "" : String(dpi)}
+                    onChange={(e) => {
+                      const next = Number(e.target.value);
+                      if (Number.isFinite(next)) {
+                        updateFunctionParam(
+                          "dpi",
+                          Math.max(1, Math.min(1200, next)),
+                        );
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 shrink-0"
+                    onClick={() => setIsCustomDpi(false)}
+                    disabled={dpi === 0}
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Select
+                  disabled={dpi === 0}
+                  value={
+                    ["72", "150", "300"].includes(String(dpi))
+                      ? String(dpi)
+                      : "custom"
+                  }
+                  onValueChange={(value) => {
+                    if (value === "custom") {
+                      setIsCustomDpi(true);
+                    } else {
+                      updateFunctionParam("dpi", Number(value));
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-8 w-full text-xs">
+                    <SelectValue placeholder="Select resolution" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectItem value="72">72 web</SelectItem>
+                    <SelectItem value="150">150</SelectItem>
+                    <SelectItem value="300">300 print</SelectItem>
+                    <SelectItem value="custom">Custom...</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div className="flex items-center justify-between gap-3">
-              <Label className="text-xs text-muted-foreground">
+              <Label
+                className={cn(
+                  "text-xs transition-colors",
+                  progressive ? "text-primary" : "text-muted-foreground",
+                )}
+              >
                 Progressive / interlaced
               </Label>
               <Switch
+                size="sm"
                 checked={progressive}
                 onCheckedChange={(checked) =>
                   updateFunctionParam("progressive", checked)

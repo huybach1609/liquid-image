@@ -1,7 +1,5 @@
 import { getNumberParam, getStringParam } from "@/lib/functionParams";
 
-import { quoteCliToken } from "./quoteCli";
-
 export function buildComposeOperationArgs(
   effectiveParams: Record<string, unknown>,
 ): string[] {
@@ -14,7 +12,7 @@ export function buildComposeOperationArgs(
   const opacity = Math.round(getNumberParam(effectiveParams, "composeOpacity", 100));
 
   return [
-    quoteCliToken(overlayPath),
+    overlayPath,
     "-gravity",
     "SouthEast",
     "-compose",

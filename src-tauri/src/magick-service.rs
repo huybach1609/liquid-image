@@ -89,6 +89,17 @@ pub async fn get_image_metadata(app: tauri::AppHandle, path: String) -> Result<I
         .output()
         .await
         .map_err(|e| e.to_string())?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        eprintln!("[get_image_metadata] failed to identify: {}", path);
+        if !stderr.is_empty() {
+            eprintln!("[get_image_metadata] stderr: {}", stderr);
+            return Err(stderr);
+        }
+        return Err("Failed to inspect image metadata".into());
+    }
+
     let raw = String::from_utf8_lossy(&output.stdout).trim().to_string();
     let parts: Vec<&str> = raw.split('|').collect();
     if parts.len() != 3 {
@@ -154,15 +165,16 @@ pub async fn create_image_proxy(
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
-        return Err(if stderr.is_empty() {
-            "Failed to create proxy".into()
-        } else {
-            stderr
-        });
+        eprintln!("[create_image_proxy] failed: {}", input_path);
+        if !stderr.is_empty() {
+            eprintln!("[create_image_proxy] stderr: {}", stderr);
+            return Err(stderr);
+        }
+        return Err("Failed to create proxy".into());
     }
 
-    Ok(proxy_path.to_string_lossy().into_owned())
-}
+    Ok(proxy_path.to_string_lossy().to_string())
+    }
 
 /// Remove a preview proxy file created under `%TEMP%/liquid-image-preview/proxy_*.webp`.
 #[tauri::command]
@@ -520,10 +532,12 @@ pub async fn run_single(
 
     if !run_output.status.success() {
         let stderr = String::from_utf8_lossy(&run_output.stderr).trim().to_string();
-        if stderr.is_empty() {
-            return Err("ImageMagick failed to run command".into());
+        eprintln!("[run_single] failed: magick {}", run_cli_display);
+        if !stderr.is_empty() {
+            eprintln!("[run_single] stderr: {}", stderr);
+            return Err(stderr);
         }
-        return Err(stderr);
+        return Err("ImageMagick failed to run command".into());
     }
 
     let identify_output = app

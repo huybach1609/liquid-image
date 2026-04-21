@@ -65,7 +65,7 @@ export function AppShell() {
               data-tauri-drag-region={false}
               onMouseDown={(e) => e.stopPropagation()}
             >
-              <ModeSwitch />
+              {/* <ModeSwitch /> */}
               <LanguageSwitcher />
             </div>
             <button

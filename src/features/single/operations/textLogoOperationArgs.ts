@@ -1,7 +1,5 @@
 import { getStringParam } from "@/lib/functionParams";
 
-import { quoteCliToken } from "./quoteCli";
-
 export function buildTextLogoOperationArgs(
   effectiveParams: Record<string, unknown>,
 ): string[] {
@@ -33,6 +31,6 @@ export function buildTextLogoOperationArgs(
     gravity,
     "-annotate",
     `+${x}+${y}`,
-    quoteCliToken(text),
+    text,
   ];
 }

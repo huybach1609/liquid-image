@@ -1,7 +1,5 @@
 import { getNumberParam, getStringParam } from "@/lib/functionParams";
 
-import { quoteCliToken } from "./quoteCli";
-
 export function buildConvertOperationArgs(
   effectiveParams: Record<string, unknown>,
 ): string[] {
@@ -35,17 +33,17 @@ export function buildConvertOperationArgs(
     parts.push("-strip");
   }
 
-  const profile = getStringParam(effectiveParams, "colorProfile", "sRGB");
+  const profile = getStringParam(effectiveParams, "colorProfile", "None");
   if (profile && profile !== "None") {
-    parts.push("-profile", quoteCliToken(profile));
+    parts.push("-colorspace", profile);
   }
 
-  const colorDepth = getNumberParam(effectiveParams, "colorDepth", 8);
+  const colorDepth = getNumberParam(effectiveParams, "colorDepth", 0);
   if (colorDepth > 0) {
     parts.push("-depth", String(colorDepth));
   }
 
-  const dpi = getNumberParam(effectiveParams, "dpi", 72);
+  const dpi = getNumberParam(effectiveParams, "dpi", 0);
   if (dpi > 0) {
     parts.push("-density", String(dpi));
   }

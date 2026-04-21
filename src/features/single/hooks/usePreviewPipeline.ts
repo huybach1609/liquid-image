@@ -183,6 +183,7 @@ export function usePreviewPipeline({
               if (requestRef.current !== ticket) {
                 return;
               }
+              console.error("[preview] decode failed:", decodeErr);
               const message =
                 decodeErr instanceof Error ? decodeErr.message : "Failed to decode preview";
               setError(message);
@@ -192,6 +193,7 @@ export function usePreviewPipeline({
               droppedResponseCountRef.current += 1;
               return;
             }
+            console.error("[preview] generate failed:", err);
             const message = err instanceof Error ? err.message : "Failed to build preview";
             setError(message);
           } finally {

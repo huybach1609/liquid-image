@@ -2,11 +2,15 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ComponentType,
   type ReactNode,
 } from "react";
-import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
+import {
+  open as openDialog,
+  save as saveDialog,
+} from "@tauri-apps/plugin-dialog";
 import { openPath } from "@tauri-apps/plugin-opener";
 
 import BlackWhiteFunction from "@/shared/components/functions/BlackWhite";
@@ -82,6 +86,20 @@ function getFileNameFromPath(filePath: string): string {
   return parts[parts.length - 1] || filePath;
 }
 
+function getFileNameWithoutExtension(filePath: string): string {
+  const filename = getFileNameFromPath(filePath);
+  const dotIndex = filename.lastIndexOf(".");
+  if (dotIndex <= 0) return filename;
+  return filename.slice(0, dotIndex);
+}
+
+function getFileExtension(filePath: string): string {
+  const filename = getFileNameFromPath(filePath);
+  const dotIndex = filename.lastIndexOf(".");
+  if (dotIndex <= 0) return "";
+  return filename.slice(dotIndex + 1).toLowerCase();
+}
+
 function getDirectoryPath(filePath: string): string {
   const normalized = filePath.replace(/\\/g, "/");
   const lastSlash = normalized.lastIndexOf("/");
@@ -92,25 +110,25 @@ function getDirectoryPath(filePath: string): string {
   return normalized.slice(0, lastSlash);
 }
 
-function normalizeOutputDir(outputDir: unknown): string {
+function normalizeOutputDir(outputDir: unknown, fallback = "./output"): string {
   if (typeof outputDir !== "string" || outputDir.trim().length === 0) {
-    return "./output";
+    return fallback;
   }
 
   return outputDir.trim().replace(/[\\/]+$/, "");
 }
 
-function normalizeOutputName(outputName: unknown): string {
+function normalizeOutputName(outputName: unknown, fallback = "photo_out"): string {
   if (typeof outputName !== "string" || outputName.trim().length === 0) {
-    return "photo_out";
+    return fallback;
   }
 
   return outputName.trim();
 }
 
-function normalizeOutputExt(outputFormat: unknown): string {
+function normalizeOutputExt(outputFormat: unknown, fallback = "png"): string {
   if (typeof outputFormat !== "string" || outputFormat.trim().length === 0) {
-    return "png";
+    return fallback;
   }
 
   const normalized = outputFormat.trim().toLowerCase();
@@ -225,7 +243,9 @@ export function SingleModePage() {
   const [cliPreviewMode, setCliPreviewMode] = useState<"function" | "all">(
     "function",
   );
-  const [outputPathOverride, setOutputPathOverride] = useState<string | null>(null);
+  const [outputPathOverride, setOutputPathOverride] = useState<string | null>(
+    null,
+  );
   const [lastOutputPath, setLastOutputPath] = useState<string | null>(null);
   const [isPreparingProxy, setIsPreparingProxy] = useState(false);
   const selectedFile = useSingleStore((state) => state.selectedFile);
@@ -261,7 +281,10 @@ export function SingleModePage() {
   );
   const setFunctionParams = useSingleStore((state) => state.setFunctionParams);
   const setRunStatus = useSingleStore((state) => state.setRunStatus);
-  const openImageMenuRequestId = useAppStore((state) => state.openImageMenuRequestId);
+  const openImageMenuRequestId = useAppStore(
+    (state) => state.openImageMenuRequestId,
+  );
+  const lastProcessedOpenImageMenuRequestId = useRef(0);
 
   const isRunning = runState.status === "running";
   const message = runState.message;
@@ -301,11 +324,19 @@ export function SingleModePage() {
   const previewOperations = useMemo(() => {
     if (cliPreviewMode === "all") {
       const targetFunctions =
-        editedFunctionNames.length > 0 ? editedFunctionNames : [selectedFunctionName];
-      return targetFunctions.map((functionName) => ({
-        selectedFunction: functionName,
-        functionParams: functionParamsByFunction[functionName] ?? {},
-      }));
+        editedFunctionNames.length > 0
+          ? editedFunctionNames
+          : [selectedFunctionName];
+      return targetFunctions
+        .filter((name) => name !== "Convert")
+        .map((functionName) => ({
+          selectedFunction: functionName,
+          functionParams: functionParamsByFunction[functionName] ?? {},
+        }));
+    }
+
+    if (selectedFunctionName === "Convert") {
+      return [];
     }
 
     return [
@@ -330,21 +361,24 @@ export function SingleModePage() {
     isManualPreview,
     previewRequestId,
     fullImageDimensions:
-      fileMetadata &&
-      fileMetadata.width > 0 &&
-      fileMetadata.height > 0
+      fileMetadata && fileMetadata.width > 0 && fileMetadata.height > 0
         ? { width: fileMetadata.width, height: fileMetadata.height }
         : null,
   });
 
-  const previewToFullScale = useMemo((): PreviewToFullImageScale | undefined => {
+  const previewToFullScale = useMemo(():
+    | PreviewToFullImageScale
+    | undefined => {
     if (!fileMetadata) {
       return undefined;
     }
     let previewW = previewState.width ?? 0;
     let previewH = previewState.height ?? 0;
     if (previewW <= 0 || previewH <= 0) {
-      const est = estimateProxyDimensions(fileMetadata.width, fileMetadata.height);
+      const est = estimateProxyDimensions(
+        fileMetadata.width,
+        fileMetadata.height,
+      );
       previewW = est.width;
       previewH = est.height;
     }
@@ -493,11 +527,20 @@ export function SingleModePage() {
   ]);
 
   const defaultOutputPath = useMemo(() => {
-    const outputDir = normalizeOutputDir(functionParams.outputDir);
-    const outputName = normalizeOutputName(functionParams.outputName);
-    const outputExt = normalizeOutputExt(functionParams.outputFormat);
+    const convertParams = functionParamsByFunction["Convert"] ?? {};
+
+    const inputDir = selectedFile ? getDirectoryPath(selectedFile) : "./output";
+    const inputName = selectedFile
+      ? getFileNameWithoutExtension(selectedFile)
+      : "photo_out";
+    const inputExt = selectedFile ? getFileExtension(selectedFile) : "png";
+
+    const outputDir = normalizeOutputDir(convertParams.outputDir, inputDir);
+    const outputName = normalizeOutputName(convertParams.outputName, inputName);
+    const outputExt = normalizeOutputExt(convertParams.outputFormat, inputExt);
+
     return `${outputDir}/${outputName}.${outputExt}`;
-  }, [functionParams.outputDir, functionParams.outputName, functionParams.outputFormat]);
+  }, [selectedFile, functionParamsByFunction]);
 
   const ingestSelectedImagePath = useCallback(
     async (selectedPath: string) => {
@@ -534,13 +577,7 @@ export function SingleModePage() {
         setIsPreparingProxy(false);
       }
     },
-    [
-      setSelectedFile,
-      setProxyPath,
-      setRunStatus,
-      setFileMetadata,
-      t,
-    ],
+    [setSelectedFile, setProxyPath, setRunStatus, setFileMetadata, t],
   );
 
   const pickAndOpenSingleImage = useCallback(async () => {
@@ -575,15 +612,31 @@ export function SingleModePage() {
   }, [ingestSelectedImagePath, t]);
 
   useEffect(() => {
-    if (openImageMenuRequestId === 0) {
+    if (
+      openImageMenuRequestId === 0 ||
+      openImageMenuRequestId === lastProcessedOpenImageMenuRequestId.current
+    ) {
       return;
     }
+    lastProcessedOpenImageMenuRequestId.current = openImageMenuRequestId;
     void pickAndOpenSingleImage();
   }, [openImageMenuRequestId, pickAndOpenSingleImage]);
 
   const handleChooseOutputPath = async () => {
+    // Sync suggested extension with chosen format (from Convert tab or input file fallback)
+    const convertParams = functionParamsByFunction["Convert"] ?? {};
+    const inputExt = selectedFile ? getFileExtension(selectedFile) : "png";
+    const outputExt = normalizeOutputExt(convertParams.outputFormat, inputExt);
+
+    let defaultPath = outputPathOverride ?? defaultOutputPath;
+    if (outputPathOverride) {
+      const dir = getDirectoryPath(outputPathOverride);
+      const name = getFileNameWithoutExtension(outputPathOverride);
+      defaultPath = `${dir}/${name}.${outputExt}`;
+    }
+
     const picked = await saveDialog({
-      defaultPath: outputPathOverride ?? defaultOutputPath,
+      defaultPath,
       filters: [
         {
           name: t("dialog.imageOutputFilter"),
@@ -630,21 +683,47 @@ export function SingleModePage() {
       return;
     }
 
+    // Sync suggested extension with chosen format (from Convert tab or input file fallback)
+    const convertParams = functionParamsByFunction["Convert"] ?? {};
+    const inputExt = getFileExtension(selectedFile);
+    const outputExt = normalizeOutputExt(convertParams.outputFormat, inputExt);
+
+    let defaultPath = outputPathOverride ?? defaultOutputPath;
+    if (outputPathOverride) {
+      const dir = getDirectoryPath(outputPathOverride);
+      const name = getFileNameWithoutExtension(outputPathOverride);
+      defaultPath = `${dir}/${name}.${outputExt}`;
+    }
+
+    // 1. Force the user to choose an output path (Save As)
+    const picked = await saveDialog({
+      defaultPath,
+      filters: [
+        {
+          name: t("dialog.imageOutputFilter"),
+          extensions: ["png", "jpg", "jpeg", "webp", "tiff", "bmp", "heic"],
+        },
+      ],
+    });
+
+    if (!picked) {
+      return;
+    }
+
+    const outputPath = Array.isArray(picked) ? picked[0] : picked;
+    if (!outputPath) {
+      return;
+    }
+
+    // Update override so the next run defaults to this location/name
+    setOutputPathOverride(outputPath);
+
     const targetFunctions =
       cliPreviewMode === "all"
         ? editedFunctionNames.length > 0
           ? editedFunctionNames
           : [selectedFunctionName]
         : [selectedFunctionName];
-
-    const outputParams =
-      functionParamsByFunction[targetFunctions[targetFunctions.length - 1]] ??
-      functionParams;
-    const outputDir = normalizeOutputDir(outputParams.outputDir);
-    const outputName = normalizeOutputName(outputParams.outputName);
-    const outputExt = normalizeOutputExt(outputParams.outputFormat);
-    const computedOutputPath = `${outputDir}/${outputName}.${outputExt}`;
-    const outputPath = outputPathOverride ?? computedOutputPath;
 
     const args: string[] = [];
     for (const functionName of targetFunctions) {
@@ -671,8 +750,13 @@ export function SingleModePage() {
         }),
       );
     } catch (error) {
+      console.error("[SingleModePage] runSingle failed:", error);
       const message =
-        error instanceof Error ? error.message : t("errors.runCommandFailed");
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+            ? error
+            : t("errors.runCommandFailed");
       setRunStatus("error", message);
     }
   };
@@ -727,40 +811,6 @@ export function SingleModePage() {
 
       <div className="grid min-w-0 grid-rows-[auto_1fr_auto]">
         <header className="flex h-14 items-center gap-2 border-b border-border/70 px-4">
-          {/* {selectedFile ? (
-            <div
-              className="group inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground"
-              aria-busy={isPreparingProxy}
-            >
-              {isPreparingProxy ? (
-                <Spinner className="size-4 shrink-0 text-muted-foreground" />
-              ) : null}
-              <span className="min-w-0 truncate">{getFileNameFromPath(selectedFile)}</span>
-              {isPreparingProxy ? (
-                <span className="shrink-0 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-                  Preparing preview…
-                </span>
-              ) : null}
-              <button
-                type="button"
-                aria-label="Detach selected file"
-                disabled={isPreparingProxy}
-                onClick={handleDetachFile}
-                className="inline-flex size-4 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity hover:text-foreground enabled:group-hover:opacity-100 disabled:pointer-events-none disabled:opacity-0"
-              >
-                ×
-              </button>
-            </div>
-          ) : (
-            <Button
-              type="button"
-              className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground"
-              onClick={handleSelectFile}
-            >
-              <PlusIcon className="size-4" />
-              Select file
-            </Button>
-          )} */}
           <div className="ml-auto flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -770,9 +820,7 @@ export function SingleModePage() {
                   size="sm"
                   className="rounded-lg px-3"
                 >
-                  {isManualPreview
-                    ? t("preview.manual")
-                    : t("preview.auto")}
+                  {isManualPreview ? t("preview.manual") : t("preview.auto")}
                   <ChevronDown className="ml-1 size-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -813,17 +861,6 @@ export function SingleModePage() {
                   : t("preview.preview")}
               </Button>
             ) : null}
-
-            <Button
-              type="button"
-              disabled={isRunning || !selectedFile || isPreparingProxy}
-              className="size-7"
-              variant="outline"
-              onClick={handleChooseOutputPath}
-              title={outputPathOverride ?? defaultOutputPath}
-            >
-              <FolderOpen className="size-4" />
-            </Button>
 
             <Button
               type="button"
@@ -950,7 +987,11 @@ export function SingleModePage() {
               See all
             </button>
           </div> */}
-          <SingleCliPreview commandPreviews={commandPreviews} cliPreviewMode={cliPreviewMode} setCliPreviewMode={setCliPreviewMode} />
+          <SingleCliPreview
+            commandPreviews={commandPreviews}
+            cliPreviewMode={cliPreviewMode}
+            setCliPreviewMode={setCliPreviewMode}
+          />
         </div>
       </aside>
     </section>
