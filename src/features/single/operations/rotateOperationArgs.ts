@@ -1,15 +1,25 @@
-import { getNumberParam } from "@/lib/functionParams";
+import { getNumberParam, getStringParam } from "@/lib/functionParams";
 
 export function buildRotateOperationArgs(
   effectiveParams: Record<string, unknown>,
 ): string[] {
-  const autoOrient = effectiveParams.rotateAutoOrient === true;
-  if (autoOrient) {
-    return ["-auto-orient"];
-  }
+  const autoOrient = effectiveParams.rotateAutoOrient === true || effectiveParams.rotateAutoOrient === "true";
+  const background = getStringParam(effectiveParams, "rotateBackground", "none");
   const degrees = Math.round(getNumberParam(effectiveParams, "rotateDegrees", 0));
-  if (degrees === 0) {
-    return [];
+
+  const args: string[] = [];
+  
+  if (autoOrient) {
+    args.push("-auto-orient");
   }
-  return ["-rotate", String(degrees)];
+
+  if (background !== "none") {
+    args.push("-background", background);
+  }
+
+  if (degrees !== 0 || !autoOrient) {
+    args.push("-rotate", String(degrees));
+  }
+
+  return args;
 }

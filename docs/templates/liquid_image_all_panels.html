@@ -1,0 +1,410 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.app{display:flex;height:640px;background:#0e0e0f;border-radius:12px;overflow:hidden;border:0.5px solid #2a2a2d;font-family:var(--font-sans)}
+.sidebar{width:200px;background:#0e0e0f;border-right:0.5px solid #1f1f22;padding:14px 0;flex-shrink:0;overflow-y:auto}
+.s-title{font-size:10px;color:#444;letter-spacing:.1em;text-transform:uppercase;padding:0 14px 10px;font-weight:500}
+.op{display:flex;align-items:center;gap:9px;padding:7px 14px;font-size:12px;color:#666;cursor:pointer;transition:all .12s;border-left:2px solid transparent;white-space:nowrap}
+.op:hover{color:#aaa;background:rgba(255,255,255,.03)}
+.op.active{color:#a89cf7;border-left-color:#7c68e8;background:rgba(124,104,232,.08)}
+.op .dot{width:5px;height:5px;border-radius:50%;background:#7c68e8;margin-left:auto;flex-shrink:0}
+.canvas{flex:1;background:#141416;display:flex;align-items:center;justify-content:center;position:relative;border-right:0.5px solid #1f1f22}
+.topbar{position:absolute;top:0;left:0;right:0;height:42px;display:flex;align-items:center;justify-content:center;gap:8px;border-bottom:0.5px solid #1f1f22;padding:0 14px;background:#141416}
+.ptoggle{display:flex;align-items:center;gap:6px;background:#1a1a1d;border:0.5px solid #2a2a2d;border-radius:5px;padding:4px 10px;font-size:11px;color:#777;cursor:pointer}
+.pbtn{background:#7c68e8;color:#fff;border:none;border-radius:5px;padding:4px 12px;font-size:11px;cursor:pointer;font-family:var(--font-sans)}
+.playbtn{width:26px;height:26px;background:#1a1a1d;border:0.5px solid #2a2a2d;border-radius:5px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.drop{text-align:center}
+.drop p{font-size:13px;color:#444;margin-bottom:5px}
+.drop span{font-size:11px;color:#2e2e32}
+.sbar{position:absolute;bottom:0;left:0;font-size:10px;color:#333;padding:5px 12px}
+.panel{width:250px;background:#0e0e0f;display:flex;flex-direction:column;flex-shrink:0}
+.ph{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:0.5px solid #1f1f22}
+.pt{font-size:10px;color:#444;letter-spacing:.08em;text-transform:uppercase;font-weight:500}
+.pm{color:#333;font-size:16px;cursor:pointer;line-height:1}
+.pb{flex:1;padding:16px 14px;overflow-y:auto}
+.cl{font-size:11px;color:#666;margin-bottom:8px;font-weight:500}
+.vd{font-size:18px;color:#bbb;font-weight:400;margin-bottom:2px}
+.cd{font-size:11px;color:#3a3a3e;margin-top:5px;line-height:1.4}
+.cg{margin-bottom:20px}
+input[type=range]{width:100%;accent-color:#7c68e8;margin:6px 0}
+.sr{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:8px 0}
+.sb{padding:5px 8px;background:#1a1a1d;border:0.5px solid #2a2a2d;border-radius:4px;font-size:11px;color:#555;cursor:pointer;text-align:center;transition:all .12s}
+.sb:hover{border-color:#444;color:#888}
+.sb.active{background:rgba(124,104,232,.15);border-color:#7c68e8;color:#a89cf7}
+.sr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin:8px 0}
+.divd{border:none;border-top:0.5px solid #1f1f22;margin:14px 0}
+.tr{display:flex;align-items:center;justify-content:space-between;margin:10px 0}
+.tl{font-size:11px;color:#555}
+.tg{width:30px;height:16px;background:#2a2a2d;border-radius:8px;cursor:pointer;position:relative;transition:background .15s;flex-shrink:0}
+.tg.on{background:#7c68e8}
+.tg::after{content:'';position:absolute;width:12px;height:12px;background:#fff;border-radius:50%;top:2px;left:2px;transition:left .15s}
+.tg.on::after{left:16px}
+.tag{font-size:10px;color:#7c68e8;background:rgba(124,104,232,.12);border-radius:3px;padding:2px 6px;margin-bottom:12px;display:inline-block}
+.inp{width:100%;background:#1a1a1d;border:0.5px solid #2a2a2d;border-radius:4px;padding:5px 8px;font-size:11px;color:#888;font-family:var(--font-mono);outline:none}
+.inp:focus{border-color:#7c68e8}
+.crow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.cli{border-top:0.5px solid #1f1f22;padding:10px 14px;background:#0a0a0b;flex-shrink:0}
+.clih{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.clit{font-size:10px;color:#444;letter-spacing:.08em;text-transform:uppercase}
+.clifn{font-size:10px;color:#7c68e8;cursor:pointer}
+.clic{font-family:var(--font-mono);font-size:10px;color:#7c68e8;line-height:1.7;word-break:break-all}
+.clic .a{color:#e0c88a}
+.sz-btns{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0}
+.sz-btn{padding:4px 8px;background:#1a1a1d;border:0.5px solid #2a2a2d;border-radius:4px;font-size:10px;color:#555;cursor:pointer;transition:all .12s}
+.sz-btn:hover{color:#888;border-color:#444}
+.sz-btn.active{background:rgba(124,104,232,.15);border-color:#7c68e8;color:#a89cf7}
+.color-row{display:flex;align-items:center;gap:8px;margin:8px 0}
+.color-swatch{width:20px;height:20px;border-radius:3px;flex-shrink:0;border:0.5px solid #2a2a2d;cursor:pointer}
+.info-box{background:rgba(124,104,232,.07);border:0.5px solid rgba(124,104,232,.2);border-radius:4px;padding:7px 9px;margin:8px 0;font-size:11px;color:#555;line-height:1.5}
+</style>
+
+<div class="app">
+<div class="sidebar">
+  <div class="s-title">Operations</div>
+  <div class="op" onclick="sw('convert')"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" stroke="#666" stroke-width="1"/><rect x="8" y="1" width="5" height="5" rx="1" stroke="#666" stroke-width="1"/><rect x="1" y="8" width="5" height="5" rx="1" stroke="#666" stroke-width="1"/><rect x="8" y="8" width="5" height="5" rx="1" stroke="#666" stroke-width="1"/></svg>Convert<div class="dot"></div></div>
+  <div class="op" onclick="sw('crop')"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="10" height="10" rx="1" stroke="#666" stroke-width="1"/><line x1="5" y1="2" x2="5" y2="12" stroke="#666" stroke-width="1"/><line x1="9" y1="2" x2="9" y2="12" stroke="#666" stroke-width="1"/></svg>Crop</div>
+  <div class="op" onclick="sw('mirror')"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7h5M3 4.5l-2 2.5 2 2.5M13 7H8M11 4.5l2 2.5-2 2.5" stroke="#666" stroke-width="1" stroke-linecap="round"/></svg>Mirror</div>
+  <div class="op" onclick="sw('bw')"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" stroke="#666" stroke-width="1"/><path d="M7 2v10" stroke="#666" stroke-width="1"/><path d="M7 2a5 5 0 0 1 0 10z" fill="#666"/></svg>Black & white<div class="dot"></div></div>
+  <div class="op" onclick="sw('contrast')"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" stroke="#666" stroke-width="1"/><path d="M4.5 4.5A3 3 0 0 1 10 7a3 3 0 0 1-5.5 1.5" stroke="#666" stroke-width="1" stroke-linecap="round"/></svg>Contrast</div>
+  <div class="op active" id="op-normalize" onclick="sw('normalize')"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" stroke="#a89cf7" stroke-width="1"/><circle cx="7" cy="7" r="2" stroke="#a89cf7" stroke-width="1"/></svg>Normalize colors</div>
+  <div class="op" id="op-vignette" onclick="sw('vignette')"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="6" stroke="#666" stroke-width="1"/><rect x="3" y="3" width="8" height="8" rx="4" stroke="#666" stroke-width="1" stroke-dasharray="2 1"/></svg>Vignette</div>
+  <div class="op" id="op-border" onclick="sw('border')"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="1" stroke="#666" stroke-width="1"/></svg>Border</div>
+  <div class="op" id="op-rotate" onclick="sw('rotate')"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10.5 3.5A5 5 0 1 0 12 7" stroke="#666" stroke-width="1" stroke-linecap="round"/><path d="M10.5 1v3h3" stroke="#666" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>Rotate</div>
+  <div class="op" id="op-scale" onclick="sw('scale')"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="4" width="8" height="8" rx="1" stroke="#666" stroke-width="1"/><rect x="5" y="2" width="8" height="8" rx="1" stroke="#666" stroke-width="1" stroke-dasharray="2 1"/></svg>Scale / resize</div>
+  <div class="op" id="op-text" onclick="sw('text')"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 11h10M4 7h6M6 3h2" stroke="#666" stroke-width="1" stroke-linecap="round"/></svg>Text / logo</div>
+  <div class="op" id="op-compose" onclick="sw('compose')"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="7" height="7" rx="1" stroke="#666" stroke-width="1"/><rect x="6" y="6" width="7" height="7" rx="1" stroke="#666" stroke-width="1"/></svg>Compose</div>
+</div>
+
+<div class="canvas">
+  <div class="topbar">
+    <div class="ptoggle">Manual preview <span style="font-size:9px;color:#444;margin-left:4px">▾</span></div>
+    <div class="pbtn">Preview</div>
+    <div class="playbtn"><svg width="8" height="9" viewBox="0 0 8 9" fill="none"><path d="M1 1.5l6 3L1 7.5V1.5z" fill="#666"/></svg></div>
+  </div>
+  <div class="drop"><p>Drop image or click to open</p><span>png · jpg · gif · webp · tiff · bmp</span></div>
+  <div class="sbar">ImageMagick 7.1</div>
+</div>
+
+<div class="panel">
+  <div class="ph"><div class="pt" id="ptitle">NORMALIZE COLORS — OPTIONS</div><div class="pm">···</div></div>
+  <div class="pb" id="pbody"></div>
+  <div class="cli">
+    <div class="clih"><div class="clit">CLI Preview</div><div class="clifn">function ▾</div></div>
+    <div class="clic" id="cli-out"></div>
+  </div>
+</div>
+</div>
+
+<script>
+var cur = 'normalize';
+var state = {
+  normalize: {method:'normalize'},
+  vignette: {radius:0, sigma:3, x:0, y:0},
+  border: {color:'#ffffff', thickness:10, frame:false, fx:6},
+  rotate: {deg:0, bg:'none', autoOrient:false},
+  scale: {w:1920, h:1080, method:'resize', keepRatio:true},
+  text: {text:'Watermark', x:10, y:10, gravity:'SouthEast', font:'Arial', size:36, color:'#ffffff', angle:0},
+  compose: {operator:'Over', x:0, y:0, alpha:100}
+};
+
+var panels = {
+  normalize: function(){
+    return '<div class="tag">color normalization</div>'+
+    '<div class="cl">Method</div>'+
+    '<div class="sr">'+
+    sb('nm','normalize','method','normalize')+
+    sb('nm','auto-level','method','auto-level')+
+    sb('nm','auto-gamma','method','auto-gamma')+
+    '</div>'+
+    '<div class="info-box" id="nm-desc">Stretches color range to cover full spectrum — every channel gets a min/max remap.</div>';
+  },
+  vignette: function(){
+    var s=state.vignette;
+    return '<div class="tag">vignette effect</div>'+
+    '<div class="cg"><div class="cl">Radius</div><div class="vd" id="vr-v">'+s.radius+'</div>'+
+    '<input type="range" min="0" max="100" value="'+s.radius+'" oninput="upv(\'radius\',this.value,\'vr-v\')"></div>'+
+    '<div class="cg"><div class="cl">Sigma (softness)</div><div class="vd" id="vs-v">'+s.sigma+'</div>'+
+    '<input type="range" min="1" max="30" value="'+s.sigma+'" oninput="upv(\'sigma\',this.value,\'vs-v\')">'+
+    '<div class="cd">Higher sigma = softer fade at edges.</div></div>'+
+    '<div class="cg"><div class="cl">Offset X</div><div class="vd" id="vx-v">'+s.x+'</div>'+
+    '<input type="range" min="-50" max="50" value="'+s.x+'" oninput="upv(\'x\',this.value,\'vx-v\')"></div>'+
+    '<div class="cg"><div class="cl">Offset Y</div><div class="vd" id="vy-v">'+s.y+'</div>'+
+    '<input type="range" min="-50" max="50" value="'+s.y+'" oninput="upv(\'y\',this.value,\'vy-v\')"></div>';
+  },
+  border: function(){
+    var s=state.border;
+    return '<div class="tag">border / frame</div>'+
+    '<div class="cg"><div class="cl">Thickness (px)</div><div class="vd" id="bt-v">'+s.thickness+'</div>'+
+    '<input type="range" min="1" max="100" value="'+s.thickness+'" oninput="upb(\'thickness\',this.value,\'bt-v\')"></div>'+
+    '<div class="cg"><div class="cl">Border color</div>'+
+    '<div class="color-row"><input type="color" value="'+s.color+'" style="width:36px;height:24px;background:none;border:0.5px solid #2a2a2d;border-radius:4px;cursor:pointer;padding:1px" oninput="upbc(this.value)">'+
+    '<span style="font-size:11px;color:#555;font-family:var(--font-mono)" id="bc-hex">'+s.color+'</span></div></div>'+
+    '<div class="tr"><div class="tl">3D frame effect</div><div class="tg'+(s.frame?' on':'')+'" id="frame-tg" onclick="togFrame()"></div></div>'+
+    '<div class="cg" id="fx-grp" style="'+(s.frame?'':'opacity:.35;pointer-events:none')+'">'+
+    '<div class="cl">Frame depth</div><div class="vd" id="fx-v">'+s.fx+'</div>'+
+    '<input type="range" min="2" max="30" value="'+s.fx+'" oninput="upb(\'fx\',this.value,\'fx-v\')"></div>';
+  },
+  rotate: function(){
+    var s=state.rotate;
+    return '<div class="tag">rotate</div>'+
+    '<div class="cg"><div class="cl">Angle (degrees)</div><div class="vd" id="rd-v">'+s.deg+'°</div>'+
+    '<input type="range" min="-180" max="180" value="'+s.deg+'" oninput="upr(\'deg\',this.value,\'rd-v\',\'°\')"></div>'+
+    '<div class="sz-btns">'+
+    '<div class="sz-btn" onclick="setRot(-90)">−90°</div>'+
+    '<div class="sz-btn" onclick="setRot(90)">+90°</div>'+
+    '<div class="sz-btn" onclick="setRot(180)">180°</div>'+
+    '<div class="sz-btn" onclick="setRot(0)">Reset</div>'+
+    '</div>'+
+    '<hr class="divd">'+
+    '<div class="cg"><div class="cl">Background fill</div>'+
+    '<div class="sr">'+
+    sb2('rbg','none','bg','rotate')+
+    sb2('rbg','white','bg','rotate')+
+    sb2('rbg','black','bg','rotate')+
+    sb2('rbg','custom','bg','rotate')+
+    '</div></div>'+
+    '<div class="tr"><div class="tl">Auto-orient (EXIF)</div><div class="tg'+(s.autoOrient?' on':'')+'" id="ao-tg" onclick="togAO()"></div></div>'+
+    '<div class="cd" style="margin-top:4px">Auto-orient reads EXIF to correct camera rotation.</div>';
+  },
+  scale: function(){
+    var s=state.scale;
+    return '<div class="tag">scale / resize</div>'+
+    '<div class="crow">'+
+    '<div class="cg"><div class="cl">Width (px)</div><input class="inp" type="number" value="'+s.w+'" min="1" oninput="ups(\'w\',this.value)"></div>'+
+    '<div class="cg"><div class="cl">Height (px)</div><input class="inp" type="number" value="'+s.h+'" min="1" oninput="ups(\'h\',this.value)"></div>'+
+    '</div>'+
+    '<div class="tr"><div class="tl">Keep aspect ratio</div><div class="tg'+(s.keepRatio?' on':'')+'" id="kr-tg" onclick="togKR()"></div></div>'+
+    '<div class="sz-btns">'+
+    '<div class="sz-btn" onclick="setSize(1920,1080)">1920×1080</div>'+
+    '<div class="sz-btn" onclick="setSize(1280,720)">1280×720</div>'+
+    '<div class="sz-btn" onclick="setSize(800,600)">800×600</div>'+
+    '<div class="sz-btn" onclick="setSize(512,512)">512×512</div>'+
+    '</div>'+
+    '<hr class="divd">'+
+    '<div class="cl">Method</div>'+
+    '<div class="sr">'+
+    sb3('sm','resize','method','scale')+
+    sb3('sm','thumbnail','method','scale')+
+    sb3('sm','sample','method','scale')+
+    '</div>'+
+    '<div class="info-box" id="sm-desc">High-quality resize with filter support. Best for final output.</div>';
+  },
+  text: function(){
+    var s=state.text;
+    return '<div class="tag">text / logo</div>'+
+    '<div class="cg"><div class="cl">Text content</div>'+
+    '<input class="inp" type="text" value="'+s.text+'" oninput="upt(\'text\',this.value)" style="width:100%"></div>'+
+    '<div class="cg"><div class="cl">Font</div>'+
+    '<div class="sr">'+
+    sb4('tf','Arial','font')+sb4('tf','Helvetica','font')+sb4('tf','Times-Roman','font')+sb4('tf','Courier','font')+
+    '</div></div>'+
+    '<div class="crow">'+
+    '<div class="cg"><div class="cl">Size (px)</div><div class="vd" id="ts-v">'+s.size+'</div>'+
+    '<input type="range" min="8" max="200" value="'+s.size+'" oninput="upt(\'size\',this.value);document.getElementById(\'ts-v\').textContent=this.value"></div>'+
+    '<div class="cg"><div class="cl">Angle°</div><div class="vd" id="ta-v">'+s.angle+'</div>'+
+    '<input type="range" min="-180" max="180" value="'+s.angle+'" oninput="upt(\'angle\',this.value);document.getElementById(\'ta-v\').textContent=this.value"></div>'+
+    '</div>'+
+    '<div class="cg"><div class="cl">Position (gravity)</div>'+
+    '<div class="sr3">'+
+    sb5('tg2','NorthWest','gravity')+sb5('tg2','North','gravity')+sb5('tg2','NorthEast','gravity')+
+    sb5('tg2','West','gravity')+sb5('tg2','Center','gravity')+sb5('tg2','East','gravity')+
+    sb5('tg2','SouthWest','gravity')+sb5('tg2','South','gravity')+sb5('tg2','SouthEast','gravity')+
+    '</div></div>'+
+    '<div class="cg"><div class="cl">Color</div>'+
+    '<input type="color" value="'+s.color+'" style="width:36px;height:24px;background:none;border:0.5px solid #2a2a2d;border-radius:4px;cursor:pointer;padding:1px" oninput="upt(\'color\',this.value)">'+
+    '</div>';
+  },
+  compose: function(){
+    var s=state.compose;
+    var ops=['Over','Multiply','Screen','Dissolve','Overlay','Difference','Exclusion','Darken','Lighten'];
+    var btns=ops.map(function(o){
+      return '<div class="sb'+(s.operator===o?' active':'')+'" onclick="upcomp(\'operator\',\''+o+'\')">'+o+'</div>';
+    }).join('');
+    return '<div class="tag">composite / blend</div>'+
+    '<div class="cg"><div class="cl">Blend mode</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin:8px 0" id="comp-modes">'+btns+'</div></div>'+
+    '<div class="cg"><div class="cl">Opacity</div><div class="vd" id="ca-v">'+s.alpha+'%</div>'+
+    '<input type="range" min="0" max="100" value="'+s.alpha+'" oninput="upcomp(\'alpha\',this.value);document.getElementById(\'ca-v\').textContent=this.value+\'%\'"></div>'+
+    '<div class="crow">'+
+    '<div class="cg"><div class="cl">X offset</div><input class="inp" type="number" value="'+s.x+'" oninput="upcomp(\'x\',this.value)"></div>'+
+    '<div class="cg"><div class="cl">Y offset</div><input class="inp" type="number" value="'+s.y+'" oninput="upcomp(\'y\',this.value)"></div>'+
+    '</div>'+
+    '<div class="info-box" id="comp-info">'+compInfo(s.operator)+'</div>';
+  }
+};
+
+function sb(group,val,prop,tab){
+  var s=state[tab];
+  return '<div class="sb'+(s[prop]===val?' active':'')+'" onclick="upnm(\''+val+'\')">'+val+'</div>';
+}
+function sb2(group,val,prop,tab){
+  var s=state[tab];
+  return '<div class="sb'+(s[prop]===val?' active':'')+'" onclick="uprop(\''+tab+'\',\''+prop+'\',\''+val+'\')">'+val+'</div>';
+}
+function sb3(group,val,prop,tab){
+  var s=state[tab];
+  return '<div class="sb'+(s[prop]===val?' active':'')+'" onclick="upsm(\''+val+'\')">'+val+'</div>';
+}
+function sb4(group,val,prop){
+  var s=state.text;
+  return '<div class="sb'+(s[prop]===val?' active':'')+'" onclick="upt(\'font\',\''+val+'\')">'+val+'</div>';
+}
+function sb5(group,val,prop){
+  var s=state.text;
+  var short=val.replace('North','N').replace('South','S').replace('East','E').replace('West','W');
+  return '<div class="sb'+(s[prop]===val?' active':'')+'" style="font-size:10px;padding:4px 4px" onclick="upt(\'gravity\',\''+val+'\')">'+short+'</div>';
+}
+
+function compInfo(op){
+  var m={Over:'Paste overlay on top using alpha channel.',Multiply:'Darkens — multiplies pixel values.',Screen:'Lightens — inverts multiply.',Dissolve:'Blend by opacity.',Overlay:'Contrast boost — dark darker, light lighter.',Difference:'Absolute difference between layers.',Exclusion:'Lower-contrast version of Difference.',Darken:'Keep darkest pixel from each layer.',Lighten:'Keep lightest pixel from each layer.'};
+  return m[op]||'';
+}
+
+function sw(tab){
+  cur=tab;
+  document.querySelectorAll('.op').forEach(function(el){el.classList.remove('active')});
+  var el=document.getElementById('op-'+tab);
+  if(el)el.classList.add('active');
+  var titles={normalize:'NORMALIZE COLORS — OPTIONS',vignette:'VIGNETTE — OPTIONS',border:'BORDER — OPTIONS',rotate:'ROTATE — OPTIONS',scale:'SCALE / RESIZE — OPTIONS',text:'TEXT / LOGO — OPTIONS',compose:'COMPOSE — OPTIONS'};
+  document.getElementById('ptitle').textContent=titles[tab]||tab.toUpperCase()+' — OPTIONS';
+  if(panels[tab]){
+    document.getElementById('pbody').innerHTML=panels[tab]();
+  }
+  updateCLI();
+}
+
+function updateCLI(){
+  var s=state[cur];
+  var html='';
+  switch(cur){
+    case 'normalize':
+      if(s.method==='normalize') html='magick "photo.jpg" -normalize\n"./output/photo_out.png"';
+      else if(s.method==='auto-level') html='magick "photo.jpg" -auto-level\n"./output/photo_out.png"';
+      else html='magick "photo.jpg" -auto-gamma\n"./output/photo_out.png"';
+      break;
+    case 'vignette':
+      html='magick "photo.jpg" -vignette <span class="a">'+s.radius+'x'+s.sigma+'+'+(s.x>=0?'+':'')+s.x+'+'+(s.y>=0?'+':'')+s.y+'</span>\n"./output/photo_out.png"';
+      break;
+    case 'border':
+      if(s.frame){
+        html='magick "photo.jpg" -bordercolor <span class="a">'+s.color+'</span>\n-frame <span class="a">'+s.fx+'x'+s.fx+'</span>\n"./output/photo_out.png"';
+      }else{
+        html='magick "photo.jpg" -bordercolor <span class="a">'+s.color+'</span>\n-border <span class="a">'+s.thickness+'x'+s.thickness+'</span>\n"./output/photo_out.png"';
+      }
+      break;
+    case 'rotate':
+      var parts='magick "photo.jpg"';
+      if(s.autoOrient) parts+=' -auto-orient';
+      if(s.bg!=='none') parts+=' -background <span class="a">'+s.bg+'</span>';
+      parts+=' -rotate <span class="a">'+s.deg+'</span>\n"./output/photo_out.png"';
+      html=parts;
+      break;
+    case 'scale':
+      var geom=s.keepRatio?s.w+'x'+s.h:s.w+'x'+s.h+'!';
+      if(s.method==='resize') html='magick "photo.jpg" -resize <span class="a">'+geom+'</span>\n"./output/photo_out.png"';
+      else if(s.method==='thumbnail') html='magick "photo.jpg" -thumbnail <span class="a">'+geom+'</span>\n"./output/photo_out.png"';
+      else html='magick "photo.jpg" -sample <span class="a">'+geom+'</span>\n"./output/photo_out.png"';
+      break;
+    case 'text':
+      var ts=state.text;
+      html='magick "photo.jpg" -font <span class="a">'+ts.font+'</span> -pointsize <span class="a">'+ts.size+'</span>\n-fill <span class="a">"'+ts.color+'"</span> -gravity <span class="a">'+ts.gravity+'</span>\n-annotate <span class="a">'+ts.angle+'x'+ts.angle+'+'+ts.x+'+'+ts.y+'</span> "'+ts.text+'"\n"./output/photo_out.png"';
+      break;
+    case 'compose':
+      var cs=state.compose;
+      html='magick "photo.jpg" "overlay.png" -compose <span class="a">'+cs.operator+'</span>\n-define compose:args=<span class="a">'+cs.alpha+'</span>\n-geometry <span class="a">+'+(cs.x>=0?'':'')+cs.x+'+'+(cs.y>=0?'':'')+cs.y+'</span>\n-composite "./output/photo_out.png"';
+      break;
+  }
+  document.getElementById('cli-out').innerHTML=html;
+}
+
+function upnm(val){
+  state.normalize.method=val;
+  var descs={normalize:'Stretches color range to cover full spectrum — every channel gets a min/max remap.',
+  'auto-level':'Finds actual min/max per channel and remaps to full range — mathematically perfect normalization.',
+  'auto-gamma':'Adjusts gamma so the mean pixel value equals 50% gray automatically.'};
+  document.getElementById('pbody').innerHTML=panels.normalize();
+  var d=document.getElementById('nm-desc');
+  if(d)d.textContent=descs[val]||'';
+  updateCLI();
+}
+
+function upv(prop,val,id){
+  state.vignette[prop]=parseInt(val);
+  document.getElementById(id).textContent=val;
+  updateCLI();
+}
+function upb(prop,val,id){
+  state.border[prop]=isNaN(parseInt(val))?val:parseInt(val);
+  document.getElementById(id).textContent=val;
+  updateCLI();
+}
+function upbc(val){
+  state.border.color=val;
+  var el=document.getElementById('bc-hex');
+  if(el)el.textContent=val;
+  updateCLI();
+}
+function togFrame(){
+  state.border.frame=!state.border.frame;
+  document.getElementById('pbody').innerHTML=panels.border();
+  updateCLI();
+}
+function upr(prop,val,id,suffix){
+  state.rotate[prop]=parseInt(val);
+  document.getElementById(id).textContent=val+(suffix||'');
+  updateCLI();
+}
+function setRot(deg){
+  state.rotate.deg=deg;
+  document.getElementById('pbody').innerHTML=panels.rotate();
+  updateCLI();
+}
+function togAO(){
+  state.rotate.autoOrient=!state.rotate.autoOrient;
+  document.getElementById('pbody').innerHTML=panels.rotate();
+  updateCLI();
+}
+function uprop(tab,prop,val){
+  state[tab][prop]=val;
+  document.getElementById('pbody').innerHTML=panels[tab]();
+  updateCLI();
+}
+function ups(prop,val){
+  state.scale[prop]=parseInt(val)||1;
+  updateCLI();
+}
+function togKR(){
+  state.scale.keepRatio=!state.scale.keepRatio;
+  document.getElementById('pbody').innerHTML=panels.scale();
+  updateCLI();
+}
+function setSize(w,h){
+  state.scale.w=w;state.scale.h=h;
+  document.getElementById('pbody').innerHTML=panels.scale();
+  updateCLI();
+}
+function upsm(val){
+  state.scale.method=val;
+  var descs={resize:'High-quality resize with filter support. Best for final output.',thumbnail:'Optimized for thumbnails — strips metadata, smaller file size.',sample:'Ultra-fast pixel sampling, no filters — may show aliasing.'};
+  document.getElementById('pbody').innerHTML=panels.scale();
+  var d=document.getElementById('sm-desc');
+  if(d)d.textContent=descs[val]||'';
+  updateCLI();
+}
+function upt(prop,val){
+  state.text[prop]=val;
+  document.getElementById('pbody').innerHTML=panels.text();
+  updateCLI();
+}
+function upcomp(prop,val){
+  state.compose[prop]= (prop==='x'||prop==='y')?parseInt(val)||0:(prop==='alpha'?parseInt(val):val);
+  if(prop==='operator'){
+    document.getElementById('pbody').innerHTML=panels.compose();
+  }
+  var d=document.getElementById('comp-info');
+  if(d)d.textContent=compInfo(state.compose.operator);
+  updateCLI();
+}
+
+sw('normalize');
+</script>

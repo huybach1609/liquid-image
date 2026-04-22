@@ -1,18 +1,16 @@
-import { getNumberParam } from "@/lib/functionParams";
+import { getNumberParam, getStringParam } from "@/lib/functionParams";
 
 export function buildScaleResizeOperationArgs(
   effectiveParams: Record<string, unknown>,
 ): string[] {
-  const width = getNumberParam(effectiveParams, "resizeWidth", NaN);
-  const height = getNumberParam(effectiveParams, "resizeHeight", NaN);
-  if (Number.isFinite(width) && Number.isFinite(height)) {
-    return ["-resize", `${width}x${height}`];
-  }
-  if (Number.isFinite(width)) {
-    return ["-resize", `${width}x`];
-  }
-  if (Number.isFinite(height)) {
-    return ["-resize", `x${height}`];
-  }
-  return [];
+  const width = getNumberParam(effectiveParams, "resizeWidth", 1920);
+  const height = getNumberParam(effectiveParams, "resizeHeight", 1080);
+  const keepRatio = effectiveParams.resizeKeepRatio !== false && effectiveParams.resizeKeepRatio !== "false";
+  const method = getStringParam(effectiveParams, "resizeMethod", "resize");
+
+  const geometry = `${width}x${height}${keepRatio ? "" : "!"}`;
+  
+  const flag = method === "thumbnail" ? "-thumbnail" : method === "sample" ? "-sample" : "-resize";
+  
+  return [flag, geometry];
 }

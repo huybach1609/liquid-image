@@ -1,35 +1,88 @@
-import { Slider } from "@/components/ui/slider";
-import { Button } from "../ui/button";
 import { useSingleStore } from "@/features/single/state/single.store";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Button } from "@/shared/components/ui/button";
+import { getNumberParam, getStringParam } from "@/lib/functionParams";
 
 const RotateFunction = () => {
   const functionParams = useSingleStore((s) => s.functionParams);
   const updateFunctionParam = useSingleStore((s) => s.updateFunctionParam);
 
-  const rotateDegrees =
-    typeof functionParams.rotateDegrees === "number"
-      ? functionParams.rotateDegrees
-      : typeof functionParams.rotateDegrees === "string"
-        ? Number(functionParams.rotateDegrees) || 0
-        : 0;
-  const autoOrient = functionParams.rotateAutoOrient === true;
+  const degrees = getNumberParam(functionParams, "rotateDegrees", 0);
+  const background = getStringParam(functionParams, "rotateBackground", "none");
+  const autoOrient = functionParams.rotateAutoOrient === true || functionParams.rotateAutoOrient === "true";
+
+  const setAngle = (deg: number) => updateFunctionParam("rotateDegrees", deg);
 
   return (
-    <div className="space-y-3">
-      <label className="block text-xs text-muted-foreground">Angle (degrees)</label>
-      <Slider
-        value={[rotateDegrees]}
-        onValueChange={(value) => updateFunctionParam("rotateDegrees", value[0])}
-      />
-      <span className="text-xs text-muted-foreground">{rotateDegrees}</span>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => updateFunctionParam("rotateAutoOrient", true)}
-        disabled={autoOrient}
-      >
-        Auto rotate by EXIF
-      </Button>
+    <div className="flex flex-col gap-6">
+      <Badge variant="secondary" className="w-fit bg-primary/10 text-primary hover:bg-primary/15 border-none px-2 py-0.5 text-[10px] uppercase tracking-wider">
+        rotate
+      </Badge>
+
+      <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-2.5">
+          <Label className="text-xs font-medium text-muted-foreground/80">Angle (degrees)</Label>
+          <div className="text-xl font-light text-foreground">{degrees}°</div>
+          <Slider
+            min={-180}
+            max={180}
+            value={[degrees]}
+            onValueChange={(v) => updateFunctionParam("rotateDegrees", v[0])}
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {[-90, 90, 180, 0].map((deg) => (
+            <Button
+              key={deg}
+              variant="outline"
+              size="sm"
+              className="h-7 min-w-14 text-[10px] font-medium"
+              onClick={() => setAngle(deg)}
+            >
+              {deg === 0 ? "Reset" : `${deg > 0 ? "+" : ""}${deg}°`}
+            </Button>
+          ))}
+        </div>
+
+        <Separator className="bg-border/40" />
+
+        <div className="flex flex-col gap-3">
+          <Label className="text-xs font-medium text-muted-foreground/80">Background fill</Label>
+          <ToggleGroup
+            type="single"
+            value={background}
+            onValueChange={(v) => v && updateFunctionParam("rotateBackground", v)}
+            className="grid grid-cols-2 gap-2"
+          >
+            <ToggleGroupItem value="none" className="text-[11px] h-8 px-2">None</ToggleGroupItem>
+            <ToggleGroupItem value="white" className="text-[11px] h-8 px-2">White</ToggleGroupItem>
+            <ToggleGroupItem value="black" className="text-[11px] h-8 px-2">Black</ToggleGroupItem>
+            <ToggleGroupItem value="transparent" className="text-[11px] h-8 px-2">Transparent</ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-[12px] text-muted-foreground/70 font-normal cursor-pointer" htmlFor="auto-orient">
+              Auto-orient (EXIF)
+            </Label>
+            <Switch
+              id="auto-orient"
+              checked={autoOrient}
+              onCheckedChange={(v) => updateFunctionParam("rotateAutoOrient", v)}
+            />
+          </div>
+          <p className="text-[11px] text-muted-foreground/60 leading-relaxed">
+            Reads EXIF to correct camera rotation.
+          </p>
+        </div>
+      </div>
     </div>
   );
 };

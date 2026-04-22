@@ -1,42 +1,73 @@
-import { Slider } from "@/components/ui/slider";
 import { useSingleStore } from "@/features/single/state/single.store";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { Badge } from "@/components/ui/badge";
+import { getNumberParam } from "@/lib/functionParams";
 
 const VignetteFunction = () => {
   const functionParams = useSingleStore((s) => s.functionParams);
   const updateFunctionParam = useSingleStore((s) => s.updateFunctionParam);
 
-  const radius =
-    typeof functionParams.vignetteRadius === "number"
-      ? functionParams.vignetteRadius
-      : typeof functionParams.vignetteRadius === "string"
-        ? Number(functionParams.vignetteRadius) || 40
-        : 40;
-
-  const softness =
-    typeof functionParams.vignetteSoftness === "number"
-      ? functionParams.vignetteSoftness
-      : typeof functionParams.vignetteSoftness === "string"
-        ? Number(functionParams.vignetteSoftness) || 60
-        : 60;
+  const radius = getNumberParam(functionParams, "vignetteRadius", 40);
+  const softness = getNumberParam(functionParams, "vignetteSoftness", 60);
+  const offsetX = getNumberParam(functionParams, "vignetteOffsetX", 5);
+  const offsetY = getNumberParam(functionParams, "vignetteOffsetY", 5);
 
   return (
-    <div className="space-y-3">
-      <label className="block text-xs text-muted-foreground">Radius</label>
-      <Slider
-        min={0}
-        max={100}
-        value={[radius]}
-        onValueChange={(value) => updateFunctionParam("vignetteRadius", value[0])}
-      />
-      <span className="text-xs text-muted-foreground">{radius}</span>
-      <label className="block text-xs text-muted-foreground">Softness</label>
-      <Slider
-        min={0}
-        max={100}
-        value={[softness]}
-        onValueChange={(value) => updateFunctionParam("vignetteSoftness", value[0])}
-      />
-      <span className="text-xs text-muted-foreground">{softness}</span>
+    <div className="flex flex-col gap-6">
+      <Badge variant="secondary" className="w-fit bg-primary/10 text-primary hover:bg-primary/15 border-none px-2 py-0.5 text-[10px] uppercase tracking-wider">
+        vignette effect
+      </Badge>
+
+      <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-2.5">
+          <Label className="text-xs font-medium text-muted-foreground/80">Radius</Label>
+          <div className="text-xl font-light text-foreground">{radius}</div>
+          <Slider
+            min={0}
+            max={100}
+            value={[radius]}
+            onValueChange={(v) => updateFunctionParam("vignetteRadius", v[0])}
+          />
+        </div>
+
+        <div className="flex flex-col gap-2.5">
+          <Label className="text-xs font-medium text-muted-foreground/80">Sigma (softness)</Label>
+          <div className="text-xl font-light text-foreground">{softness}</div>
+          <Slider
+            min={1}
+            max={100}
+            value={[softness]}
+            onValueChange={(v) => updateFunctionParam("vignetteSoftness", v[0])}
+          />
+          <p className="text-[11px] text-muted-foreground/60 leading-relaxed">
+            Higher sigma = softer fade at edges.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-2.5">
+            <Label className="text-xs font-medium text-muted-foreground/80">Offset X</Label>
+            <div className="text-xl font-light text-foreground">{offsetX}</div>
+            <Slider
+              min={-50}
+              max={50}
+              value={[offsetX]}
+              onValueChange={(v) => updateFunctionParam("vignetteOffsetX", v[0])}
+            />
+          </div>
+          <div className="flex flex-col gap-2.5">
+            <Label className="text-xs font-medium text-muted-foreground/80">Offset Y</Label>
+            <div className="text-xl font-light text-foreground">{offsetY}</div>
+            <Slider
+              min={-50}
+              max={50}
+              value={[offsetY]}
+              onValueChange={(v) => updateFunctionParam("vignetteOffsetY", v[0])}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

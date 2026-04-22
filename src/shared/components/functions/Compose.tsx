@@ -1,54 +1,115 @@
-import { Select,  SelectItem, SelectContent, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 import { useSingleStore } from "@/features/single/state/single.store";
-import { Input } from "../ui/input";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { Badge } from "@/components/ui/badge";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Input } from "../../components/ui/input";
+import { getNumberParam, getStringParam } from "@/lib/functionParams";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { InfoIcon } from "lucide-react";
+
+const BLEND_MODES = [
+  "Over", "Multiply", "Screen", 
+  "Dissolve", "Overlay", "Difference", 
+  "Exclusion", "Darken", "Lighten"
+] as const;
+
+const BLEND_DESCRIPTIONS: Record<string, string> = {
+  Over: "Paste overlay on top using alpha channel.",
+  Multiply: "Darkens — multiplies pixel values.",
+  Screen: "Lightens — inverts multiply.",
+  Dissolve: "Blend by opacity.",
+  Overlay: "Contrast boost — dark darker, light lighter.",
+  Difference: "Absolute difference between layers.",
+  Exclusion: "Lower-contrast version of Difference.",
+  Darken: "Keep darkest pixel from each layer.",
+  Lighten: "Keep lightest pixel from each layer.",
+};
 
 const ComposeFunction = () => {
   const functionParams = useSingleStore((s) => s.functionParams);
   const updateFunctionParam = useSingleStore((s) => s.updateFunctionParam);
 
-  const composeBlendMode =
-    typeof functionParams.composeBlendMode === "string" ? functionParams.composeBlendMode : "over";
-  const composeOpacity =
-    typeof functionParams.composeOpacity === "number"
-      ? functionParams.composeOpacity
-      : typeof functionParams.composeOpacity === "string"
-        ? Number(functionParams.composeOpacity) || 100
-        : 100;
-  const composeOverlayPath =
-    typeof functionParams.composeOverlayPath === "string" ? functionParams.composeOverlayPath : "overlay.png";
+  const overlayPath = getStringParam(functionParams, "composeOverlayPath", "overlay.png");
+  const blendMode = getStringParam(functionParams, "composeBlendMode", "Over");
+  const opacity = getNumberParam(functionParams, "composeOpacity", 100);
+  const offsetX = getNumberParam(functionParams, "composeOffsetX", 0);
+  const offsetY = getNumberParam(functionParams, "composeOffsetY", 0);
 
   return (
-    <div className="space-y-3">
-      <label className="block text-xs text-muted-foreground">Overlay image path</label>
-      <Input
-        value={composeOverlayPath}
-        onChange={(e) => updateFunctionParam("composeOverlayPath", e.target.value)}
-      />
-      <span className="text-xs text-muted-foreground">{composeOverlayPath}</span>
+    <div className="flex flex-col gap-6">
+      <Badge variant="secondary" className="w-fit bg-primary/10 text-primary hover:bg-primary/15 border-none px-2 py-0.5 text-[10px] uppercase tracking-wider">
+        composite / blend
+      </Badge>
 
-      <label className="block text-xs text-muted-foreground">Blend mode</label>
-      <Select
-        value={composeBlendMode}
-        onValueChange={(value) => updateFunctionParam("composeBlendMode", value)}
-      >
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Select a blend mode" />
-        </SelectTrigger>
-        <SelectContent position="popper">
-          <SelectItem value="over">over</SelectItem>
-          <SelectItem value="multiply">multiply</SelectItem>
-          <SelectItem value="screen">screen</SelectItem>
-        </SelectContent>
-      </Select>
+      <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-2">
+          <Label className="text-xs font-medium text-muted-foreground/80">Overlay image path</Label>
+          <Input
+            value={overlayPath}
+            onChange={(e) => updateFunctionParam("composeOverlayPath", e.target.value)}
+            className="h-8 text-[11px] font-mono"
+            placeholder="e.g. assets/logo.png"
+          />
+        </div>
 
-      <label className="block text-xs text-muted-foreground">Opacity</label>
-      <Slider
-        min={0}
-        max={100}
-        value={[composeOpacity]}
-        onValueChange={(value) => updateFunctionParam("composeOpacity", value[0])}
-      />
+        <div className="flex flex-col gap-3">
+          <Label className="text-xs font-medium text-muted-foreground/80">Blend mode</Label>
+          <ToggleGroup
+            type="single"
+            value={blendMode}
+            onValueChange={(v) => v && updateFunctionParam("composeBlendMode", v)}
+            className="grid grid-cols-3 gap-1.5"
+          >
+            {BLEND_MODES.map((mode) => (
+              <ToggleGroupItem key={mode} value={mode} className="text-[10px] h-8 px-1">
+                {mode}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </div>
+
+        <div className="flex flex-col gap-2.5">
+          <Label className="text-xs font-medium text-muted-foreground/80">Opacity</Label>
+          <div className="text-xl font-light text-foreground">{opacity}%</div>
+          <Slider
+            min={0}
+            max={100}
+            value={[opacity]}
+            onValueChange={(v) => updateFunctionParam("composeOpacity", v[0])}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-2">
+            <Label className="text-[11px] font-medium text-muted-foreground/70">X offset</Label>
+            <Input
+              type="number"
+              value={offsetX}
+              onChange={(e) => updateFunctionParam("composeOffsetX", parseInt(e.target.value) || 0)}
+              className="h-8 text-[11px] font-mono"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label className="text-[11px] font-medium text-muted-foreground/70">Y offset</Label>
+            <Input
+              type="number"
+              value={offsetY}
+              onChange={(e) => updateFunctionParam("composeOffsetY", parseInt(e.target.value) || 0)}
+              className="h-8 text-[11px] font-mono"
+            />
+          </div>
+        </div>
+
+        <Alert className="bg-primary/5 border-primary/20 p-3">
+          <div className="flex gap-2 items-start">
+            <InfoIcon className="size-3.5 text-primary mt-0.5 shrink-0" />
+            <AlertDescription className="text-[11px] text-muted-foreground leading-normal">
+              {BLEND_DESCRIPTIONS[blendMode]}
+            </AlertDescription>
+          </div>
+        </Alert>
+      </div>
     </div>
   );
 };

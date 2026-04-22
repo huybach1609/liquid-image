@@ -8,17 +8,19 @@ export function buildComposeOperationArgs(
     "composeOverlayPath",
     "overlay.png",
   );
-  const blendMode = getStringParam(effectiveParams, "composeBlendMode", "over");
-  const opacity = Math.round(getNumberParam(effectiveParams, "composeOpacity", 100));
+  const blendMode = getStringParam(effectiveParams, "composeBlendMode", "Over");
+  const opacity = getNumberParam(effectiveParams, "composeOpacity", 100);
+  const x = getNumberParam(effectiveParams, "composeOffsetX", 0);
+  const y = getNumberParam(effectiveParams, "composeOffsetY", 0);
+
+  const geometry = `${x >= 0 ? "+" : ""}${x}${y >= 0 ? "+" : ""}${y}`;
 
   return [
     overlayPath,
-    "-gravity",
-    "SouthEast",
-    "-compose",
-    blendMode,
-    "-define",
-    `compose:args=${Math.max(0, Math.min(1, opacity / 100))}`,
+    "-gravity", "NorthWest", // Use NorthWest so offsets are predictable from top-left
+    "-compose", blendMode,
+    "-define", `compose:args=${opacity}`,
+    "-geometry", geometry,
     "-composite",
   ];
 }
