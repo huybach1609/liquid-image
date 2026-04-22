@@ -1,0 +1,317 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); }
+
+.app { display: flex; height: 600px; background: #0e0e0f; border-radius: var(--border-radius-lg); overflow: hidden; border: 0.5px solid #2a2a2d; }
+
+.sidebar { width: 210px; background: #0e0e0f; border-right: 0.5px solid #2a2a2d; padding: 16px 0; flex-shrink: 0; }
+.sidebar-title { font-size: 11px; color: #555; letter-spacing: 0.1em; text-transform: uppercase; padding: 0 16px 12px; font-weight: 500; }
+.op-item { display: flex; align-items: center; gap: 10px; padding: 8px 16px; font-size: 13px; color: #888; cursor: pointer; transition: all 0.15s; border-left: 2px solid transparent; }
+.op-item:hover { color: #ccc; background: rgba(255,255,255,0.03); }
+.op-item.active { color: #a89cf7; border-left-color: #7c68e8; background: rgba(124,104,232,0.08); }
+.op-item .dot { width: 5px; height: 5px; border-radius: 50%; background: #7c68e8; margin-left: auto; flex-shrink: 0; }
+.op-icon { width: 16px; height: 16px; opacity: 0.7; flex-shrink: 0; }
+
+.canvas { flex: 1; background: #141416; display: flex; align-items: center; justify-content: center; position: relative; border-right: 0.5px solid #2a2a2d; }
+.drop-hint { text-align: center; }
+.drop-hint p { font-size: 14px; color: #555; margin-bottom: 6px; }
+.drop-hint span { font-size: 12px; color: #3a3a3e; }
+
+.topbar { position: absolute; top: 0; left: 0; right: 0; height: 44px; display: flex; align-items: center; justify-content: center; gap: 8px; border-bottom: 0.5px solid #1f1f22; padding: 0 16px; background: #141416; }
+.preview-toggle { display: flex; align-items: center; gap: 6px; background: #1e1e21; border: 0.5px solid #2a2a2d; border-radius: 6px; padding: 5px 10px; font-size: 12px; color: #888; cursor: pointer; }
+.preview-toggle .arrow { font-size: 10px; color: #555; }
+.preview-btn { background: #7c68e8; color: #fff; border: none; border-radius: 6px; padding: 5px 14px; font-size: 12px; cursor: pointer; font-family: var(--font-sans); }
+.play-btn { width: 28px; height: 28px; background: #1e1e21; border: 0.5px solid #2a2a2d; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+.panel { width: 260px; background: #0e0e0f; display: flex; flex-direction: column; flex-shrink: 0; }
+.panel-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 0.5px solid #1f1f22; }
+.panel-title { font-size: 11px; color: #555; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 500; }
+.panel-more { color: #444; font-size: 18px; cursor: pointer; line-height: 1; }
+
+.tab-bar { display: flex; border-bottom: 0.5px solid #1f1f22; }
+.tab { flex: 1; padding: 9px 0; text-align: center; font-size: 12px; color: #555; cursor: pointer; transition: all 0.15s; border-bottom: 2px solid transparent; }
+.tab.active { color: #a89cf7; border-bottom-color: #7c68e8; }
+
+.panel-body { flex: 1; padding: 20px 16px; overflow-y: auto; }
+
+.control-group { margin-bottom: 24px; }
+.control-label { font-size: 12px; color: #777; margin-bottom: 10px; font-weight: 500; }
+.control-desc { font-size: 11px; color: #444; margin-top: 6px; }
+.value-display { font-size: 20px; color: #ccc; font-weight: 400; margin-bottom: 2px; }
+
+input[type=range] { width: 100%; accent-color: #7c68e8; height: 3px; margin: 8px 0; }
+
+.select-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 10px 0; }
+.sel-btn { padding: 6px 8px; background: #1a1a1d; border: 0.5px solid #2a2a2d; border-radius: 5px; font-size: 11px; color: #666; cursor: pointer; text-align: center; transition: all 0.12s; }
+.sel-btn:hover { border-color: #444; color: #999; }
+.sel-btn.active { background: rgba(124,104,232,0.15); border-color: #7c68e8; color: #a89cf7; }
+
+.toggle-row { display: flex; align-items: center; justify-content: space-between; margin: 12px 0; }
+.toggle-label { font-size: 12px; color: #666; }
+.toggle { width: 32px; height: 18px; background: #2a2a2d; border-radius: 9px; cursor: pointer; position: relative; transition: background 0.15s; }
+.toggle.on { background: #7c68e8; }
+.toggle::after { content: ''; position: absolute; width: 14px; height: 14px; background: #fff; border-radius: 50%; top: 2px; left: 2px; transition: left 0.15s; }
+.toggle.on::after { left: 16px; }
+
+.divider { border: none; border-top: 0.5px solid #1f1f22; margin: 16px 0; }
+
+.cli-bar { border-top: 0.5px solid #1f1f22; padding: 12px 16px; background: #0a0a0b; }
+.cli-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.cli-title { font-size: 11px; color: #555; letter-spacing: 0.08em; text-transform: uppercase; }
+.cli-fn { font-size: 11px; color: #7c68e8; cursor: pointer; }
+.cli-code { font-family: var(--font-mono); font-size: 11px; color: #7c68e8; line-height: 1.6; white-space: pre; }
+.cli-arg { color: #e0c88a; }
+
+.statusbar { position: absolute; bottom: 0; left: 0; font-size: 11px; color: #444; padding: 6px 14px; }
+
+.section-tag { font-size: 10px; color: #7c68e8; background: rgba(124,104,232,0.12); border-radius: 3px; padding: 2px 6px; margin-bottom: 14px; display: inline-block; }
+
+.info-row { display: flex; align-items: center; gap: 8px; background: rgba(124,104,232,0.07); border: 0.5px solid rgba(124,104,232,0.2); border-radius: 5px; padding: 8px 10px; margin: 10px 0; }
+.info-icon { font-size: 12px; color: #7c68e8; }
+.info-text { font-size: 11px; color: #666; line-height: 1.4; }
+</style>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-title">Operations</div>
+    <div class="op-item"><svg class="op-icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" stroke="#888" stroke-width="1"/><rect x="9" y="2" width="5" height="5" rx="1" stroke="#888" stroke-width="1"/><rect x="2" y="9" width="5" height="5" rx="1" stroke="#888" stroke-width="1"/><rect x="9" y="9" width="5" height="5" rx="1" stroke="#888" stroke-width="1"/></svg>Convert <div class="dot"></div></div>
+    <div class="op-item"><svg class="op-icon" viewBox="0 0 16 16" fill="none"><rect x="3" y="3" width="10" height="10" rx="1" stroke="#888" stroke-width="1"/><line x1="6" y1="3" x2="6" y2="13" stroke="#888" stroke-width="1"/><line x1="10" y1="3" x2="10" y2="13" stroke="#888" stroke-width="1"/></svg>Crop</div>
+    <div class="op-item"><svg class="op-icon" viewBox="0 0 16 16" fill="none"><path d="M2 8h7M6 5l-3 3 3 3M14 8H7M10 5l3 3-3 3" stroke="#888" stroke-width="1" stroke-linecap="round"/></svg>Mirror</div>
+    <div class="op-item" id="tab-bw" onclick="switchTab('bw')"><svg class="op-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5" stroke="#888" stroke-width="1"/><path d="M8 3v10" stroke="#888" stroke-width="1"/><path d="M8 3a5 5 0 0 1 0 10z" fill="#888"/></svg>Black & white <div class="dot"></div></div>
+    <div class="op-item active" id="tab-contrast" onclick="switchTab('contrast')"><svg class="op-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5" stroke="#a89cf7" stroke-width="1"/><path d="M5 5.5A3 3 0 0 1 11 8a3 3 0 0 1-6 2.5" stroke="#a89cf7" stroke-width="1" stroke-linecap="round"/></svg>Contrast</div>
+    <div class="op-item"><svg class="op-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5" stroke="#888" stroke-width="1"/><circle cx="8" cy="8" r="2" stroke="#888" stroke-width="1"/></svg>Normalize colors</div>
+    <div class="op-item"><svg class="op-icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="6" stroke="#888" stroke-width="1"/><rect x="4" y="4" width="8" height="8" rx="4" stroke="#888" stroke-width="1" stroke-dasharray="2 1"/></svg>Vignette</div>
+    <div class="op-item"><svg class="op-icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="1" stroke="#888" stroke-width="1"/></svg>Border</div>
+    <div class="op-item"><svg class="op-icon" viewBox="0 0 16 16" fill="none"><path d="M3 13L8 3l5 10" stroke="#888" stroke-width="1" stroke-linecap="round"/></svg>Rotate</div>
+    <div class="op-item"><svg class="op-icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="9" height="9" rx="1" stroke="#888" stroke-width="1"/><rect x="5" y="3" width="9" height="9" rx="1" stroke="#888" stroke-width="1" stroke-dasharray="2 1"/></svg>Scale / resize</div>
+    <div class="op-item"><svg class="op-icon" viewBox="0 0 16 16" fill="none"><path d="M3 12h10M5 8h6M7 4h2" stroke="#888" stroke-width="1" stroke-linecap="round"/></svg>Text / logo</div>
+    <div class="op-item"><svg class="op-icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="7" height="7" rx="1" stroke="#888" stroke-width="1"/><rect x="7" y="7" width="7" height="7" rx="1" stroke="#888" stroke-width="1"/></svg>Compose</div>
+  </div>
+
+  <div class="canvas">
+    <div class="topbar">
+      <div class="preview-toggle">Manual preview <span class="arrow">▾</span></div>
+      <div class="preview-btn">Preview</div>
+      <div class="play-btn">
+        <svg width="10" height="11" viewBox="0 0 10 11" fill="none"><path d="M2 2l6 3.5L2 9V2z" fill="#888"/></svg>
+      </div>
+    </div>
+    <div class="drop-hint">
+      <p>Drop image or click to open</p>
+      <span>png · jpg · gif · webp · tiff · bmp</span>
+    </div>
+    <div class="statusbar">ImageMagick 7.1</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title" id="panel-title">CONTRAST — OPTIONS</div>
+      <div class="panel-more">···</div>
+    </div>
+
+    <div class="panel-body" id="panel-bw" style="display:none;">
+      <div class="section-tag">monochrome</div>
+      <div class="control-group">
+        <div class="control-label">Intensity</div>
+        <div class="value-display" id="bw-val">54</div>
+        <input type="range" min="0" max="100" value="54" id="bw-slider" oninput="updateBW(this.value)">
+        <div class="control-desc">Convert image to monochrome style.</div>
+      </div>
+      <hr class="divider">
+      <div class="control-label" style="margin-bottom:10px;">Method</div>
+      <div class="select-row">
+        <div class="sel-btn active" id="m-gray" onclick="selectMethod('gray','colorspace Gray -threshold')">Colorspace</div>
+        <div class="sel-btn" id="m-mono" onclick="selectMethod('mono','monochrome')">Monochrome</div>
+        <div class="sel-btn" id="m-rec709" onclick="selectMethod('rec709','grayscale Rec709Luma')">Rec709Luma</div>
+        <div class="sel-btn" id="m-rec601" onclick="selectMethod('rec601','grayscale Rec601Luma')">Rec601Luma</div>
+      </div>
+      <hr class="divider">
+      <div class="toggle-row">
+        <div class="toggle-label">Dither (Floyd-Steinberg)</div>
+        <div class="toggle" id="dither-toggle" onclick="toggleDither()"></div>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-label">Black threshold</div>
+        <div class="toggle on" id="bthresh-toggle" onclick="this.classList.toggle('on'); updateBW(document.getElementById('bw-slider').value)"></div>
+      </div>
+      <div class="control-group" style="margin-top:8px;">
+        <div class="control-label">Threshold value</div>
+        <div class="value-display" id="thresh-val">54</div>
+        <input type="range" min="0" max="100" value="54" id="thresh-slider" oninput="updateThresh(this.value)">
+        <div class="control-desc">Pixels below this % → black, above → white.</div>
+      </div>
+    </div>
+
+    <div class="panel-body" id="panel-contrast">
+      <div class="section-tag">tương phản</div>
+      <div class="control-group">
+        <div class="control-label">Contrast</div>
+        <div class="value-display" id="ct-val">0</div>
+        <input type="range" min="-100" max="100" value="0" id="ct-slider" oninput="updateContrast(this.value)">
+        <div class="control-desc">Adjust image contrast intensity.</div>
+      </div>
+      <hr class="divider">
+      <div class="control-label" style="margin-bottom:10px;">Mode</div>
+      <div class="select-row">
+        <div class="sel-btn active" id="cm-bc" onclick="selectCMode('bc')">Brightness-Contrast</div>
+        <div class="sel-btn" id="cm-sig" onclick="selectCMode('sig')">Sigmoidal</div>
+        <div class="sel-btn" id="cm-stretch" onclick="selectCMode('stretch')">Stretch</div>
+        <div class="sel-btn" id="cm-level" onclick="selectCMode('level')">Level</div>
+        <div class="sel-btn" id="cm-clahe" onclick="selectCMode('clahe')">CLAHE</div>
+        <div class="sel-btn" id="cm-norm" onclick="selectCMode('norm')">Normalize</div>
+      </div>
+      <hr class="divider">
+      <div class="control-group" id="brightness-group">
+        <div class="control-label">Brightness</div>
+        <div class="value-display" id="br-val">0</div>
+        <input type="range" min="-100" max="100" value="0" id="br-slider" oninput="updateBrightness(this.value)">
+        <div class="control-desc">Adjust brightness alongside contrast.</div>
+      </div>
+      <div class="info-row" id="mode-info">
+        <div class="info-icon">i</div>
+        <div class="info-text" id="mode-desc">Adjusts brightness and contrast together using values from −100 to +100.</div>
+      </div>
+    </div>
+
+    <div class="cli-bar">
+      <div class="cli-header">
+        <div class="cli-title">CLI Preview</div>
+        <div class="cli-fn" id="fn-toggle" onclick="toggleFn()">function ▾</div>
+      </div>
+      <div class="cli-code" id="cli-out">magick "photo.jpg" -brightness-contrast <span class="cli-arg">0x0</span>
+"./output/photo_out.png"</div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentTab = 'contrast';
+let bwMethod = 'colorspace Gray -threshold';
+let bwMethodKey = 'gray';
+let contrastMode = 'bc';
+let bwVal = 54, threshVal = 54, ctVal = 0, brVal = 0;
+let ditherOn = false;
+
+const modeInfo = {
+  bc: 'Adjusts brightness and contrast together using values from −100 to +100.',
+  sig: 'Sigmoidal curve — avoids clipping highlights and shadows for smoother contrast.',
+  stretch: 'Stretches the intensity range; specify how many pixels clip to pure black/white.',
+  level: 'Set black point, white point, and gamma directly for fine-grained control.',
+  clahe: 'Adaptive histogram equalization on local tiles for detail in flat regions.',
+  norm: 'Auto-stretches color range to full spectrum — equivalent to contrast-stretch 0.'
+};
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('panel-bw').style.display = tab === 'bw' ? 'block' : 'none';
+  document.getElementById('panel-contrast').style.display = tab === 'contrast' ? 'block' : 'none';
+  document.getElementById('t-bw').className = 'tab' + (tab === 'bw' ? ' active' : '');
+  document.getElementById('t-contrast').className = 'tab' + (tab === 'contrast' ? ' active' : '');
+  document.getElementById('tab-bw').className = 'op-item' + (tab === 'bw' ? ' active' : '');
+  document.getElementById('tab-contrast').className = 'op-item' + (tab === 'contrast' ? ' active' : '');
+  document.getElementById('panel-title').textContent = tab === 'bw' ? 'BLACK & WHITE — OPTIONS' : 'CONTRAST — OPTIONS';
+  updateCLI();
+}
+
+function updateBW(v) {
+  bwVal = parseInt(v);
+  document.getElementById('bw-val').textContent = bwVal;
+  updateCLI();
+}
+
+function updateThresh(v) {
+  threshVal = parseInt(v);
+  document.getElementById('thresh-val').textContent = threshVal;
+  document.getElementById('bw-slider').value = v;
+  document.getElementById('bw-val').textContent = v;
+  bwVal = threshVal;
+  updateCLI();
+}
+
+function updateContrast(v) {
+  ctVal = parseInt(v);
+  document.getElementById('ct-val').textContent = ctVal;
+  updateCLI();
+}
+
+function updateBrightness(v) {
+  brVal = parseInt(v);
+  document.getElementById('br-val').textContent = brVal;
+  updateCLI();
+}
+
+function selectMethod(key, val) {
+  bwMethodKey = key;
+  bwMethod = val;
+  ['gray','mono','rec709','rec601'].forEach(k => {
+    document.getElementById('m-'+k).className = 'sel-btn' + (k === key ? ' active' : '');
+  });
+  updateCLI();
+}
+
+function selectCMode(mode) {
+  contrastMode = mode;
+  ['bc','sig','stretch','level','clahe','norm'].forEach(k => {
+    document.getElementById('cm-'+k).className = 'sel-btn' + (k === mode ? ' active' : '');
+  });
+  document.getElementById('brightness-group').style.display = mode === 'bc' ? 'block' : 'none';
+  document.getElementById('mode-desc').textContent = modeInfo[mode];
+  updateCLI();
+}
+
+function toggleDither() {
+  ditherOn = !ditherOn;
+  document.getElementById('dither-toggle').className = 'toggle' + (ditherOn ? ' on' : '');
+  updateCLI();
+}
+
+function updateCLI() {
+  let cmd = '';
+  if (currentTab === 'bw') {
+    if (bwMethodKey === 'mono') {
+      cmd = `magick "photo.jpg" -monochrome\n"./output/photo_out.png"`;
+    } else if (bwMethodKey === 'gray') {
+      const d = ditherOn ? ' -dither FloydSteinberg' : '';
+      cmd = `magick "photo.jpg" -colorspace Gray${d}\n-threshold <span class="cli-arg">${bwVal}%</span>\n"./output/photo_out.png"`;
+    } else {
+      const method = bwMethodKey === 'rec709' ? 'Rec709Luma' : 'Rec601Luma';
+      cmd = `magick "photo.jpg" -grayscale <span class="cli-arg">${method}</span>\n-threshold <span class="cli-arg">${bwVal}%</span>\n"./output/photo_out.png"`;
+    }
+  } else {
+    switch(contrastMode) {
+      case 'bc':
+        cmd = `magick "photo.jpg" -brightness-contrast <span class="cli-arg">${brVal}x${ctVal}</span>\n"./output/photo_out.png"`;
+        break;
+      case 'sig':
+        const mid = Math.round(50 + ctVal * 0.3);
+        cmd = `magick "photo.jpg" -sigmoidal-contrast <span class="cli-arg">${Math.abs(ctVal)}x${mid}%</span>\n"./output/photo_out.png"`;
+        break;
+      case 'stretch':
+        const bp = Math.max(0, -ctVal);
+        const wp = Math.max(0, ctVal);
+        cmd = `magick "photo.jpg" -contrast-stretch <span class="cli-arg">${bp}x${wp}</span>\n"./output/photo_out.png"`;
+        break;
+      case 'level':
+        const bl = Math.max(0, -ctVal * 0.5).toFixed(0);
+        const wl = Math.min(100, 100 - ctVal * 0.3).toFixed(0);
+        cmd = `magick "photo.jpg" -level <span class="cli-arg">${bl}%,${wl}%,1.0</span>\n"./output/photo_out.png"`;
+        break;
+      case 'clahe':
+        cmd = `magick "photo.jpg" -clahe <span class="cli-arg">25x25%+128+3</span>\n"./output/photo_out.png"`;
+        break;
+      case 'norm':
+        cmd = `magick "photo.jpg" -normalize\n"./output/photo_out.png"`;
+        break;
+    }
+  }
+  document.getElementById('cli-out').innerHTML = cmd;
+}
+
+function toggleFn() {
+  const el = document.getElementById('fn-toggle');
+  el.textContent = el.textContent.includes('▾') ? 'function ▴' : 'function ▾';
+}
+
+switchTab('contrast');
+</script>
