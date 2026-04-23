@@ -25,6 +25,18 @@ pub fn run() {
         .setup(|app| {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.set_decorations(false);
+
+                // For Linux/Wayland, setting the icon explicitly helps in dev mode.
+                #[cfg(desktop)]
+                {
+                    let icon_bytes = include_bytes!("../icons/32x32.png");
+                    if let Ok(image) = image::load_from_memory(icon_bytes) {
+                        let rgba = image.to_rgba8();
+                        let (width, height) = rgba.dimensions();
+                        let icon = tauri::image::Image::new_owned(rgba.into_raw(), width, height);
+                        let _ = window.set_icon(icon);
+                    }
+                }
             }
 
             #[cfg(all(desktop, target_os = "macos"))]
