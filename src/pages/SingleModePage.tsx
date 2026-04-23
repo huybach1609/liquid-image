@@ -1,61 +1,14 @@
 import {
-  cloneElement,
-  isValidElement,
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
-  type ComponentType,
-  type ReactNode,
 } from "react";
 import {
-  open as openDialog,
-  save as saveDialog,
-} from "@tauri-apps/plugin-dialog";
-import { openPath } from "@tauri-apps/plugin-opener";
-
-import BlackWhiteFunction from "@/shared/components/functions/BlackWhite";
-import BorderFunction from "@/shared/components/functions/Border";
-import ComposeFunction from "@/shared/components/functions/Compose";
-import ContrastFunction from "@/shared/components/functions/Contrast";
-import ConvertFunction from "@/shared/components/functions/Convert";
-import { CropFunction } from "@/shared/components/functions/Crop";
-import MirrorFunction from "@/shared/components/functions/Mirror";
-import NormalizeColorFunction from "@/shared/components/functions/NormalizeColor";
-import RotateFunction from "@/shared/components/functions/Rotate";
-import ScaleResizeFunction from "@/shared/components/functions/ScaleResize";
-import TextLogoFunction from "@/shared/components/functions/TextLogo";
-import VignetteFunction from "@/shared/components/functions/Vignette";
-import {
-  ALargeSmall,
-  Blend,
-  ChevronDown,
-  Contrast,
-  CropIcon,
-  Disc3,
-  Ellipsis,
-  FlipHorizontal2,
-  FolderOpen,
-  ImageIcon,
-  ImageUpscale,
-  Palette,
-  Play,
-  Rotate3d,
-  SquareRoundCorner,
-  SquaresUnite,
-} from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/shared/components/ui/tooltip";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  FUNCTION_CATALOG,
+  type FunctionSlug,
+} from "@/shared/constants/functionCatalog";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -63,253 +16,85 @@ import {
 } from "@/components/ui/resizable";
 import { useAppStore } from "@/app/store/app.store";
 import { useSingleStore } from "@/features/single/state/single.store";
-import { Button } from "@/shared/components/ui/button";
-import {
-  createImageProxy,
-  getImageMetadata,
-  removeProxyFile,
-  runSingle,
-} from "@/shared/tauri/commands";
-import { formatFileSize } from "@/lib/utils";
-import {
-  CanvasPreview,
-  type NaturalCropRect,
-} from "@/features/single/components/CanvasPreview";
-import { SingleCliPreview } from "@/features/single/components/SingleCliPreview";
+import { type NaturalCropRect } from "@/features/single/components/CanvasPreview";
+import { OperationsNav } from "@/features/single/components/OperationsNav";
+import { PreviewPane } from "@/features/single/components/PreviewPane";
+import { OptionsPane } from "@/features/single/components/OptionsPane";
 import { usePreviewPipeline } from "@/features/single/hooks/usePreviewPipeline";
+import { useSingleActions } from "@/features/single/hooks/useSingleActions";
 import {
-  buildSingleOperationArgs,
   buildSingleCliPipeline,
   buildSingleCliPreview,
   estimateProxyDimensions,
   type PreviewToFullImageScale,
 } from "@/features/single/buildSingleCliPreview";
-import { Spinner } from "@/components/ui/spinner";
+import { getFileNameFromPath } from "@/features/single/pathUtils";
 import { useTranslation } from "react-i18next";
-
-function getFileNameFromPath(filePath: string): string {
-  const normalized = filePath.replace(/\\/g, "/");
-  const parts = normalized.split("/");
-  return parts[parts.length - 1] || filePath;
-}
-
-function getFileNameWithoutExtension(filePath: string): string {
-  const filename = getFileNameFromPath(filePath);
-  const dotIndex = filename.lastIndexOf(".");
-  if (dotIndex <= 0) return filename;
-  return filename.slice(0, dotIndex);
-}
-
-function getFileExtension(filePath: string): string {
-  const filename = getFileNameFromPath(filePath);
-  const dotIndex = filename.lastIndexOf(".");
-  if (dotIndex <= 0) return "";
-  return filename.slice(dotIndex + 1).toLowerCase();
-}
-
-function getDirectoryPath(filePath: string): string {
-  const normalized = filePath.replace(/\\/g, "/");
-  const lastSlash = normalized.lastIndexOf("/");
-  if (lastSlash <= 0) {
-    return ".";
-  }
-
-  return normalized.slice(0, lastSlash);
-}
-
-function normalizeOutputDir(outputDir: unknown, fallback = "./output"): string {
-  if (typeof outputDir !== "string" || outputDir.trim().length === 0) {
-    return fallback;
-  }
-
-  return outputDir.trim().replace(/[\\/]+$/, "");
-}
-
-function normalizeOutputName(
-  outputName: unknown,
-  fallback = "photo_out",
-): string {
-  if (typeof outputName !== "string" || outputName.trim().length === 0) {
-    return fallback;
-  }
-
-  return outputName.trim();
-}
-
-function normalizeOutputExt(outputFormat: unknown, fallback = "png"): string {
-  if (typeof outputFormat !== "string" || outputFormat.trim().length === 0) {
-    return fallback;
-  }
-
-  const normalized = outputFormat.trim().toLowerCase();
-  return normalized === "jpeg" ? "jpg" : normalized;
-}
-
-type FunctionSlug =
-  | "convert"
-  | "crop"
-  | "mirror"
-  | "blackWhite"
-  | "contrast"
-  | "normalizeColors"
-  | "vignette"
-  | "border"
-  | "rotate"
-  | "scaleResize"
-  | "textLogo"
-  | "compose";
-
-type SingleFunctionCatalogEntry = {
-  /** Stable id used in store and ImageMagick routing (English labels). */
-  id: string;
-  slug: FunctionSlug;
-  component: ComponentType;
-  icon: ReactNode;
-};
-
-const iconView = (icon: ReactNode, size: number) => {
-  if (!isValidElement<{ className?: string }>(icon)) {
-    return icon;
-  }
-
-  const existingClassName =
-    typeof icon.props.className === "string" ? icon.props.className : "";
-  const sizeClassName = size > 0 ? `size-${size}` : "";
-
-  return cloneElement(icon, {
-    className: `${existingClassName} ${sizeClassName}`.trim(),
-  });
-};
-const SINGLE_FUNCTION_CATALOG: readonly SingleFunctionCatalogEntry[] = [
-  {
-    id: "Convert",
-    slug: "convert",
-    component: ConvertFunction,
-    icon: iconView(<ImageIcon className="size-4"/>, 4),
-  },
-  {
-    id: "Crop",
-    slug: "crop",
-    component: CropFunction,
-    icon: <CropIcon className="size-4" />,
-  },
-  {
-    id: "Mirror",
-    slug: "mirror",
-    component: MirrorFunction,
-    icon: <FlipHorizontal2 className="size-4" />,
-  },
-  {
-    id: "Black & white",
-    slug: "blackWhite",
-    component: BlackWhiteFunction,
-    icon: <Blend className="size-4" />,
-  },
-  {
-    id: "Contrast",
-    slug: "contrast",
-    component: ContrastFunction,
-    icon: <Contrast className="size-4" />,
-  },
-  {
-    id: "Normalize colors",
-    slug: "normalizeColors",
-    component: NormalizeColorFunction,
-    icon: <Palette className="size-4" />,
-  },
-  {
-    id: "Vignette",
-    slug: "vignette",
-    component: VignetteFunction,
-    icon: <Disc3 className="size-4" />,
-  },
-  {
-    id: "Border",
-    slug: "border",
-    component: BorderFunction,
-    icon: <SquareRoundCorner className="size-4" />,
-  },
-  {
-    id: "Rotate",
-    slug: "rotate",
-    component: RotateFunction,
-    icon: <Rotate3d className="size-4" />,
-  },
-  {
-    id: "Scale / resize",
-    slug: "scaleResize",
-    component: ScaleResizeFunction,
-    icon: <ImageUpscale className="size-4" />,
-  },
-  {
-    id: "Text / logo",
-    slug: "textLogo",
-    component: TextLogoFunction,
-    icon: <ALargeSmall className="size-4" />,
-  },
-  {
-    id: "Compose",
-    slug: "compose",
-    component: ComposeFunction,
-    icon: <SquaresUnite className="size-4" />,
-  },
-];
+import { useShallow } from "zustand/react/shallow";
 
 function slugForFunctionId(functionId: string): FunctionSlug {
   return (
-    SINGLE_FUNCTION_CATALOG.find((e) => e.id === functionId)?.slug ?? "convert"
+    FUNCTION_CATALOG.find((e) => e.id === functionId)?.slug ?? "convert"
   );
 }
 
 export function SingleModePage() {
   const { t } = useTranslation("single");
   const [cliPreviewMode, setCliPreviewMode] = useState<"function" | "all">(
-    "function",
+    "all",
   );
-  const [outputPathOverride, setOutputPathOverride] = useState<string | null>(
-    null,
-  );
-  const [lastOutputPath, setLastOutputPath] = useState<string | null>(null);
-  const [isPreparingProxy, setIsPreparingProxy] = useState(false);
   const [isOperationsPanelCompact, setIsOperationsPanelCompact] = useState(false);
   const operationsPanelRef = useRef<HTMLElement | null>(null);
-  const selectedFile = useSingleStore((state) => state.selectedFile);
-  const proxyPath = useSingleStore((state) => state.proxyPath);
-  const fileMetadata = useSingleStore((state) => state.fileMetadata);
-  const setSelectedFile = useSingleStore((state) => state.setSelectedFile);
-  const setProxyPath = useSingleStore((state) => state.setProxyPath);
-  const setFileMetadata = useSingleStore((state) => state.setFileMetadata);
-  const selectedFunctionName = useSingleStore(
-    (state) => state.selectedFunction,
+  const {
+    selectedFile,
+    proxyPath,
+    fileMetadata,
+    setSelectedFile,
+    setProxyPath,
+    setFileMetadata,
+    selectedFunctionName,
+    setSelectedFunctionName,
+    previewZoom,
+    setPreviewZoom,
+    functionParams,
+    functionParamsByFunction,
+    runState,
+    isManualPreview,
+    previewRequestId,
+    setIsManualPreview,
+    requestPreview,
+    resetCurrentFunctionParams,
+    resetAllFunctionParams,
+    setFunctionParams,
+    setRunStatus,
+  } = useSingleStore(
+    useShallow((state) => ({
+      selectedFile: state.selectedFile,
+      proxyPath: state.proxyPath,
+      fileMetadata: state.fileMetadata,
+      setSelectedFile: state.setSelectedFile,
+      setProxyPath: state.setProxyPath,
+      setFileMetadata: state.setFileMetadata,
+      selectedFunctionName: state.selectedFunction,
+      setSelectedFunctionName: state.setSelectedFunction,
+      previewZoom: state.previewZoom,
+      setPreviewZoom: state.setPreviewZoom,
+      functionParams: state.functionParams,
+      functionParamsByFunction: state.functionParamsByFunction,
+      runState: state.runState,
+      isManualPreview: state.isManualPreview,
+      previewRequestId: state.previewRequestId,
+      setIsManualPreview: state.setIsManualPreview,
+      requestPreview: state.requestPreview,
+      resetCurrentFunctionParams: state.resetCurrentFunctionParams,
+      resetAllFunctionParams: state.resetAllFunctionParams,
+      setFunctionParams: state.setFunctionParams,
+      setRunStatus: state.setRunStatus,
+    })),
   );
-  const setSelectedFunctionName = useSingleStore(
-    (state) => state.setSelectedFunction,
-  );
-  const previewZoom = useSingleStore((state) => state.previewZoom);
-  const setPreviewZoom = useSingleStore((state) => state.setPreviewZoom);
-  const functionParams = useSingleStore((state) => state.functionParams);
-  const functionParamsByFunction = useSingleStore(
-    (state) => state.functionParamsByFunction,
-  );
-  const runState = useSingleStore((state) => state.runState);
-  const isManualPreview = useSingleStore((state) => state.isManualPreview);
-  const previewRequestId = useSingleStore((state) => state.previewRequestId);
-  const setIsManualPreview = useSingleStore(
-    (state) => state.setIsManualPreview,
-  );
-  const requestPreview = useSingleStore((state) => state.requestPreview);
-  const resetCurrentFunctionParams = useSingleStore(
-    (state) => state.resetCurrentFunctionParams,
-  );
-  const resetAllFunctionParams = useSingleStore(
-    (state) => state.resetAllFunctionParams,
-  );
-  const setFunctionParams = useSingleStore((state) => state.setFunctionParams);
-  const setRunStatus = useSingleStore((state) => state.setRunStatus);
   const openImageMenuRequestId = useAppStore(
     (state) => state.openImageMenuRequestId,
   );
-  const lastProcessedOpenImageMenuRequestId = useRef(0);
 
   const isRunning = runState.status === "running";
   const message = runState.message;
@@ -341,8 +126,8 @@ export function SingleModePage() {
 
   const selectedCatalogEntry = useMemo(
     () =>
-      SINGLE_FUNCTION_CATALOG.find((e) => e.id === selectedFunctionName) ??
-      SINGLE_FUNCTION_CATALOG[0],
+      FUNCTION_CATALOG.find((e) => e.id === selectedFunctionName) ??
+      FUNCTION_CATALOG[0],
     [selectedFunctionName],
   );
   const selectedFunctionLabels = useMemo(
@@ -356,7 +141,7 @@ export function SingleModePage() {
 
   const functionNavItems = useMemo(
     () =>
-      SINGLE_FUNCTION_CATALOG.map((entry) => ({
+      FUNCTION_CATALOG.map((entry) => ({
         ...entry,
         label: t(`functions.${entry.slug}.name`),
         description: t(`functions.${entry.slug}.note`),
@@ -366,10 +151,15 @@ export function SingleModePage() {
 
   const editedFunctionNames = useMemo(
     () =>
-      Object.entries(functionParamsByFunction)
-        .filter(([, params]) => Object.keys(params).length > 0)
-        .map(([name]) => name),
+      FUNCTION_CATALOG.map((entry) => entry.id).filter(
+        (functionName) =>
+          Object.keys(functionParamsByFunction[functionName] ?? {}).length > 0,
+      ),
     [functionParamsByFunction],
+  );
+  const editedFunctionNameSet = useMemo(
+    () => new Set(editedFunctionNames),
+    [editedFunctionNames],
   );
   const previewOperations = useMemo(() => {
     if (cliPreviewMode === "all") {
@@ -492,15 +282,14 @@ export function SingleModePage() {
 
   const handleFreeCropComplete = useCallback(
     (rect: NaturalCropRect) => {
-      const fp = useSingleStore.getState().functionParams;
-      setFunctionParams({
-        ...fp,
+      setFunctionParams((prev: Record<string, unknown>) => ({
+        ...prev,
         cropX: rect.x,
         cropY: rect.y,
         cropW: rect.width,
         cropH: rect.height,
         cropGravity: "NW",
-      });
+      }));
     },
     [setFunctionParams],
   );
@@ -576,240 +365,23 @@ export function SingleModePage() {
     previewToFullScale,
   ]);
 
-  const defaultOutputPath = useMemo(() => {
-    const convertParams = functionParamsByFunction["Convert"] ?? {};
-
-    const inputDir = selectedFile ? getDirectoryPath(selectedFile) : "./output";
-    const inputName = selectedFile
-      ? getFileNameWithoutExtension(selectedFile)
-      : "photo_out";
-    const inputExt = selectedFile ? getFileExtension(selectedFile) : "png";
-
-    const outputDir = normalizeOutputDir(convertParams.outputDir, inputDir);
-    const outputName = normalizeOutputName(convertParams.outputName, inputName);
-    const outputExt = normalizeOutputExt(convertParams.outputFormat, inputExt);
-
-    return `${outputDir}/${outputName}.${outputExt}`;
-  }, [selectedFile, functionParamsByFunction]);
-
-  const ingestSelectedImagePath = useCallback(
-    async (selectedPath: string) => {
-      const previousProxy = useSingleStore.getState().proxyPath;
-      if (previousProxy) {
-        try {
-          await removeProxyFile(previousProxy);
-        } catch {
-          /* best-effort cleanup */
-        }
-      }
-
-      setSelectedFile(selectedPath);
-      setProxyPath(null);
-      setIsPreparingProxy(true);
-
-      try {
-        try {
-          const proxy = await createImageProxy(selectedPath);
-          setProxyPath(proxy);
-        } catch (error) {
-          const message =
-            error instanceof Error
-              ? error.message
-              : t("errors.previewProxyFailed");
-          console.error("Failed to create preview proxy", error);
-          setRunStatus("error", message);
-          setProxyPath(null);
-        }
-
-        const meta = await getImageMetadata(selectedPath);
-        setFileMetadata(meta ?? null);
-      } finally {
-        setIsPreparingProxy(false);
-      }
-    },
-    [setSelectedFile, setProxyPath, setRunStatus, setFileMetadata, t],
-  );
-
-  const pickAndOpenSingleImage = useCallback(async () => {
-    const picked = await openDialog({
-      filters: [
-        {
-          name: t("dialog.imageFilter"),
-          extensions: [
-            "png",
-            "jpg",
-            "jpeg",
-            "gif",
-            "webp",
-            "tiff",
-            "bmp",
-            "heic",
-          ],
-        },
-      ],
+  const { isPreparingProxy, lastOutputPath, handleRunSingle, handleOpenOutputFolder } =
+    useSingleActions({
+      t,
+      openImageMenuRequestId,
+      selectedFile,
+      proxyPath,
+      selectedFunctionName,
+      functionParamsByFunction,
+      editedFunctionNames,
+      cliPreviewMode,
+      previewToFullScale,
+      isRunning,
+      setSelectedFile,
+      setProxyPath,
+      setFileMetadata,
+      setRunStatus,
     });
-
-    if (!picked) {
-      return;
-    }
-
-    const selectedPath = Array.isArray(picked) ? picked[0] : picked;
-    if (!selectedPath) {
-      return;
-    }
-
-    await ingestSelectedImagePath(selectedPath);
-  }, [ingestSelectedImagePath, t]);
-
-  useEffect(() => {
-    if (
-      openImageMenuRequestId === 0 ||
-      openImageMenuRequestId === lastProcessedOpenImageMenuRequestId.current
-    ) {
-      return;
-    }
-    lastProcessedOpenImageMenuRequestId.current = openImageMenuRequestId;
-    void pickAndOpenSingleImage();
-  }, [openImageMenuRequestId, pickAndOpenSingleImage]);
-
-  const handleChooseOutputPath = async () => {
-    // Sync suggested extension with chosen format (from Convert tab or input file fallback)
-    const convertParams = functionParamsByFunction["Convert"] ?? {};
-    const inputExt = selectedFile ? getFileExtension(selectedFile) : "png";
-    const outputExt = normalizeOutputExt(convertParams.outputFormat, inputExt);
-
-    let defaultPath = outputPathOverride ?? defaultOutputPath;
-    if (outputPathOverride) {
-      const dir = getDirectoryPath(outputPathOverride);
-      const name = getFileNameWithoutExtension(outputPathOverride);
-      defaultPath = `${dir}/${name}.${outputExt}`;
-    }
-
-    const picked = await saveDialog({
-      defaultPath,
-      filters: [
-        {
-          name: t("dialog.imageOutputFilter"),
-          extensions: ["png", "jpg", "jpeg", "webp", "tiff", "bmp", "heic"],
-        },
-      ],
-    });
-
-    if (!picked) {
-      return;
-    }
-
-    const selectedPath = Array.isArray(picked) ? picked[0] : picked;
-    if (!selectedPath) {
-      return;
-    }
-
-    setOutputPathOverride(selectedPath);
-    setRunStatus(
-      "idle",
-      t("status.outputSet", { file: getFileNameFromPath(selectedPath) }),
-    );
-  };
-
-  const handleOpenOutputFolder = async () => {
-    if (!lastOutputPath) {
-      return;
-    }
-
-    try {
-      await openPath(getDirectoryPath(lastOutputPath));
-    } catch (error) {
-      console.error("[SingleModePage] Failed to open output folder", {
-        lastOutputPath,
-        outputDir: getDirectoryPath(lastOutputPath),
-        error,
-      });
-      setRunStatus("error", t("errors.openOutputFolder"));
-    }
-  };
-
-  const handleRunSingle = async () => {
-    if (!selectedFile || isRunning) {
-      return;
-    }
-
-    // Sync suggested extension with chosen format (from Convert tab or input file fallback)
-    const convertParams = functionParamsByFunction["Convert"] ?? {};
-    const inputExt = getFileExtension(selectedFile);
-    const outputExt = normalizeOutputExt(convertParams.outputFormat, inputExt);
-
-    let defaultPath = outputPathOverride ?? defaultOutputPath;
-    if (outputPathOverride) {
-      const dir = getDirectoryPath(outputPathOverride);
-      const name = getFileNameWithoutExtension(outputPathOverride);
-      defaultPath = `${dir}/${name}.${outputExt}`;
-    }
-
-    // 1. Force the user to choose an output path (Save As)
-    const picked = await saveDialog({
-      defaultPath,
-      filters: [
-        {
-          name: t("dialog.imageOutputFilter"),
-          extensions: ["png", "jpg", "jpeg", "webp", "tiff", "bmp", "heic"],
-        },
-      ],
-    });
-
-    if (!picked) {
-      return;
-    }
-
-    const outputPath = Array.isArray(picked) ? picked[0] : picked;
-    if (!outputPath) {
-      return;
-    }
-
-    // Update override so the next run defaults to this location/name
-    setOutputPathOverride(outputPath);
-
-    const targetFunctions =
-      cliPreviewMode === "all"
-        ? editedFunctionNames.length > 0
-          ? editedFunctionNames
-          : [selectedFunctionName]
-        : [selectedFunctionName];
-
-    const args: string[] = [];
-    for (const functionName of targetFunctions) {
-      const params = functionParamsByFunction[functionName] ?? {};
-      args.push(
-        ...buildSingleOperationArgs(functionName, params, previewToFullScale),
-      );
-    }
-
-    try {
-      setRunStatus("running", t("status.runningMagick"));
-      const response = await runSingle({
-        inputPath: selectedFile,
-        outputPath,
-        args,
-      });
-      setLastOutputPath(response.outputPath);
-      setRunStatus(
-        "success",
-        t("status.done", {
-          file: getFileNameFromPath(response.outputPath),
-          width: response.width,
-          height: response.height,
-        }),
-      );
-    } catch (error) {
-      console.error("[SingleModePage] runSingle failed:", error);
-      const message =
-        error instanceof Error
-          ? error.message
-          : typeof error === "string"
-            ? error
-            : t("errors.runCommandFailed");
-      setRunStatus("error", message);
-    }
-  };
 
   return (
     <ResizablePanelGroup className="h-full border border-border/70 bg-card">
@@ -820,246 +392,54 @@ export function SingleModePage() {
         className="bg-muted/20"
         
       >
-        <aside ref={operationsPanelRef} className="h-full">
-          <div
-            className={`flex h-14 items-center border-b border-border/70 text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase ${
-              isOperationsPanelCompact ? "justify-center px-2" : "px-5"
-            }`}
-          >
-            {isOperationsPanelCompact ? "Ops" : t("operations.heading")}
-          </div>
-          <nav className="py-2">
-            {functionNavItems.map((item) => {
-              const isSelected = selectedFunctionName === item.id;
-              const isEdited =
-                Object.keys(functionParamsByFunction[item.id] ?? {}).length > 0;
-              return (
-                <Tooltip key={item.id} delayDuration={700}>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      aria-pressed={isSelected}
-                      aria-label={item.label}
-                      className={`flex w-full items-center border-r-2 py-2 text-[13px] leading-5 transition-colors outline-none ${
-                        isOperationsPanelCompact
-                          ? "justify-center gap-0 px-2 h-12"
-                          : "gap-2 px-5 text-left"
-                      } ${
-                        isSelected
-                          ? "border-primary bg-background/80 font-medium text-primary"
-                          : "border-transparent text-muted-foreground hover:bg-background/70 hover:text-foreground"
-                      }`}
-                      onClick={() => setSelectedFunctionName(item.id)}
-                    >
-                      {iconView(item.icon, isOperationsPanelCompact ? 6 : 4)}
-                      {!isOperationsPanelCompact ? (
-                        <span className="inline-flex items-center gap-1.5">
-                          {item.label}
-                          {isEdited ? (
-                            <span
-                              className="size-1.5 rounded-full bg-primary/80"
-                              aria-label={t("operations.editedBadgeAria", {
-                                name: item.label,
-                              })}
-                              title={t("operations.editedBadgeTitle")}
-                            />
-                          ) : null}
-                        </span>
-                      ) : null}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    <p>
-                      {item.label}
-                      {item.description ? ` - ${item.description}` : ""}
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              );
-            })}
-          </nav>
-        </aside>
+        <OperationsNav
+          operationsPanelRef={operationsPanelRef}
+          isCompact={isOperationsPanelCompact}
+          functionNavItems={functionNavItems}
+          selectedFunctionName={selectedFunctionName}
+          editedFunctionNameSet={editedFunctionNameSet}
+          onSelectFunction={setSelectedFunctionName}
+        />
       </ResizablePanel>
 
       <ResizableHandle withHandle />
 
       <ResizablePanel defaultSize={40} minSize={20}>
-        <div className="grid h-full min-w-0 grid-rows-[auto_1fr_auto]">
-          <header className="flex h-14 items-center gap-2 border-b border-border/70 px-4">
-            <div className="ml-auto flex items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="rounded-lg px-3"
-                  >
-                    {isManualPreview ? t("preview.manual") : t("preview.auto")}
-                    <ChevronDown className="ml-1 size-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onSelect={() => setIsManualPreview(false)}
-                    className="cursor-pointer"
-                  >
-                    {t("preview.auto")}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onSelect={() => setIsManualPreview(true)}
-                    className="cursor-pointer"
-                  >
-                    {t("preview.manual")}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {isManualPreview ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  disabled={
-                    !selectedFile ||
-                    !proxyPath ||
-                    isPreparingProxy ||
-                    !isManualPreview ||
-                    previewState.isPending
-                  }
-                  onClick={requestPreview}
-                  className="rounded-lg"
-                >
-                  {isManualPreview
-                    ? previewState.isPending
-                      ? t("preview.previewing")
-                      : t("preview.preview")
-                    : t("preview.preview")}
-                </Button>
-              ) : null}
-
-              <Button
-                type="button"
-                disabled={isRunning || !selectedFile || isPreparingProxy}
-                className="size-7"
-                variant={isRunning ? "default" : "outline"}
-                onClick={handleRunSingle}
-              >
-                {isRunning ? <Spinner /> : <Play />}
-              </Button>
-            </div>
-          </header>
-
-          <div className="relative flex items-center justify-center bg-muted/25">
-            <CanvasPreview
-              originUrl={previewState.originUrl}
-              previewUrl={previewState.previewUrl}
-              isPending={previewState.isPending}
-              isSourcePreparing={isPreparingProxy}
-              error={previewState.error}
-              zoomPercent={previewZoom}
-              onZoomChange={setPreviewZoom}
-              freeCrop={canvasFreeCrop}
-            />
-          </div>
-
-          <footer className="flex items-center justify-between border-t border-border/70 px-4 py-3">
-            {fileMetadata && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="rounded-md border border-border bg-muted/40 px-2 py-1">
-                      {getFileNameFromPath(selectedFile ?? "photo.jpg")}
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    <p>{selectedFile ?? "photo.jpg"}</p>
-                  </TooltipContent>
-                </Tooltip>
-                <span className="rounded-md border border-border bg-muted/40 px-2 py-1">
-                  {fileMetadata?.width} × {fileMetadata?.height}
-                </span>
-                {previewState.width && previewState.height ? (
-                  <span className="rounded-md border border-border bg-muted/40 px-2 py-1">
-                    {t("metadata.previewDimensions", {
-                      w: previewState.width,
-                      h: previewState.height,
-                    })}
-                  </span>
-                ) : null}
-                <span className="rounded-md border border-border bg-muted/40 px-2 py-1">
-                  {formatFileSize(fileMetadata?.fileSizeBytes)}
-                </span>
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground">
-              {message || t("status.imagemagickDefault")}
-            </p>
-            {runState.status === "success" && lastOutputPath ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="ml-3 h-7"
-                onClick={handleOpenOutputFolder}
-              >
-                {t("output.openOutputFolder")}
-              </Button>
-            ) : null}
-          </footer>
-        </div>
+        <PreviewPane
+          isManualPreview={isManualPreview}
+          setIsManualPreview={setIsManualPreview}
+          selectedFile={selectedFile}
+          proxyPath={proxyPath}
+          isPreparingProxy={isPreparingProxy}
+          isRunning={isRunning}
+          requestPreview={requestPreview}
+          handleRunSingle={handleRunSingle}
+          previewState={previewState}
+          previewZoom={previewZoom}
+          setPreviewZoom={setPreviewZoom}
+          canvasFreeCrop={canvasFreeCrop}
+          fileMetadata={fileMetadata}
+          message={message}
+          defaultStatusMessage={t("status.imagemagickDefault")}
+          lastOutputPath={lastOutputPath}
+          runStatus={runState.status}
+          onOpenOutputFolder={handleOpenOutputFolder}
+          getFileNameFromPath={getFileNameFromPath}
+        />
       </ResizablePanel>
 
       <ResizableHandle withHandle />
 
-      <ResizablePanel  defaultSize={30} minSize={20}>
-        <aside className="flex h-full flex-col min-h-0">
-          <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border/70 px-4">
-            <span className="text-xs font-medium tracking-[0.08em] text-muted-foreground uppercase">
-              {t("optionsPanel.title", { name: selectedFunctionLabels.name })}
-            </span>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="size-7"
-                >
-                  <Ellipsis />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={resetCurrentFunctionParams}>
-                  {t("reset.current", { name: selectedFunctionLabels.name })}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={resetAllFunctionParams}>
-                  {t("reset.all")}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-
-          <ResizablePanelGroup orientation="vertical">
-            <ResizablePanel defaultSize={70} minSize={30}>
-              <div className="h-full overflow-auto px-4 py-3">
-                <SelectedFunctionComponent />
-              </div>
-            </ResizablePanel>
-
-            <ResizableHandle withHandle />
-
-            <ResizablePanel defaultSize={30} minSize={10}>
-              <div className="h-full overflow-auto px-4 py-3">
-                <SingleCliPreview
-                  commandPreviews={commandPreviews}
-                  cliPreviewMode={cliPreviewMode}
-                  setCliPreviewMode={setCliPreviewMode}
-                />
-              </div>
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        </aside>
+      <ResizablePanel defaultSize={30} minSize={20}>
+        <OptionsPane
+          selectedFunctionNameLabel={selectedFunctionLabels.name}
+          resetCurrentFunctionParams={resetCurrentFunctionParams}
+          resetAllFunctionParams={resetAllFunctionParams}
+          SelectedFunctionComponent={SelectedFunctionComponent}
+          commandPreviews={commandPreviews}
+          cliPreviewMode={cliPreviewMode}
+          setCliPreviewMode={setCliPreviewMode}
+        />
       </ResizablePanel>
     </ResizablePanelGroup>
   );

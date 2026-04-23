@@ -1,0 +1,52 @@
+{
+  "queue": {
+    "title": "Input Queue",
+    "clear": "Clear",
+    "addFiles": "Add files",
+    "empty": "Queue is empty. Add some images to start.",
+    "total": "total",
+    "done": "done",
+    "errors": "errors"
+  },
+  "pipeline": {
+    "title": "Pipeline",
+    "savePreset": "Save preset",
+    "loadPreset": "Load preset",
+    "emptyTitle": "Your pipeline is empty",
+    "emptySubtitle": "Add an operation below to start processing images.",
+    "addOperation": "Add operation",
+    "preview": "Mogrify Preview (per file)"
+  },
+  "tabs": {
+    "output": "Output",
+    "log": "Log",
+    "settings": "Settings"
+  },
+  "output": {
+    "destination": "Destination Directory",
+    "hint": "Processed images will be saved here.",
+    "naming": "File Naming",
+    "nameOriginal": "Keep original names",
+    "namePrefix": "Add prefix",
+    "nameSuffix": "Add suffix",
+    "nameCounter": "Sequential (001...)"
+  },
+  "log": {
+    "title": "Execution Log",
+    "empty": "No log entries yet. Run a batch to see output."
+  },
+  "settings": {
+    "performance": "Performance",
+    "concurrency": "Parallel Workers",
+    "gpuTitle": "GPU Acceleration",
+    "gpuDesc": "Use OpenCL when available.",
+    "advanced": "Advanced",
+    "dryRunLimit": "Dry Run Limit",
+    "overwrite": "Overwrite Existing"
+  },
+  "actions": {
+    "dryRun": "Dry run",
+    "runBatch": "Run batch",
+    "stopBatch": "Stop"
+  }
+}

@@ -4,159 +4,71 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { BatchQueuePanel } from "@/features/batch/components/BatchQueuePanel";
+import { BatchPipelinePanel } from "@/features/batch/components/BatchPipelinePanel";
+import { BatchOutputPanel } from "@/features/batch/components/BatchOutputPanel";
+import { BatchLogPanel } from "@/features/batch/components/BatchLogPanel";
+import { BatchSettingsPanel } from "@/features/batch/components/BatchSettingsPanel";
+import { BatchBottomBar } from "@/features/batch/components/BatchBottomBar";
+import { useTranslation } from "react-i18next";
 
 export function BatchModePage() {
-  const [activeTab, setActiveTab] = useState<"output" | "log" | "settings">("output");
+  const { t } = useTranslation("batch");
+  const [activeTab, setActiveTab] = useState<"output" | "log" | "settings">(
+    "output",
+  );
 
   return (
-    <ResizablePanelGroup className="h-full border border-border/70 bg-card">
-      <ResizablePanel defaultSize={200} minSize={200} maxSize={400} className="bg-muted/20">
-      <aside className="grid h-full min-h-0 grid-rows-[auto_1fr_auto] border-r border-border/70">
-        <header className="flex items-center justify-between border-b border-border/70 px-4 py-3">
-          <p className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
-            Input Queue
-          </p>
-          <button type="button" className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm">
-            + Add files
-          </button>
-        </header>
-
-        <div className="overflow-auto px-3 py-3">
-          <div className="mb-3 rounded-lg border border-border/70 bg-muted/30 p-2 text-xs text-muted-foreground">
-            ~/photos/raw/
-          </div>
-          {[
-            { name: "sunset_01.jpg", meta: "4032×3024 · 3.8 MB", state: "done" },
-            { name: "portrait_02.jpg", meta: "2448×3264 · 2.1 MB", state: "done" },
-            { name: "landscape_03.jpg", meta: "processing...", state: "run" },
-            { name: "citynight_04.jpg", meta: "5472×3648 · 6.2 MB", state: "wait" },
-            { name: "scan_corrupt.tif", meta: "unsupported depth", state: "error" },
-          ].map((item) => (
-            <div
-              key={item.name}
-              className={`mb-2 rounded-lg border px-3 py-2 ${
-                item.state === "run"
-                  ? "border-info/60 bg-info/10"
-                  : item.state === "error"
-                    ? "border-destructive/50 bg-destructive/10"
-                    : "border-border/70 bg-background"
-              }`}
-            >
-              <p className="text-sm font-medium">{item.name}</p>
-              <p className="text-xs text-muted-foreground">{item.meta}</p>
-            </div>
-          ))}
-        </div>
-
-        <footer className="border-t border-border/70 px-4 py-3">
-          <p className="text-xs text-muted-foreground">2 done · 1 running · 1 error</p>
-        </footer>
-      </aside>
+    <ResizablePanelGroup className="h-full border border-border/70 bg-card overflow-hidden">
+      {/* Left Sidebar: Input Queue */}
+      <ResizablePanel defaultSize={20} minSize={15} className="bg-muted/5">
+        <BatchQueuePanel />
       </ResizablePanel>
 
       <ResizableHandle withHandle />
 
-      <ResizablePanel defaultSize={500} minSize={500} maxSize={800}>
-      <div className="grid h-full min-h-0 grid-rows-[auto_1fr_auto]">
-        <header className="flex items-center gap-2 border-b border-border/70 px-4 py-3">
-          <p className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Pipeline</p>
-          <div className="ml-auto flex items-center gap-2">
-            <button type="button" className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm">
-              Save preset
-            </button>
-            <button type="button" className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm">
-              Load preset
-            </button>
-          </div>
-        </header>
-
-        <div className="overflow-auto px-3 py-3">
-          {["Resize", "Normalize colors", "Convert"].map((step, index) => (
-            <div key={step} className="mb-2 rounded-lg border border-border/70 bg-background p-3">
-              <div className="flex items-center gap-2">
-                <span className="flex size-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                  {index + 1}
-                </span>
-                <p className="text-sm font-medium">{step}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <footer className="border-t border-border/70 px-4 py-3">
-          <p className="mb-1 text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
-            Mogrify Preview (per file)
-          </p>
-          <code className="text-xs text-primary">
-            mogrify -path ./out/ -resize 1920x1080 -filter Lanczos -normalize -quality 85 -strip -format webp *.jpg
-          </code>
-        </footer>
-      </div>
+      {/* Main Content: Pipeline */}
+      <ResizablePanel defaultSize={55} minSize={40}>
+        <BatchPipelinePanel />
       </ResizablePanel>
 
       <ResizableHandle withHandle />
 
-      <ResizablePanel defaultSize={200} minSize={200} maxSize={500}>
-      <aside className="grid h-full min-h-0 grid-rows-[auto_1fr_auto] border-l border-border/70">
-        <div className="flex h-14 items-center border-b border-border/70 px-1">
-          {[
-            { id: "output", label: "Output" },
-            { id: "log", label: "Log" },
-            { id: "settings", label: "Settings" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id as "output" | "log" | "settings")}
-              className={`h-full px-3 text-sm ${
-                activeTab === tab.id
-                  ? "border-b-2 border-primary font-medium text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="overflow-auto px-4 py-3">
-          {activeTab === "output" && (
-            <div className="space-y-3">
-              <p className="text-xs font-medium tracking-[0.08em] text-muted-foreground uppercase">Destination</p>
-              <input className="h-8 w-full rounded-lg border border-input bg-background px-2 text-sm" value="./out/" readOnly />
-              <select className="h-8 w-full rounded-lg border border-input bg-background px-2 text-sm">
-                <option>Same name</option>
-              </select>
-            </div>
-          )}
-          {activeTab === "log" && (
-            <div className="space-y-1 font-mono text-xs text-muted-foreground">
-              <p>✓ sunset_01.jpg -&gt; sunset_01.webp</p>
-              <p>↻ landscape_03.jpg - step 2/3...</p>
-              <p>✕ scan_corrupt.tif - unsupported depth</p>
-            </div>
-          )}
-          {activeTab === "settings" && (
-            <div className="space-y-3">
-              <p className="text-xs font-medium tracking-[0.08em] text-muted-foreground uppercase">Runtime</p>
-              <select className="h-8 w-full rounded-lg border border-input bg-background px-2 text-sm">
-                <option>4 workers</option>
-              </select>
-            </div>
-          )}
-        </div>
-
-        <footer className="border-t border-border/70 px-4 py-3">
-          <div className="flex gap-2">
-            <button type="button" className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm">
-              Dry run
-            </button>
-            <button type="button" className="flex-1 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground">
-              Run batch
-            </button>
+      {/* Right Sidebar: Tabs & Execution */}
+      <ResizablePanel defaultSize={25} minSize={20}>
+        <aside className="grid h-full min-h-0 grid-rows-[auto_1fr_auto] border-l border-border/70">
+          {/* Tabs Header */}
+          <div className="flex h-12 items-center border-b border-border/70 bg-muted/10 px-1">
+            {[
+              { id: "output", label: t("tabs.output", "Output") },
+              { id: "log", label: t("tabs.log", "Log") },
+              { id: "settings", label: t("tabs.settings", "Settings") },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex-1 h-full flex items-center justify-center text-[11px] font-semibold tracking-wider uppercase transition-all ${
+                  activeTab === tab.id
+                    ? "bg-background border-x border-border/70 text-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
-        </footer>
-      </aside>
+
+          {/* Tab Content */}
+          <div className="overflow-auto p-4 bg-background">
+            {activeTab === "output" && <BatchOutputPanel />}
+            {activeTab === "log" && <BatchLogPanel />}
+            {activeTab === "settings" && <BatchSettingsPanel />}
+          </div>
+
+          {/* Actions Footer */}
+          <BatchBottomBar />
+        </aside>
       </ResizablePanel>
     </ResizablePanelGroup>
   );

@@ -6,13 +6,15 @@ export type BatchQueueItem = {
   fileName: string;
   status: BatchJobStatus;
   errorMessage?: string;
+  progress?: number;
 };
 
 export type BatchPipelineStep = {
-  id: string;
-  label: string;
+  id: string; // Unique instance ID
+  functionId: string; // ID from FUNCTION_CATALOG (e.g., "Scale / resize")
   enabled: boolean;
-  summary?: string;
+  params: Record<string, any>;
+  isExpanded?: boolean;
 };
 
 export type BatchRunStats = {

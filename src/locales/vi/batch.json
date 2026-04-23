@@ -1,0 +1,52 @@
+{
+  "queue": {
+    "title": "Hàng đợi đầu vào",
+    "clear": "Xóa sạch",
+    "addFiles": "Thêm tệp",
+    "empty": "Hàng đợi trống. Thêm một số hình ảnh để bắt đầu.",
+    "total": "tổng cộng",
+    "done": "hoàn thành",
+    "errors": "lỗi"
+  },
+  "pipeline": {
+    "title": "Quy trình xử lý",
+    "savePreset": "Lưu cài đặt",
+    "loadPreset": "Tải cài đặt",
+    "emptyTitle": "Quy trình đang trống",
+    "emptySubtitle": "Thêm một thao tác bên dưới để bắt đầu xử lý hình ảnh.",
+    "addOperation": "Thêm thao tác",
+    "preview": "Xem trước Mogrify (theo tệp)"
+  },
+  "tabs": {
+    "output": "Đầu ra",
+    "log": "Nhật ký",
+    "settings": "Cài đặt"
+  },
+  "output": {
+    "destination": "Thư mục đầu ra",
+    "hint": "Hình ảnh đã xử lý sẽ được lưu tại đây.",
+    "naming": "Đặt tên tệp",
+    "nameOriginal": "Giữ tên gốc",
+    "namePrefix": "Thêm tiền tố",
+    "nameSuffix": "Thêm hậu tố",
+    "nameCounter": "Số thứ tự (001...)"
+  },
+  "log": {
+    "title": "Nhật ký thực thi",
+    "empty": "Chưa có nhật ký. Hãy chạy để xem kết quả."
+  },
+  "settings": {
+    "performance": "Hiệu năng",
+    "concurrency": "Số tiến trình song song",
+    "gpuTitle": "Tăng tốc GPU",
+    "gpuDesc": "Sử dụng OpenCL nếu có thể.",
+    "advanced": "Nâng cao",
+    "dryRunLimit": "Giới hạn Chạy thử",
+    "overwrite": "Ghi đè tệp cũ"
+  },
+  "actions": {
+    "dryRun": "Chạy thử",
+    "runBatch": "Chạy hàng loạt",
+    "stopBatch": "Dừng"
+  }
+}
