@@ -1,4 +1,6 @@
 import {
+  cloneElement,
+  isValidElement,
   useCallback,
   useEffect,
   useMemo,
@@ -54,6 +56,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 import { useAppStore } from "@/app/store/app.store";
 import { useSingleStore } from "@/features/single/state/single.store";
 import { Button } from "@/shared/components/ui/button";
@@ -118,7 +125,10 @@ function normalizeOutputDir(outputDir: unknown, fallback = "./output"): string {
   return outputDir.trim().replace(/[\\/]+$/, "");
 }
 
-function normalizeOutputName(outputName: unknown, fallback = "photo_out"): string {
+function normalizeOutputName(
+  outputName: unknown,
+  fallback = "photo_out",
+): string {
   if (typeof outputName !== "string" || outputName.trim().length === 0) {
     return fallback;
   }
@@ -157,12 +167,25 @@ type SingleFunctionCatalogEntry = {
   icon: ReactNode;
 };
 
+const iconView = (icon: ReactNode, size: number) => {
+  if (!isValidElement<{ className?: string }>(icon)) {
+    return icon;
+  }
+
+  const existingClassName =
+    typeof icon.props.className === "string" ? icon.props.className : "";
+  const sizeClassName = size > 0 ? `size-${size}` : "";
+
+  return cloneElement(icon, {
+    className: `${existingClassName} ${sizeClassName}`.trim(),
+  });
+};
 const SINGLE_FUNCTION_CATALOG: readonly SingleFunctionCatalogEntry[] = [
   {
     id: "Convert",
     slug: "convert",
     component: ConvertFunction,
-    icon: <ImageIcon className="size-4" />,
+    icon: iconView(<ImageIcon className="size-4"/>, 4),
   },
   {
     id: "Crop",
@@ -248,6 +271,8 @@ export function SingleModePage() {
   );
   const [lastOutputPath, setLastOutputPath] = useState<string | null>(null);
   const [isPreparingProxy, setIsPreparingProxy] = useState(false);
+  const [isOperationsPanelCompact, setIsOperationsPanelCompact] = useState(false);
+  const operationsPanelRef = useRef<HTMLElement | null>(null);
   const selectedFile = useSingleStore((state) => state.selectedFile);
   const proxyPath = useSingleStore((state) => state.proxyPath);
   const fileMetadata = useSingleStore((state) => state.fileMetadata);
@@ -288,6 +313,31 @@ export function SingleModePage() {
 
   const isRunning = runState.status === "running";
   const message = runState.message;
+
+  useEffect(() => {
+    const panelEl = operationsPanelRef.current;
+    if (!panelEl) {
+      return;
+    }
+
+    const updateCompactState = (width: number) => {
+      setIsOperationsPanelCompact(width < 90);
+    };
+
+    updateCompactState(panelEl.getBoundingClientRect().width);
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) {
+        return;
+      }
+
+      updateCompactState(entry.contentRect.width);
+    });
+
+    observer.observe(panelEl);
+    return () => observer.disconnect();
+  }, []);
 
   const selectedCatalogEntry = useMemo(
     () =>
@@ -762,238 +812,255 @@ export function SingleModePage() {
   };
 
   return (
-    <section className="grid h-full grid-cols-[180px_1fr_240px] border border-border/70 bg-card">
-      <aside className="border-r border-border/70 bg-muted/20">
-        <div className="flex h-14 items-center border-b border-border/70 px-5 text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
-          {t("operations.heading")}
-        </div>
-        <nav className="py-2">
-          {functionNavItems.map((item) => {
-            const isSelected = selectedFunctionName === item.id;
-            const isEdited =
-              Object.keys(functionParamsByFunction[item.id] ?? {}).length > 0;
-            return (
-              <Tooltip key={item.id} delayDuration={700}>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    aria-pressed={isSelected}
-                    className={`flex w-full items-center gap-2 border-r-2 px-5 py-2 text-left text-[13px] leading-5 transition-colors outline-none ${
-                      isSelected
-                        ? "border-primary bg-background/80 font-medium text-primary"
-                        : "border-transparent text-muted-foreground hover:bg-background/70 hover:text-foreground"
-                    }`}
-                    onClick={() => setSelectedFunctionName(item.id)}
-                  >
-                    {item.icon}
-                    <span className="inline-flex items-center gap-1.5">
-                      {item.label}
-                      {isEdited ? (
-                        <span
-                          className="size-1.5 rounded-full bg-primary/80"
-                          aria-label={t("operations.editedBadgeAria", {
-                            name: item.label,
-                          })}
-                          title={t("operations.editedBadgeTitle")}
-                        />
+    <ResizablePanelGroup className="h-full border border-border/70 bg-card">
+      <ResizablePanel
+        defaultSize={30}
+        minSize={50}
+        maxSize={220}
+        className="bg-muted/20"
+        
+      >
+        <aside ref={operationsPanelRef} className="h-full">
+          <div
+            className={`flex h-14 items-center border-b border-border/70 text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase ${
+              isOperationsPanelCompact ? "justify-center px-2" : "px-5"
+            }`}
+          >
+            {isOperationsPanelCompact ? "Ops" : t("operations.heading")}
+          </div>
+          <nav className="py-2">
+            {functionNavItems.map((item) => {
+              const isSelected = selectedFunctionName === item.id;
+              const isEdited =
+                Object.keys(functionParamsByFunction[item.id] ?? {}).length > 0;
+              return (
+                <Tooltip key={item.id} delayDuration={700}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      aria-pressed={isSelected}
+                      aria-label={item.label}
+                      className={`flex w-full items-center border-r-2 py-2 text-[13px] leading-5 transition-colors outline-none ${
+                        isOperationsPanelCompact
+                          ? "justify-center gap-0 px-2 h-12"
+                          : "gap-2 px-5 text-left"
+                      } ${
+                        isSelected
+                          ? "border-primary bg-background/80 font-medium text-primary"
+                          : "border-transparent text-muted-foreground hover:bg-background/70 hover:text-foreground"
+                      }`}
+                      onClick={() => setSelectedFunctionName(item.id)}
+                    >
+                      {iconView(item.icon, isOperationsPanelCompact ? 6 : 4)}
+                      {!isOperationsPanelCompact ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          {item.label}
+                          {isEdited ? (
+                            <span
+                              className="size-1.5 rounded-full bg-primary/80"
+                              aria-label={t("operations.editedBadgeAria", {
+                                name: item.label,
+                              })}
+                              title={t("operations.editedBadgeTitle")}
+                            />
+                          ) : null}
+                        </span>
                       ) : null}
-                    </span>
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  <p>{item.description}</p>
-                </TooltipContent>
-              </Tooltip>
-            );
-          })}
-        </nav>
-      </aside>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p>
+                      {item.label}
+                      {item.description ? ` - ${item.description}` : ""}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </nav>
+        </aside>
+      </ResizablePanel>
 
-      <div className="grid min-w-0 grid-rows-[auto_1fr_auto]">
-        <header className="flex h-14 items-center gap-2 border-b border-border/70 px-4">
-          <div className="ml-auto flex items-center gap-2">
+      <ResizableHandle withHandle />
+
+      <ResizablePanel defaultSize={40} minSize={20}>
+        <div className="grid h-full min-w-0 grid-rows-[auto_1fr_auto]">
+          <header className="flex h-14 items-center gap-2 border-b border-border/70 px-4">
+            <div className="ml-auto flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-lg px-3"
+                  >
+                    {isManualPreview ? t("preview.manual") : t("preview.auto")}
+                    <ChevronDown className="ml-1 size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onSelect={() => setIsManualPreview(false)}
+                    className="cursor-pointer"
+                  >
+                    {t("preview.auto")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => setIsManualPreview(true)}
+                    className="cursor-pointer"
+                  >
+                    {t("preview.manual")}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {isManualPreview ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={
+                    !selectedFile ||
+                    !proxyPath ||
+                    isPreparingProxy ||
+                    !isManualPreview ||
+                    previewState.isPending
+                  }
+                  onClick={requestPreview}
+                  className="rounded-lg"
+                >
+                  {isManualPreview
+                    ? previewState.isPending
+                      ? t("preview.previewing")
+                      : t("preview.preview")
+                    : t("preview.preview")}
+                </Button>
+              ) : null}
+
+              <Button
+                type="button"
+                disabled={isRunning || !selectedFile || isPreparingProxy}
+                className="size-7"
+                variant={isRunning ? "default" : "outline"}
+                onClick={handleRunSingle}
+              >
+                {isRunning ? <Spinner /> : <Play />}
+              </Button>
+            </div>
+          </header>
+
+          <div className="relative flex items-center justify-center bg-muted/25">
+            <CanvasPreview
+              originUrl={previewState.originUrl}
+              previewUrl={previewState.previewUrl}
+              isPending={previewState.isPending}
+              isSourcePreparing={isPreparingProxy}
+              error={previewState.error}
+              zoomPercent={previewZoom}
+              onZoomChange={setPreviewZoom}
+              freeCrop={canvasFreeCrop}
+            />
+          </div>
+
+          <footer className="flex items-center justify-between border-t border-border/70 px-4 py-3">
+            {fileMetadata && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="rounded-md border border-border bg-muted/40 px-2 py-1">
+                      {getFileNameFromPath(selectedFile ?? "photo.jpg")}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p>{selectedFile ?? "photo.jpg"}</p>
+                  </TooltipContent>
+                </Tooltip>
+                <span className="rounded-md border border-border bg-muted/40 px-2 py-1">
+                  {fileMetadata?.width} × {fileMetadata?.height}
+                </span>
+                {previewState.width && previewState.height ? (
+                  <span className="rounded-md border border-border bg-muted/40 px-2 py-1">
+                    {t("metadata.previewDimensions", {
+                      w: previewState.width,
+                      h: previewState.height,
+                    })}
+                  </span>
+                ) : null}
+                <span className="rounded-md border border-border bg-muted/40 px-2 py-1">
+                  {formatFileSize(fileMetadata?.fileSizeBytes)}
+                </span>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              {message || t("status.imagemagickDefault")}
+            </p>
+            {runState.status === "success" && lastOutputPath ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="ml-3 h-7"
+                onClick={handleOpenOutputFolder}
+              >
+                {t("output.openOutputFolder")}
+              </Button>
+            ) : null}
+          </footer>
+        </div>
+      </ResizablePanel>
+
+      <ResizableHandle withHandle />
+
+      <ResizablePanel  defaultSize={30} minSize={20}>
+        <aside className="flex h-full flex-col min-h-0">
+          <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border/70 px-4">
+            <span className="text-xs font-medium tracking-[0.08em] text-muted-foreground uppercase">
+              {t("optionsPanel.title", { name: selectedFunctionLabels.name })}
+            </span>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
-                  className="rounded-lg px-3"
+                  className="size-7"
                 >
-                  {isManualPreview ? t("preview.manual") : t("preview.auto")}
-                  <ChevronDown className="ml-1 size-4" />
+                  <Ellipsis />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onSelect={() => setIsManualPreview(false)}
-                  className="cursor-pointer"
-                >
-                  {t("preview.auto")}
+                <DropdownMenuItem onClick={resetCurrentFunctionParams}>
+                  {t("reset.current", { name: selectedFunctionLabels.name })}
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() => setIsManualPreview(true)}
-                  className="cursor-pointer"
-                >
-                  {t("preview.manual")}
+                <DropdownMenuItem onClick={resetAllFunctionParams}>
+                  {t("reset.all")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-
-            {isManualPreview ? (
-              <Button
-                type="button"
-                size="sm"
-                disabled={
-                  !selectedFile ||
-                  !proxyPath ||
-                  isPreparingProxy ||
-                  !isManualPreview ||
-                  previewState.isPending
-                }
-                onClick={requestPreview}
-                className="rounded-lg"
-              >
-                {isManualPreview
-                  ? previewState.isPending
-                    ? t("preview.previewing")
-                    : t("preview.preview")
-                  : t("preview.preview")}
-              </Button>
-            ) : null}
-
-            <Button
-              type="button"
-              disabled={isRunning || !selectedFile || isPreparingProxy}
-              className="size-7"
-              variant={isRunning ? "default" : "outline"}
-              onClick={handleRunSingle}
-            >
-              {isRunning ? <Spinner /> : <Play />}
-            </Button>
           </div>
-        </header>
 
-        <div className="relative flex items-center justify-center bg-muted/25">
-          <CanvasPreview
-            originUrl={previewState.originUrl}
-            previewUrl={previewState.previewUrl}
-            isPending={previewState.isPending}
-            isSourcePreparing={isPreparingProxy}
-            error={previewState.error}
-            zoomPercent={previewZoom}
-            onZoomChange={setPreviewZoom}
-            freeCrop={canvasFreeCrop}
-          />
-        </div>
 
-        <footer className="flex items-center justify-between border-t border-border/70 px-4 py-3">
-          {fileMetadata && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="rounded-md border border-border bg-muted/40 px-2 py-1">
-                    {getFileNameFromPath(selectedFile ?? "photo.jpg")}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  <p>{selectedFile ?? "photo.jpg"}</p>
-                </TooltipContent>
-              </Tooltip>
-              <span className="rounded-md border border-border bg-muted/40 px-2 py-1">
-                {fileMetadata?.width} × {fileMetadata?.height}
-              </span>
-              {previewState.width && previewState.height ? (
-                <span className="rounded-md border border-border bg-muted/40 px-2 py-1">
-                  {t("metadata.previewDimensions", {
-                    w: previewState.width,
-                    h: previewState.height,
-                  })}
-                </span>
-              ) : null}
-              <span className="rounded-md border border-border bg-muted/40 px-2 py-1">
-                {formatFileSize(fileMetadata?.fileSizeBytes)}
-              </span>
-            </div>
-          )}
-          <p className="text-xs text-muted-foreground">
-            {message || t("status.imagemagickDefault")}
-          </p>
-          {runState.status === "success" && lastOutputPath ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="ml-3 h-7"
-              onClick={handleOpenOutputFolder}
-            >
-              {t("output.openOutputFolder")}
-            </Button>
-          ) : null}
-        </footer>
-      </div>
+          <ResizablePanelGroup orientation="vertical">
+            <ResizablePanel defaultSize={70} minSize={30}>
+              <div className="h-full overflow-auto px-4 py-3">
+                <SelectedFunctionComponent />
+              </div>
+            </ResizablePanel>
 
-      <aside className="grid min-h-0 grid-rows-[auto_1fr_auto] border-l border-border/70">
-        <div className="flex h-14 items-center justify-between gap-2 border-b border-border/70 px-4">
-          <span className="text-xs font-medium tracking-[0.08em] text-muted-foreground uppercase">
-            {t("optionsPanel.title", { name: selectedFunctionLabels.name })}
-          </span>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="size-7"
-              >
-                <Ellipsis />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={resetCurrentFunctionParams}>
-                {t("reset.current", { name: selectedFunctionLabels.name })}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={resetAllFunctionParams}>
-                {t("reset.all")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-        <div className="space-y-3 overflow-auto px-4 py-3">
-          <SelectedFunctionComponent />
-        </div>
-        <div className="border-t border-border/70 px-4 py-3">
-          {/* <div className="mb-2 inline-flex rounded-md border border-border/80 bg-muted/30 p-0.5">
-            <button
-              type="button"
-              className={`rounded px-2 py-1 text-[11px] transition-colors ${
-                cliPreviewMode === "function"
-                  ? "bg-background text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              onClick={() => setCliPreviewMode("function")}
-            >
-              See function
-            </button>
-            <button
-              type="button"
-              className={`rounded px-2 py-1 text-[11px] transition-colors ${
-                cliPreviewMode === "all"
-                  ? "bg-background text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              onClick={() => setCliPreviewMode("all")}
-            >
-              See all
-            </button>
-          </div> */}
-          <SingleCliPreview
-            commandPreviews={commandPreviews}
-            cliPreviewMode={cliPreviewMode}
-            setCliPreviewMode={setCliPreviewMode}
-          />
-        </div>
-      </aside>
-    </section>
+            <ResizableHandle withHandle />
+
+            <ResizablePanel defaultSize={30} minSize={10}>
+              <div className="h-full overflow-auto px-4 py-3">
+                <SingleCliPreview
+                  commandPreviews={commandPreviews}
+                  cliPreviewMode={cliPreviewMode}
+                  setCliPreviewMode={setCliPreviewMode}
+                />
+              </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </aside>
+      </ResizablePanel>
+    </ResizablePanelGroup>
   );
 }

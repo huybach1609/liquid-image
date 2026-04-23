@@ -1,12 +1,13 @@
 import { useSingleStore } from "@/features/single/state/single.store";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
 import { getNumberParam, getStringParam } from "@/lib/functionParams";
+import { cn } from "@/lib/utils";
 
 const MODE_DESCRIPTIONS: Record<string, string> = {
   bc: "Adjusts brightness and contrast together using values from −100 to +100.",
@@ -48,19 +49,30 @@ const ContrastFunction = () => {
 
         <div className="flex flex-col gap-3">
           <Label className="text-xs font-medium text-muted-foreground/80">Mode</Label>
-          <ToggleGroup
-            type="single"
-            value={mode}
-            onValueChange={(v) => v && updateFunctionParam("contrastMode", v)}
-            className="grid grid-cols-2 gap-2"
-          >
-            <ToggleGroupItem value="bc" className="text-[11px] h-8 px-2 text-center leading-tight">Brightness Contrast</ToggleGroupItem>
-            <ToggleGroupItem value="sig" className="text-[11px] h-8 px-2">Sigmoidal</ToggleGroupItem>
-            <ToggleGroupItem value="stretch" className="text-[11px] h-8 px-2">Stretch</ToggleGroupItem>
-            <ToggleGroupItem value="level" className="text-[11px] h-8 px-2">Level</ToggleGroupItem>
-            <ToggleGroupItem value="clahe" className="text-[11px] h-8 px-2">CLAHE</ToggleGroupItem>
-            <ToggleGroupItem value="norm" className="text-[11px] h-8 px-2">Normalize</ToggleGroupItem>
-          </ToggleGroup>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { value: "bc", label: "Brightness Contrast" },
+              { value: "sig", label: "Sigmoidal" },
+              { value: "stretch", label: "Stretch" },
+              { value: "level", label: "Level" },
+              { value: "clahe", label: "CLAHE" },
+              { value: "norm", label: "Normalize" },
+            ].map((opt) => (
+              <Button
+                key={opt.value}
+                variant="outline"
+                className={cn(
+                  "text-[11px] h-8 px-2 text-center leading-tight",
+                  mode === opt.value
+                    ? "bg-primary/10 text-primary border-primary/20"
+                    : "text-muted-foreground/70 border-border/40"
+                )}
+                onClick={() => updateFunctionParam("contrastMode", opt.value)}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
         </div>
 
         {mode === "bc" && (

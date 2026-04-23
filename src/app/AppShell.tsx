@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
 import { LanguageSwitcher } from "@/app/LanguageSwitcher";
-import { ModeSwitch } from "@/app/ModeSwitch";
 import { WebMenubar } from "@/app/menubar/WebMenubar";
 import { useMenubarBridge } from "@/app/menubar/useMenubarBridge";
 import { useAppStore } from "@/app/store/app.store";

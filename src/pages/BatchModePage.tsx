@@ -1,11 +1,17 @@
 import { useState } from "react";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 
 export function BatchModePage() {
   const [activeTab, setActiveTab] = useState<"output" | "log" | "settings">("output");
 
   return (
-    <section className="grid h-full grid-cols-[220px_1fr_300px] border border-border/70 bg-card">
-      <aside className="grid min-h-0 grid-rows-[auto_1fr_auto] border-r border-border/70">
+    <ResizablePanelGroup className="h-full border border-border/70 bg-card">
+      <ResizablePanel defaultSize={200} minSize={200} maxSize={400} className="bg-muted/20">
+      <aside className="grid h-full min-h-0 grid-rows-[auto_1fr_auto] border-r border-border/70">
         <header className="flex items-center justify-between border-b border-border/70 px-4 py-3">
           <p className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
             Input Queue
@@ -46,8 +52,12 @@ export function BatchModePage() {
           <p className="text-xs text-muted-foreground">2 done · 1 running · 1 error</p>
         </footer>
       </aside>
+      </ResizablePanel>
 
-      <div className="grid min-h-0 grid-rows-[auto_1fr_auto]">
+      <ResizableHandle withHandle />
+
+      <ResizablePanel defaultSize={500} minSize={500} maxSize={800}>
+      <div className="grid h-full min-h-0 grid-rows-[auto_1fr_auto]">
         <header className="flex items-center gap-2 border-b border-border/70 px-4 py-3">
           <p className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Pipeline</p>
           <div className="ml-auto flex items-center gap-2">
@@ -82,9 +92,13 @@ export function BatchModePage() {
           </code>
         </footer>
       </div>
+      </ResizablePanel>
 
-      <aside className="grid min-h-0 grid-rows-[auto_1fr_auto] border-l border-border/70">
-        <div className="flex border-b border-border/70">
+      <ResizableHandle withHandle />
+
+      <ResizablePanel defaultSize={200} minSize={200} maxSize={500}>
+      <aside className="grid h-full min-h-0 grid-rows-[auto_1fr_auto] border-l border-border/70">
+        <div className="flex h-14 items-center border-b border-border/70 px-1">
           {[
             { id: "output", label: "Output" },
             { id: "log", label: "Log" },
@@ -94,7 +108,7 @@ export function BatchModePage() {
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id as "output" | "log" | "settings")}
-              className={`px-4 py-3 text-sm ${
+              className={`h-full px-3 text-sm ${
                 activeTab === tab.id
                   ? "border-b-2 border-primary font-medium text-foreground"
                   : "text-muted-foreground hover:text-foreground"
@@ -143,6 +157,7 @@ export function BatchModePage() {
           </div>
         </footer>
       </aside>
-    </section>
+      </ResizablePanel>
+    </ResizablePanelGroup>
   );
 }

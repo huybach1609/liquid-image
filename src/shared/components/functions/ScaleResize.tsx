@@ -3,10 +3,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "../../components/ui/input";
 import { getNumberParam, getStringParam } from "@/lib/functionParams";
+import { cn } from "@/lib/utils";
 
 const METHOD_DESCRIPTIONS: Record<string, string> = {
   resize: "High-quality resize with filter support. Best for final output.",
@@ -92,16 +92,27 @@ const ScaleResizeFunction = () => {
 
         <div className="flex flex-col gap-3">
           <Label className="text-xs font-medium text-muted-foreground/80">Method</Label>
-          <ToggleGroup
-            type="single"
-            value={method}
-            onValueChange={(v) => v && updateFunctionParam("resizeMethod", v)}
-            className="grid grid-cols-3 gap-2"
-          >
-            <ToggleGroupItem value="resize" className="text-[10px] h-8 px-1">Resize</ToggleGroupItem>
-            <ToggleGroupItem value="thumbnail" className="text-[10px] h-8 px-1">Thumbnail</ToggleGroupItem>
-            <ToggleGroupItem value="sample" className="text-[10px] h-8 px-1">Sample</ToggleGroupItem>
-          </ToggleGroup>
+          <div className="grid grid-cols-3 gap-2">
+            {(["resize", "thumbnail", "sample"] as const).map((m) => {
+              const active = method === m;
+              return (
+                <Button
+                  key={m}
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "h-8 text-[10px] px-1 font-medium capitalize transition-all border-border/40",
+                    active
+                      ? "bg-primary/10 text-primary border-primary/20 hover:bg-primary/15 hover:text-primary"
+                      : "text-muted-foreground/70 hover:bg-accent/5 hover:text-foreground",
+                  )}
+                  onClick={() => updateFunctionParam("resizeMethod", m)}
+                >
+                  {m}
+                </Button>
+              );
+            })}
+          </div>
           <p className="text-[11px] text-muted-foreground/60 leading-relaxed min-h-8">
             {METHOD_DESCRIPTIONS[method]}
           </p>

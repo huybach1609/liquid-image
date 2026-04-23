@@ -2,11 +2,12 @@ import { useSingleStore } from "@/features/single/state/single.store";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Button } from "@/shared/components/ui/button";
 import { Input } from "../../components/ui/input";
 import { getNumberParam, getStringParam } from "@/lib/functionParams";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const BLEND_MODES = [
   "Over", "Multiply", "Screen", 
@@ -55,18 +56,23 @@ const ComposeFunction = () => {
 
         <div className="flex flex-col gap-3">
           <Label className="text-xs font-medium text-muted-foreground/80">Blend mode</Label>
-          <ToggleGroup
-            type="single"
-            value={blendMode}
-            onValueChange={(v) => v && updateFunctionParam("composeBlendMode", v)}
-            className="grid grid-cols-3 gap-1.5"
-          >
+          <div className="grid grid-cols-3 gap-1.5">
             {BLEND_MODES.map((mode) => (
-              <ToggleGroupItem key={mode} value={mode} className="text-[10px] h-8 px-1">
+              <Button
+                key={mode}
+                variant="outline"
+                className={cn(
+                  "text-[10px] h-8 px-1",
+                  blendMode === mode
+                    ? "bg-primary/10 text-primary border-primary/20"
+                    : "text-muted-foreground/70 border-border/40"
+                )}
+                onClick={() => updateFunctionParam("composeBlendMode", mode)}
+              >
                 {mode}
-              </ToggleGroupItem>
+              </Button>
             ))}
-          </ToggleGroup>
+          </div>
         </div>
 
         <div className="flex flex-col gap-2.5">

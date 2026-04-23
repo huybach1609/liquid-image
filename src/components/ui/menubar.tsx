@@ -12,7 +12,7 @@ function Menubar({
     <MenubarPrimitive.Root
       data-slot="menubar"
       className={cn(
-        "flex h-8 items-center gap-0.5 rounded-lg border-[0.5px] border-black/14 bg-[#f9f9f8] p-[3px] text-[12px] font-medium text-[rgb(40_40_46/0.85)] antialiased",
+        "flex h-8 items-center gap-0.5 rounded-lg p-[3px] text-[12px] font-medium text-foreground/80 antialiased",
         className
       )}
       {...props}
@@ -54,7 +54,7 @@ function MenubarTrigger({
     <MenubarPrimitive.Trigger
       data-slot="menubar-trigger"
       className={cn(
-        "flex items-center rounded-md px-1.5 py-[2px] text-[12px] font-medium text-[rgb(40_40_46/0.85)] outline-hidden transition-colors duration-100 select-none hover:bg-[rgb(127_119_221/0.1)] hover:text-[#534ab7] aria-expanded:bg-[rgb(127_119_221/0.1)] aria-expanded:text-[#534ab7]",
+        "flex items-center rounded-md px-1.5 py-[2px] text-[12px] font-medium text-foreground/60 outline-hidden transition-colors duration-100 select-none hover:bg-accent/15 hover:text-foreground aria-expanded:bg-accent/15 aria-expanded:text-foreground",
         className
       )}
       {...props}
@@ -77,7 +77,7 @@ function MenubarContent({
         alignOffset={alignOffset}
         sideOffset={sideOffset}
         className={cn(
-          "z-50 min-w-36 origin-(--radix-menubar-content-transform-origin) overflow-hidden rounded-lg border-[0.5px] border-black/12 bg-popover p-1 text-[12px] text-popover-foreground shadow-[0_1px_3px_rgb(0_0_0/0.06)] duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95",
+          "z-50 min-w-36 origin-(--radix-menubar-content-transform-origin) overflow-hidden rounded-lg border-[0.5px] border-border/50 bg-popover p-1 text-[12px] text-popover-foreground shadow-[0_1px_3px_rgb(0_0_0/0.06)] duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95",
           className
         )}
         {...props}
@@ -101,7 +101,7 @@ function MenubarItem({
       data-inset={inset}
       data-variant={variant}
       className={cn(
-        "group/menubar-item relative flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-[12px] outline-hidden transition-colors duration-75 select-none focus:bg-accent focus:text-accent-foreground focus:[&_svg]:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:[&_svg]:text-destructive",
+        "group/menubar-item relative flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-[12px] text-foreground/90 outline-hidden transition-colors duration-75 select-none focus:bg-accent focus:text-accent-foreground focus:[&_svg]:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:[&_svg]:text-destructive",
         className
       )}
       {...props}

@@ -2,9 +2,10 @@ import { useSingleStore } from "@/features/single/state/single.store";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Button } from "@/shared/components/ui/button";
 import { Input } from "../../components/ui/input";
 import { getNumberParam, getStringParam } from "@/lib/functionParams";
+import { cn } from "@/lib/utils";
 
 const GRAVITY_OPTIONS = [
   "NorthWest", "North", "NorthEast",
@@ -12,14 +13,14 @@ const GRAVITY_OPTIONS = [
   "SouthWest", "South", "SouthEast"
 ] as const;
 
-const FONTS = ["Arial", "Helvetica", "Times-Roman", "Courier"] as const;
+const FONTS = ["Default", "Arial", "Helvetica", "Times-Roman", "Courier"] as const;
 
 const TextLogoFunction = () => {
   const functionParams = useSingleStore((s) => s.functionParams);
   const updateFunctionParam = useSingleStore((s) => s.updateFunctionParam);
 
   const text = getStringParam(functionParams, "textLogoText", "Watermark");
-  const font = getStringParam(functionParams, "textLogoFont", "Arial");
+  const font = getStringParam(functionParams, "textLogoFont", "Default");
   const size = getNumberParam(functionParams, "textLogoSize", 36);
   const angle = getNumberParam(functionParams, "textLogoAngle", 0);
   const gravity = getStringParam(functionParams, "textLogoGravity", "SouthEast");
@@ -44,18 +45,23 @@ const TextLogoFunction = () => {
 
         <div className="flex flex-col gap-3">
           <Label className="text-xs font-medium text-muted-foreground/80">Font</Label>
-          <ToggleGroup
-            type="single"
-            value={font}
-            onValueChange={(v) => v && updateFunctionParam("textLogoFont", v)}
-            className="grid grid-cols-2 gap-2"
-          >
+          <div className="grid grid-cols-3 gap-2">
             {FONTS.map((f) => (
-              <ToggleGroupItem key={f} value={f} className="text-[10px] h-8 px-1">
+              <Button
+                key={f}
+                variant="outline"
+                className={cn(
+                  "text-[10px] h-8 px-1",
+                  font === f
+                    ? "bg-primary/10 text-primary border-primary/20"
+                    : "text-muted-foreground/70 border-border/40"
+                )}
+                onClick={() => updateFunctionParam("textLogoFont", f)}
+              >
                 {f}
-              </ToggleGroupItem>
+              </Button>
             ))}
-          </ToggleGroup>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -83,21 +89,26 @@ const TextLogoFunction = () => {
 
         <div className="flex flex-col gap-3">
           <Label className="text-xs font-medium text-muted-foreground/80">Position (gravity)</Label>
-          <ToggleGroup
-            type="single"
-            value={gravity}
-            onValueChange={(v) => v && updateFunctionParam("textLogoGravity", v)}
-            className="grid grid-cols-3 gap-1.5"
-          >
+          <div className="grid grid-cols-3 gap-1.5">
             {GRAVITY_OPTIONS.map((g) => {
               const short = g.replace("North", "N").replace("South", "S").replace("East", "E").replace("West", "W");
               return (
-                <ToggleGroupItem key={g} value={g} className="text-[10px] size-8 p-0">
+                <Button
+                  key={g}
+                  variant="outline"
+                  className={cn(
+                    "text-[10px] h-8 p-0",
+                    gravity === g
+                      ? "bg-primary/10 text-primary border-primary/20"
+                      : "text-muted-foreground/70 border-border/40"
+                  )}
+                  onClick={() => updateFunctionParam("textLogoGravity", g)}
+                >
                   {short === "Center" ? "C" : short}
-                </ToggleGroupItem>
+                </Button>
               );
             })}
-          </ToggleGroup>
+          </div>
         </div>
 
         <div className="flex flex-col gap-3">

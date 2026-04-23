@@ -2,10 +2,11 @@ import { useSingleStore } from "@/features/single/state/single.store";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Button } from "@/shared/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
 import { getNumberParam, getStringParam } from "@/lib/functionParams";
+import { cn } from "@/lib/utils";
 
 const METHOD_DESCRIPTIONS: Record<string, string> = {
   normalize: "Stretches color range to cover full spectrum — every channel gets a min/max remap.",
@@ -29,16 +30,27 @@ const NormalizeColorFunction = () => {
       <div className="flex flex-col gap-5">
         <div className="flex flex-col gap-3">
           <Label className="text-xs font-medium text-muted-foreground/80">Method</Label>
-          <ToggleGroup
-            type="single"
-            value={method}
-            onValueChange={(v) => v && updateFunctionParam("normalizeMethod", v)}
-            className="flex flex-col gap-2"
-          >
-            <ToggleGroupItem value="normalize" className="text-[11px] h-8 justify-start px-3">Normalize</ToggleGroupItem>
-            <ToggleGroupItem value="auto-level" className="text-[11px] h-8 justify-start px-3">Auto Level</ToggleGroupItem>
-            <ToggleGroupItem value="auto-gamma" className="text-[11px] h-8 justify-start px-3">Auto Gamma</ToggleGroupItem>
-          </ToggleGroup>
+          <div className="flex flex-col gap-2">
+            {[
+              { value: "normalize", label: "Normalize" },
+              { value: "auto-level", label: "Auto Level" },
+              { value: "auto-gamma", label: "Auto Gamma" },
+            ].map((opt) => (
+              <Button
+                key={opt.value}
+                variant="outline"
+                className={cn(
+                  "text-[11px] h-8 justify-start px-3",
+                  method === opt.value
+                    ? "bg-primary/10 text-primary border-primary/20"
+                    : "text-muted-foreground/70 border-border/40"
+                )}
+                onClick={() => updateFunctionParam("normalizeMethod", opt.value)}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
         </div>
 
         <div className="flex flex-col gap-2.5">

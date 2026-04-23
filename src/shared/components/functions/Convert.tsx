@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { X, Gauge } from "lucide-react";
 import { useState } from "react";
 
 import { Label } from "@/components/ui/label";
@@ -19,7 +19,6 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "../ui/input";
 
 const OUTPUT_FORMATS = ["PNG", "JPEG", "WEBP", "GIF", "TIFF", "BMP"] as const;
-const WEBP_METHODS = [0, 1, 2, 3, 4, 5, 6] as const;
 const COLOR_DEPTHS = [8, 16, 32] as const;
 const DITHER_OPTIONS = ["None", "Floyd-Steinberg"] as const;
 
@@ -132,30 +131,42 @@ const ConvertFunction = () => {
           </div>
         </div>
       ) : (
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">
-            Compression effort (WebP)
-          </Label>
-          <div className="grid grid-cols-7 gap-1">
-            {WEBP_METHODS.map((method) => {
-              const active = webpMethod === method;
-              return (
-                <Button
-                  key={method}
-                  type="button"
-                  size="sm"
-                  variant={active ? "default" : "outline"}
-                  className={cn(
-                    "h-6 text-[11px]",
-                    method === 0 || method === 6 ? "px-1" : "px-2",
-                  )}
-                  onClick={() => updateFunctionParam("webpMethod", method)}
-                >
-                  {method === 0 ? "0 fast" : method === 6 ? "6 best" : method}
-                </Button>
-              );
-            })}
+        <div className="space-y-3.5 py-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Gauge className="size-3.5 text-muted-foreground" />
+              <Label className="text-xs font-medium">Compression Speed</Label>
+            </div>
+            <span className="text-xs font-medium text-foreground/70">
+              {webpMethod === 6
+                ? "Slow (Best)"
+                : webpMethod === 4
+                  ? "Normal"
+                  : webpMethod === 2
+                    ? "Fast"
+                    : webpMethod === 0
+                      ? "Very Fast"
+                      : `Level ${6 - webpMethod}`}
+            </span>
           </div>
+          <div className="px-1">
+            <Slider
+              min={0}
+              max={6}
+              step={1}
+              value={[6 - webpMethod]}
+              onValueChange={(v) => updateFunctionParam("webpMethod", 6 - v[0])}
+            />
+          </div>
+          <div className="flex items-center justify-between px-0.5 text-[10px] text-muted-foreground/60">
+            <span>Slow</span>
+            <span className="translate-x-1">Normal</span>
+            <span className="-translate-x-1">Fast</span>
+            <span>Very Fast</span>
+          </div>
+          <p className="text-[10px] italic text-muted-foreground/40">
+            * Slower methods provide higher quality and smaller file sizes.
+          </p>
         </div>
       )}
 

@@ -4,9 +4,9 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/shared/components/ui/button";
 import { getNumberParam, getStringParam } from "@/lib/functionParams";
+import { cn } from "@/lib/utils";
 
 const RotateFunction = () => {
   const functionParams = useSingleStore((s) => s.functionParams);
@@ -54,17 +54,28 @@ const RotateFunction = () => {
 
         <div className="flex flex-col gap-3">
           <Label className="text-xs font-medium text-muted-foreground/80">Background fill</Label>
-          <ToggleGroup
-            type="single"
-            value={background}
-            onValueChange={(v) => v && updateFunctionParam("rotateBackground", v)}
-            className="grid grid-cols-2 gap-2"
-          >
-            <ToggleGroupItem value="none" className="text-[11px] h-8 px-2">None</ToggleGroupItem>
-            <ToggleGroupItem value="white" className="text-[11px] h-8 px-2">White</ToggleGroupItem>
-            <ToggleGroupItem value="black" className="text-[11px] h-8 px-2">Black</ToggleGroupItem>
-            <ToggleGroupItem value="transparent" className="text-[11px] h-8 px-2">Transparent</ToggleGroupItem>
-          </ToggleGroup>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { value: "none", label: "None" },
+              { value: "white", label: "White" },
+              { value: "black", label: "Black" },
+              { value: "transparent", label: "Transparent" },
+            ].map((opt) => (
+              <Button
+                key={opt.value}
+                variant="outline"
+                className={cn(
+                  "text-[11px] h-8 px-2",
+                  background === opt.value
+                    ? "bg-primary/10 text-primary border-primary/20"
+                    : "text-muted-foreground/70 border-border/40"
+                )}
+                onClick={() => updateFunctionParam("rotateBackground", opt.value)}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
         </div>
 
         <div className="flex flex-col gap-2">
