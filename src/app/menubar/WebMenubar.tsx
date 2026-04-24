@@ -69,10 +69,15 @@ export function WebMenubar() {
           requestOpenImage();
         }
       }
+
+      if (mod && e.key === ",") {
+        e.preventDefault();
+        setMode("settings");
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [mode, requestOpenImage]);
+  }, [mode, requestOpenImage, setMode]);
 
   return (
     <Menubar
@@ -125,7 +130,7 @@ export function WebMenubar() {
             <MenubarShortcut>⌘W</MenubarShortcut>
           </MenubarItem>
           <MenubarSeparator />
-          <MenubarItem disabled>
+          <MenubarItem onSelect={() => setMode("settings")}>
             Settings…
             <MenubarShortcut>⌘,</MenubarShortcut>
           </MenubarItem>

@@ -24,12 +24,15 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_window_state::Builder::default().build())
+        // .plugin(tauri_plugin_window_state::Builder::default().build())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
             if let Some(window) = app.get_webview_window("main") {
+                // Ensure window is visible and focused regardless of saved state
                 let _ = window.set_decorations(false);
+                // let _ = window.show();
+                // let _ = window.set_focus();
 
                 // For Linux/Wayland, setting the icon explicitly helps in dev mode.
                 #[cfg(desktop)]

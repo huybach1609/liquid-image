@@ -1,4 +1,4 @@
-import { createStore, Store } from "@tauri-apps/plugin-store";
+import { LazyStore } from "@tauri-apps/plugin-store";
 import type { StateStorage } from "zustand/middleware";
 
 /**
@@ -6,31 +6,21 @@ import type { StateStorage } from "zustand/middleware";
  * for native persistence on the user's filesystem.
  */
 export const createTauriStorage = (path: string): StateStorage => {
-  let store: Store | null = null;
-
-  const getStore = async () => {
-    if (!store) {
-      store = await createStore(path);
-    }
-    return store;
-  };
+  const store = new LazyStore(path);
 
   return {
     getItem: async (name: string): Promise<string | null> => {
-      const s = await getStore();
-      const val = await s.get<{ state: any }>(name);
+      const val = await store.get<{ state: any }>(name);
       return val ? JSON.stringify(val) : null;
     },
     setItem: async (name: string, value: string): Promise<void> => {
-      const s = await getStore();
       const parsedValue = JSON.parse(value);
-      await s.set(name, parsedValue);
-      await s.save();
+      await store.set(name, parsedValue);
+      await store.save();
     },
     removeItem: async (name: string): Promise<void> => {
-      const s = await getStore();
-      await s.delete(name);
-      await s.save();
+      await store.delete(name);
+      await store.save();
     },
   };
 };

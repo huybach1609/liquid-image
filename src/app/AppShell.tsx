@@ -7,6 +7,7 @@ import { useMenubarBridge } from "@/app/menubar/useMenubarBridge";
 import { useAppStore } from "@/app/store/app.store";
 import { BatchModePage } from "@/pages/BatchModePage";
 import { SingleModePage } from "@/pages/SingleModePage";
+import { SettingPage } from "@/pages/SettingPage";
 import { menubarUsesNative } from "@/shared/tauri/commands";
 import { TooltipProvider } from "@/shared/components/ui/tooltip";
 import { useTranslation } from "react-i18next";
@@ -15,7 +16,7 @@ export function AppShell() {
   const { t } = useTranslation("common");
   const mode = useAppStore((s) => s.mode);
   const [nativeMenubar, setNativeMenubar] = useState<boolean | null>(null);
-  const isFullFrameMode = mode === "single" || mode === "batch";
+  const isFullFrameMode = mode === "single" || mode === "batch" || mode === "settings";
   const appWindow = getCurrentWindow();
 
   useMenubarBridge();
@@ -104,6 +105,8 @@ export function AppShell() {
             <SingleModePage />
           ) : mode === "batch" ? (
             <BatchModePage />
+          ) : mode === "settings" ? (
+            <SettingPage />
           ) : (
             <section className="app-shell-content" />
           )}
