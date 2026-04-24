@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import { createTauriStorage } from "@/shared/lib/zustand-tauri-store";
 import type { ImageMetadata } from "@/shared/tauri/commands";
 
 export type SingleRunStatus = "idle" | "running" | "success" | "error";
@@ -53,96 +55,110 @@ const initialRunState: SingleRunState = {
   message: "",
 };
 
-export const useSingleStore = create<SingleStoreState>((set) => ({
-  selectedFile: null,
-  proxyPath: null,
-  selectedFunction: DEFAULT_SELECTED_FUNCTION,
-  functionParams: {},
-  functionParamsByFunction: {},
-  isManualPreview: true,
-  previewRequestId: 0,
-  previewZoom: 100,
-  cropFreeApplyReview: false,
-  runState: initialRunState,
-  fileMetadata: null,
-  setFileMetadata: (fileMetadata: ImageMetadata | null) => set({ fileMetadata }),
-  setSelectedFile: (selectedFile) =>
-    set({ selectedFile, cropFreeApplyReview: false }),
-  setProxyPath: (proxyPath) => set({ proxyPath }),
-  setSelectedFunction: (selectedFunction) =>
-    set((state) => {
-      if (state.selectedFunction === selectedFunction) {
-        return state;
-      }
-
-      const nextParamsByFunction = {
-        ...state.functionParamsByFunction,
-        [state.selectedFunction]: state.functionParams,
-      };
-
-      return {
-        selectedFunction,
-        functionParamsByFunction: nextParamsByFunction,
-        functionParams: nextParamsByFunction[selectedFunction] ?? {},
-        cropFreeApplyReview:
-          selectedFunction === "Crop" ? state.cropFreeApplyReview : false,
-      };
-    }),
-  setFunctionParams: (next) =>
-    set((state) => {
-      const functionParams =
-        typeof next === "function" ? next(state.functionParams) : next;
-      return {
-        functionParams,
-        functionParamsByFunction: {
-          ...state.functionParamsByFunction,
-          [state.selectedFunction]: functionParams,
-        },
-      };
-    }),
-  updateFunctionParam: (key, value) =>
-    set((state) => ({
-      functionParams: {
-        ...state.functionParams,
-        [key]: value,
-      },
-      functionParamsByFunction: {
-        ...state.functionParamsByFunction,
-        [state.selectedFunction]: {
-          ...state.functionParams,
-          [key]: value,
-        },
-      },
-    })),
-  setIsManualPreview: (isManualPreview) => set({ isManualPreview }),
-  requestPreview: () =>
-    set((state) => ({
-      previewRequestId: state.previewRequestId + 1,
-    })),
-  setCropFreeApplyReview: (cropFreeApplyReview) => set({ cropFreeApplyReview }),
-  setPreviewZoom: (previewZoom) => set({ previewZoom }),
-  setRunState: (runState) => set({ runState }),
-  setRunStatus: (status, message = "") =>
-    set({
-      runState: {
-        status,
-        message,
-      },
-    }),
-  resetCurrentFunctionParams: () =>
-    set((state) => ({
-      functionParams: {},
-      functionParamsByFunction: {
-        ...state.functionParamsByFunction,
-        [state.selectedFunction]: {},
-      },
-      cropFreeApplyReview: false,
-    })),
-  resetAllFunctionParams: () =>
-    set({
+export const useSingleStore = create<SingleStoreState>()(
+  persist(
+    (set) => ({
+      selectedFile: null,
+      proxyPath: null,
+      selectedFunction: DEFAULT_SELECTED_FUNCTION,
       functionParams: {},
       functionParamsByFunction: {},
+      isManualPreview: true,
+      previewRequestId: 0,
+      previewZoom: 100,
       cropFreeApplyReview: false,
+      runState: initialRunState,
+      fileMetadata: null,
+      setFileMetadata: (fileMetadata: ImageMetadata | null) => set({ fileMetadata }),
+      setSelectedFile: (selectedFile) =>
+        set({ selectedFile, cropFreeApplyReview: false }),
+      setProxyPath: (proxyPath) => set({ proxyPath }),
+      setSelectedFunction: (selectedFunction) =>
+        set((state) => {
+          if (state.selectedFunction === selectedFunction) {
+            return state;
+          }
+
+          const nextParamsByFunction = {
+            ...state.functionParamsByFunction,
+            [state.selectedFunction]: state.functionParams,
+          };
+
+          return {
+            selectedFunction,
+            functionParamsByFunction: nextParamsByFunction,
+            functionParams: nextParamsByFunction[selectedFunction] ?? {},
+            cropFreeApplyReview:
+              selectedFunction === "Crop" ? state.cropFreeApplyReview : false,
+          };
+        }),
+      setFunctionParams: (next) =>
+        set((state) => {
+          const functionParams =
+            typeof next === "function" ? next(state.functionParams) : next;
+          return {
+            functionParams,
+            functionParamsByFunction: {
+              ...state.functionParamsByFunction,
+              [state.selectedFunction]: functionParams,
+            },
+          };
+        }),
+      updateFunctionParam: (key, value) =>
+        set((state) => ({
+          functionParams: {
+            ...state.functionParams,
+            [key]: value,
+          },
+          functionParamsByFunction: {
+            ...state.functionParamsByFunction,
+            [state.selectedFunction]: {
+              ...state.functionParams,
+              [key]: value,
+            },
+          },
+        })),
+      setIsManualPreview: (isManualPreview) => set({ isManualPreview }),
+      requestPreview: () =>
+        set((state) => ({
+          previewRequestId: state.previewRequestId + 1,
+        })),
+      setCropFreeApplyReview: (cropFreeApplyReview) => set({ cropFreeApplyReview }),
+      setPreviewZoom: (previewZoom) => set({ previewZoom }),
+      setRunState: (runState) => set({ runState }),
+      setRunStatus: (status, message = "") =>
+        set({
+          runState: {
+            status,
+            message,
+          },
+        }),
+      resetCurrentFunctionParams: () =>
+        set((state) => ({
+          functionParams: {},
+          functionParamsByFunction: {
+            ...state.functionParamsByFunction,
+            [state.selectedFunction]: {},
+          },
+          cropFreeApplyReview: false,
+        })),
+      resetAllFunctionParams: () =>
+        set({
+          functionParams: {},
+          functionParamsByFunction: {},
+          cropFreeApplyReview: false,
+        }),
+      resetRunState: () => set({ runState: initialRunState }),
     }),
-  resetRunState: () => set({ runState: initialRunState }),
-}));
+    {
+      name: "single-storage",
+      storage: createJSONStorage(() => createTauriStorage("single.json")),
+      partialize: (state) => ({
+        selectedFunction: state.selectedFunction,
+        isManualPreview: state.isManualPreview,
+        previewZoom: state.previewZoom,
+        functionParamsByFunction: state.functionParamsByFunction,
+      }),
+    }
+  )
+);

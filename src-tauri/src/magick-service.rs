@@ -42,7 +42,8 @@ fn parse_magick_version(raw: &str) -> MagickVersionInfo {
 
 #[command]
 pub async fn convert_image(app: AppHandle, path: String) -> Result<String, String> {
-    let output = app.shell()
+    let output = app
+        .shell()
         .sidecar("magick")
         .map_err(|e| e.to_string())?
         .arg("-convert")
@@ -54,7 +55,8 @@ pub async fn convert_image(app: AppHandle, path: String) -> Result<String, Strin
 }
 #[command]
 pub async fn check_version(app: AppHandle) -> Result<MagickVersionInfo, String> {
-    let output = app.shell()
+    let output = app
+        .shell()
         .sidecar("magick")
         .map_err(|e| e.to_string())?
         .arg("-version")
@@ -77,11 +79,16 @@ pub struct ImageMetadata {
 }
 
 #[tauri::command]
-pub async fn get_image_metadata(app: tauri::AppHandle, path: String) -> Result<ImageMetadata, String> {
+pub async fn get_image_metadata(
+    app: tauri::AppHandle,
+    path: String,
+) -> Result<ImageMetadata, String> {
     use std::fs;
     // identify -format "%m|%w|%h"
-    let output = app.shell()
-        .sidecar("magick").map_err(|e| e.to_string())?
+    let output = app
+        .shell()
+        .sidecar("magick")
+        .map_err(|e| e.to_string())?
         .arg("identify")
         .arg("-format")
         .arg("%m|%w|%h")
@@ -174,7 +181,7 @@ pub async fn create_image_proxy(
     }
 
     Ok(proxy_path.to_string_lossy().to_string())
-    }
+}
 
 /// Remove a preview proxy file created under `%TEMP%/liquid-image-preview/proxy_*.webp`.
 #[tauri::command]
@@ -327,14 +334,13 @@ pub struct RunSingleResponse {
     height: u32,
 }
 
-
 #[tauri::command]
 pub async fn generate_preview(
     app: tauri::AppHandle,
     request: GeneratePreviewRequest,
 ) -> Result<GeneratePreviewResponse, String> {
-    use std::time::Instant;
     use base64::{engine::general_purpose::STANDARD, Engine as _};
+    use std::time::Instant;
 
     const PREVIEW_QUALITY: u32 = 70;
     const WEBP_METHOD_FAST: u32 = 1;
@@ -343,10 +349,7 @@ pub async fn generate_preview(
 
     // Mirror argv into `preview_cli_args` so failure logs match the real shell invocation.
     let mut preview_cli_args: Vec<String> = Vec::new();
-    let mut command = app
-        .shell()
-        .sidecar("magick")
-        .map_err(|e| e.to_string())?;
+    let mut command = app.shell().sidecar("magick").map_err(|e| e.to_string())?;
 
     let from_proxy = request.from_proxy;
 
@@ -411,10 +414,13 @@ pub async fn generate_preview(
         "webp:-".into(),
     ]);
     command = command
-        .arg("-depth").arg("8")
+        .arg("-depth")
+        .arg("8")
         .arg("-strip")
-        .arg("-quality").arg(PREVIEW_QUALITY.to_string())
-        .arg("-define").arg(format!("webp:method={WEBP_METHOD_FAST}"))
+        .arg("-quality")
+        .arg(PREVIEW_QUALITY.to_string())
+        .arg("-define")
+        .arg(format!("webp:method={WEBP_METHOD_FAST}"))
         .arg("webp:-");
 
     let render_started = Instant::now();
@@ -446,7 +452,11 @@ pub async fn generate_preview(
             "[preview-in-memory] cmd (failed): magick {}",
             preview_cli_args.join(" ")
         );
-        return Err(if stderr.is_empty() { "Failed to generate preview".into() } else { stderr });
+        return Err(if stderr.is_empty() {
+            "Failed to generate preview".into()
+        } else {
+            stderr
+        });
     }
 
     let b64_image = STANDARD.encode(&preview_stdout);
@@ -531,7 +541,9 @@ pub async fn run_single(
         .map_err(|e| e.to_string())?;
 
     if !run_output.status.success() {
-        let stderr = String::from_utf8_lossy(&run_output.stderr).trim().to_string();
+        let stderr = String::from_utf8_lossy(&run_output.stderr)
+            .trim()
+            .to_string();
         eprintln!("[run_single] failed: magick {}", run_cli_display);
         if !stderr.is_empty() {
             eprintln!("[run_single] stderr: {}", stderr);

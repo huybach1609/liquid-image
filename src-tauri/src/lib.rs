@@ -22,6 +22,11 @@ mod magick_service;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_window_state::Builder::default().build())
+        .plugin(tauri_plugin_store::Builder::new().build())
+        .plugin(tauri_plugin_fs::init())
         .setup(|app| {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.set_decorations(false);
@@ -67,7 +72,6 @@ pub fn run() {
             magick_service::remove_proxy_file,
             magick_service::generate_preview,
             magick_service::run_single
-
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
