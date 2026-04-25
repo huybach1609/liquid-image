@@ -27,9 +27,24 @@ const BLEND_DESCRIPTIONS: Record<string, string> = {
   Lighten: "Keep lightest pixel from each layer.",
 };
 
-const ComposeFunction = () => {
-  const functionParams = useSingleStore((s) => s.functionParams);
-  const updateFunctionParam = useSingleStore((s) => s.updateFunctionParam);
+interface ComposeFunctionProps {
+  params?: Record<string, any>;
+  onUpdateParam?: (key: string, value: any) => void;
+  selectedFile?: string | null;
+}
+
+const ComposeFunction = ({
+  params: propsParams,
+  onUpdateParam: propsUpdateParam,
+  selectedFile: propsSelectedFile,
+}: ComposeFunctionProps) => {
+  const storeSelectedFile = useSingleStore((s) => s.selectedFile);
+  const storeFunctionParams = useSingleStore((s) => s.functionParams);
+  const storeUpdateFunctionParam = useSingleStore((s) => s.updateFunctionParam);
+
+  const selectedFile = propsSelectedFile !== undefined ? propsSelectedFile : storeSelectedFile;
+  const functionParams = propsParams !== undefined ? propsParams : storeFunctionParams;
+  const updateFunctionParam = propsUpdateParam !== undefined ? propsUpdateParam : storeUpdateFunctionParam;
 
   const overlayPath = getStringParam(functionParams, "composeOverlayPath", "overlay.png");
   const blendMode = getStringParam(functionParams, "composeBlendMode", "Over");

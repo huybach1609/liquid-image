@@ -35,10 +35,26 @@ function parseGravity(v: unknown): CropGravity {
   return "NW";
 }
 
-export const CropFunction = () => {
+interface CropFunctionProps {
+  params?: Record<string, any>;
+  onUpdateParam?: (key: string, value: any) => void;
+  selectedFile?: string | null;
+}
+
+export const CropFunction = ({
+  params: propsParams,
+  onUpdateParam: propsUpdateParam,
+  selectedFile: propsSelectedFile,
+}: CropFunctionProps) => {
   const { t } = useSingleT();
-  const functionParams = useSingleStore((s) => s.functionParams);
-  const updateFunctionParam = useSingleStore((s) => s.updateFunctionParam);
+  const storeSelectedFile = useSingleStore((s) => s.selectedFile);
+  const storeFunctionParams = useSingleStore((s) => s.functionParams);
+  const storeUpdateFunctionParam = useSingleStore((s) => s.updateFunctionParam);
+
+  const selectedFile = propsSelectedFile !== undefined ? propsSelectedFile : storeSelectedFile;
+  const functionParams = propsParams !== undefined ? propsParams : storeFunctionParams;
+  const updateFunctionParam = propsUpdateParam !== undefined ? propsUpdateParam : storeUpdateFunctionParam;
+
   const setFunctionParams = useSingleStore((s) => s.setFunctionParams);
   const requestPreview = useSingleStore((s) => s.requestPreview);
   const cropFreeApplyReview = useSingleStore((s) => s.cropFreeApplyReview);

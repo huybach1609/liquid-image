@@ -8,9 +8,24 @@ import { Separator } from "@/components/ui/separator";
 import { getNumberParam, getStringParam } from "@/lib/functionParams";
 import { cn } from "@/lib/utils";
 
-const BlackWhiteFunction = () => {
-  const functionParams = useSingleStore((s) => s.functionParams);
-  const updateFunctionParam = useSingleStore((s) => s.updateFunctionParam);
+interface BlackWhiteFunctionProps {
+  params?: Record<string, any>;
+  onUpdateParam?: (key: string, value: any) => void;
+  selectedFile?: string | null;
+}
+
+const BlackWhiteFunction = ({
+  params: propsParams,
+  onUpdateParam: propsUpdateParam,
+  selectedFile: propsSelectedFile,
+}: BlackWhiteFunctionProps) => {
+  const storeSelectedFile = useSingleStore((s) => s.selectedFile);
+  const storeFunctionParams = useSingleStore((s) => s.functionParams);
+  const storeUpdateFunctionParam = useSingleStore((s) => s.updateFunctionParam);
+
+  const selectedFile = propsSelectedFile !== undefined ? propsSelectedFile : storeSelectedFile;
+  const functionParams = propsParams !== undefined ? propsParams : storeFunctionParams;
+  const updateFunctionParam = propsUpdateParam !== undefined ? propsUpdateParam : storeUpdateFunctionParam;
 
   const intensity = getNumberParam(functionParams, "bwIntensity", 54);
   const method = getStringParam(functionParams, "bwMethod", "gray");

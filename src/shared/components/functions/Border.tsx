@@ -7,9 +7,24 @@ import { Separator } from "@/components/ui/separator";
 import { getNumberParam, getStringParam } from "@/lib/functionParams";
 import { Input } from "../../components/ui/input";
 
-const BorderFunction = () => {
-  const functionParams = useSingleStore((s) => s.functionParams);
-  const updateFunctionParam = useSingleStore((s) => s.updateFunctionParam);
+interface BorderFunctionProps {
+  params?: Record<string, any>;
+  onUpdateParam?: (key: string, value: any) => void;
+  selectedFile?: string | null;
+}
+
+const BorderFunction = ({
+  params: propsParams,
+  onUpdateParam: propsUpdateParam,
+  selectedFile: propsSelectedFile,
+}: BorderFunctionProps) => {
+  const storeSelectedFile = useSingleStore((s) => s.selectedFile);
+  const storeFunctionParams = useSingleStore((s) => s.functionParams);
+  const storeUpdateFunctionParam = useSingleStore((s) => s.updateFunctionParam);
+
+  const selectedFile = propsSelectedFile !== undefined ? propsSelectedFile : storeSelectedFile;
+  const functionParams = propsParams !== undefined ? propsParams : storeFunctionParams;
+  const updateFunctionParam = propsUpdateParam !== undefined ? propsUpdateParam : storeUpdateFunctionParam;
 
   const thickness = getNumberParam(functionParams, "borderSize", 10);
   const color = getStringParam(functionParams, "borderColor", "#ffffff");

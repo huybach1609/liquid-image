@@ -14,9 +14,24 @@ const METHOD_DESCRIPTIONS: Record<string, string> = {
   sample: "Ultra-fast pixel sampling, no filters — may show aliasing.",
 };
 
-const ScaleResizeFunction = () => {
-  const functionParams = useSingleStore((s) => s.functionParams);
-  const updateFunctionParam = useSingleStore((s) => s.updateFunctionParam);
+interface ScaleResizeFunctionProps {
+  params?: Record<string, any>;
+  onUpdateParam?: (key: string, value: any) => void;
+  selectedFile?: string | null;
+}
+
+const ScaleResizeFunction = ({
+  params: propsParams,
+  onUpdateParam: propsUpdateParam,
+  selectedFile: propsSelectedFile,
+}: ScaleResizeFunctionProps) => {
+  const storeSelectedFile = useSingleStore((s) => s.selectedFile);
+  const storeFunctionParams = useSingleStore((s) => s.functionParams);
+  const storeUpdateFunctionParam = useSingleStore((s) => s.updateFunctionParam);
+
+  const selectedFile = propsSelectedFile !== undefined ? propsSelectedFile : storeSelectedFile;
+  const functionParams = propsParams !== undefined ? propsParams : storeFunctionParams;
+  const updateFunctionParam = propsUpdateParam !== undefined ? propsUpdateParam : storeUpdateFunctionParam;
 
   const width = getNumberParam(functionParams, "resizeWidth", 1920);
   const height = getNumberParam(functionParams, "resizeHeight", 1080);

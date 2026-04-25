@@ -14,9 +14,24 @@ const METHOD_DESCRIPTIONS: Record<string, string> = {
   "auto-gamma": "Adjusts gamma so the mean pixel value equals 50% gray automatically.",
 };
 
-const NormalizeColorFunction = () => {
-  const functionParams = useSingleStore((s) => s.functionParams);
-  const updateFunctionParam = useSingleStore((s) => s.updateFunctionParam);
+interface NormalizeColorFunctionProps {
+  params?: Record<string, any>;
+  onUpdateParam?: (key: string, value: any) => void;
+  selectedFile?: string | null;
+}
+
+const NormalizeColorFunction = ({
+  params: propsParams,
+  onUpdateParam: propsUpdateParam,
+  selectedFile: propsSelectedFile,
+}: NormalizeColorFunctionProps) => {
+  const storeSelectedFile = useSingleStore((s) => s.selectedFile);
+  const storeFunctionParams = useSingleStore((s) => s.functionParams);
+  const storeUpdateFunctionParam = useSingleStore((s) => s.updateFunctionParam);
+
+  const selectedFile = propsSelectedFile !== undefined ? propsSelectedFile : storeSelectedFile;
+  const functionParams = propsParams !== undefined ? propsParams : storeFunctionParams;
+  const updateFunctionParam = propsUpdateParam !== undefined ? propsUpdateParam : storeUpdateFunctionParam;
 
   const strength = getNumberParam(functionParams, "normalizeStrength", 60);
   const method = getStringParam(functionParams, "normalizeMethod", "normalize");

@@ -6,6 +6,7 @@ export type BatchQueueItem = {
   fileName: string;
   status: BatchJobStatus;
   errorMessage?: string;
+  message?: string;
   progress?: number;
 };
 

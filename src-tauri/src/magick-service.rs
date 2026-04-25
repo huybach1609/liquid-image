@@ -1,4 +1,4 @@
-use tauri::{command, AppHandle};
+use tauri::{command, AppHandle, Emitter};
 use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
 
@@ -495,9 +495,6 @@ pub async fn run_single(
     app: tauri::AppHandle,
     request: RunSingleRequest,
 ) -> Result<RunSingleResponse, String> {
-    use std::fs;
-    use std::path::Path;
-
     if request.input_path.trim().is_empty() {
         return Err("Input path is required".into());
     }
@@ -505,37 +502,206 @@ pub async fn run_single(
         return Err("Output path is required".into());
     }
 
-    let output_parent = Path::new(&request.output_path)
-        .parent()
-        .ok_or_else(|| "Invalid output path".to_string())?;
-    fs::create_dir_all(output_parent).map_err(|e| e.to_string())?;
+    run_single_internal(&app, &request.input_path, &request.output_path, &request.args).await
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BatchItem {
+    pub input_path: String,
+    pub output_path: String,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RunBatchRequest {
+    pub items: Vec<BatchItem>,
+    pub args: Vec<String>,
+    pub workers: u32,
+    pub stop_on_error: bool,
+}
+
+#[derive(serde::Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BatchProgressEvent {
+    pub index: usize,
+    pub status: String, // "success" | "error"
+    pub message: Option<String>,
+    pub output_path: Option<String>,
+}
+
+#[tauri::command]
+pub async fn cancel_batch(state: tauri::State<'_, crate::AppState>) -> Result<(), String> {
+    let mut token_lock = state.batch_cancel_token.lock().map_err(|e| e.to_string())?;
+    if let Some(token) = token_lock.take() {
+        token.cancel();
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn run_batch(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, crate::AppState>,
+    request: RunBatchRequest,
+) -> Result<(), String> {
+    use std::sync::Arc;
+    use tokio::sync::Semaphore;
+    use tokio_util::sync::CancellationToken;
+
+    let token = CancellationToken::new();
+    {
+        let mut token_lock = state.batch_cancel_token.lock().map_err(|e| e.to_string())?;
+        *token_lock = Some(token.clone());
+    }
+
+    let workers = request.workers.max(1).min(32);
+    let semaphore = Arc::new(Semaphore::new(workers as usize));
+    let args = Arc::new(request.args);
+    let items = request.items;
+    let stop_on_error = request.stop_on_error;
+
+    let mut handles = Vec::new();
+
+    for (index, item) in items.into_iter().enumerate() {
+        if token.is_cancelled() {
+            break;
+        }
+
+        let permit = semaphore.clone().acquire_owned().await.map_err(|e| e.to_string())?;
+        let app_h = app.clone();
+        let args_h = args.clone();
+        let token_h = token.clone();
+
+        let handle = tokio::spawn(async move {
+            let _permit = permit;
+            if token_h.is_cancelled() {
+                return None;
+            }
+
+            let res = run_single_internal(&app_h, &item.input_path, &item.output_path, &args_h).await;
+            
+            let event = match res {
+                Ok(resp) => BatchProgressEvent {
+                    index,
+                    status: "success".into(),
+                    message: None,
+                    output_path: Some(resp.output_path),
+                },
+                Err(e) => BatchProgressEvent {
+                    index,
+                    status: "error".into(),
+                    message: Some(e),
+                    output_path: None,
+                },
+            };
+
+            let _ = app_h.emit("batch-progress", event.clone());
+            Some(event)
+        });
+
+        handles.push(handle);
+    }
+
+    // Wait for all tasks to complete or handle stop_on_error
+    for handle in handles {
+        if let Ok(Some(event)) = handle.await {
+            if stop_on_error && event.status == "error" {
+                let mut token_lock = state.batch_cancel_token.lock().map_err(|e| e.to_string())?;
+                if let Some(token) = token_lock.take() {
+                    token.cancel();
+                }
+            }
+        }
+    }
+
+    // Clear token when done
+    let mut token_lock = state.batch_cancel_token.lock().map_err(|e| e.to_string())?;
+    *token_lock = None;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn run_batch_dry_run(
+    app: tauri::AppHandle,
+    request: RunBatchRequest,
+) -> Result<(), String> {
+    use std::sync::Arc;
+    use tokio::sync::Semaphore;
+
+    let workers = request.workers.max(1).min(32);
+    let semaphore = Arc::new(Semaphore::new(workers as usize));
+    let args = Arc::new(request.args);
+    let items = request.items;
+
+    let mut handles = Vec::new();
+
+    for (index, item) in items.into_iter().enumerate() {
+        let permit = semaphore
+            .clone()
+            .acquire_owned()
+            .await
+            .map_err(|e| e.to_string())?;
+        let app_h = app.clone();
+        let args_h = args.clone();
+
+        let handle = tokio::spawn(async move {
+            let _permit = permit;
+            
+            // For dry run, we use 'identify' or 'magick ... -format "" info:'
+            // Here we use magick with the arguments but output to 'info:' to validate
+            let res = dry_run_single_internal(&app_h, &item.input_path, &args_h).await;
+
+            let event = match res {
+                Ok(_) => BatchProgressEvent {
+                    index,
+                    status: "success".into(),
+                    message: None,
+                    output_path: None,
+                },
+                Err(e) => BatchProgressEvent {
+                    index,
+                    status: "error".into(),
+                    message: Some(e),
+                    output_path: None,
+                },
+            };
+
+            let _ = app_h.emit("batch-dry-run-progress", event.clone());
+            event
+        });
+
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        let _ = handle.await;
+    }
+
+    Ok(())
+}
+
+async fn dry_run_single_internal(
+    app: &tauri::AppHandle,
+    input_path: &str,
+    args: &[String],
+) -> Result<(), String> {
+    use tauri_plugin_shell::ShellExt;
 
     let mut command = app
         .shell()
         .sidecar("magick")
         .map_err(|e| e.to_string())?
-        .arg(&request.input_path);
+        .arg(input_path);
 
-    for arg in &request.args {
+    for arg in args {
         command = command.arg(arg);
     }
 
-    let run_cli_display = std::iter::once(format_cli_token_for_log(&request.input_path))
-        .chain(
-            request
-                .args
-                .iter()
-                .map(|a| format_cli_token_for_log(a.as_str())),
-        )
-        .chain(std::iter::once(format_cli_token_for_log(
-            &request.output_path,
-        )))
-        .collect::<Vec<_>>()
-        .join(" ");
-    println!("[run_single] magick {}", run_cli_display);
-
+    // info: is a special output that just reports image info and applies settings without writing
     let run_output = command
-        .arg(&request.output_path)
+        .arg("info:")
         .output()
         .await
         .map_err(|e| e.to_string())?;
@@ -544,9 +710,62 @@ pub async fn run_single(
         let stderr = String::from_utf8_lossy(&run_output.stderr)
             .trim()
             .to_string();
-        eprintln!("[run_single] failed: magick {}", run_cli_display);
         if !stderr.is_empty() {
-            eprintln!("[run_single] stderr: {}", stderr);
+            return Err(stderr);
+        }
+        return Err("Dry run failed".into());
+    }
+
+    Ok(())
+}
+
+/// Internal helper for run_single to avoid command recursion if needed, 
+/// but here we just reuse logic.
+async fn run_single_internal(
+    app: &tauri::AppHandle,
+    input_path: &str,
+    output_path: &str,
+    args: &[String],
+) -> Result<RunSingleResponse, String> {
+    use std::fs;
+    use std::path::Path;
+    use tauri_plugin_shell::ShellExt;
+
+    let output_parent = Path::new(output_path)
+        .parent()
+        .ok_or_else(|| "Invalid output path".to_string())?;
+    fs::create_dir_all(output_parent).map_err(|e| e.to_string())?;
+
+    let mut command = app
+        .shell()
+        .sidecar("magick")
+        .map_err(|e| e.to_string())?
+        .arg(input_path);
+
+    for arg in args {
+        command = command.arg(arg);
+    }
+
+    let run_cli_display = std::iter::once(format_cli_token_for_log(input_path))
+        .chain(args.iter().map(|a| format_cli_token_for_log(a.as_str())))
+        .chain(std::iter::once(format_cli_token_for_log(output_path)))
+        .collect::<Vec<_>>()
+        .join(" ");
+    println!("[magick] {}", run_cli_display);
+
+    let run_output = command
+        .arg(output_path)
+        .output()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if !run_output.status.success() {
+        let stderr = String::from_utf8_lossy(&run_output.stderr)
+            .trim()
+            .to_string();
+        eprintln!("[magick] failed: {}", run_cli_display);
+        if !stderr.is_empty() {
+            eprintln!("[magick] stderr: {}", stderr);
             return Err(stderr);
         }
         return Err("ImageMagick failed to run command".into());
@@ -559,7 +778,7 @@ pub async fn run_single(
         .arg("identify")
         .arg("-format")
         .arg("%w|%h")
-        .arg(&request.output_path)
+        .arg(output_path)
         .output()
         .await
         .map_err(|e| e.to_string())?;
@@ -568,10 +787,11 @@ pub async fn run_single(
         let stderr = String::from_utf8_lossy(&identify_output.stderr)
             .trim()
             .to_string();
-        if stderr.is_empty() {
-            return Err("Failed to inspect output image".into());
-        }
-        return Err(stderr);
+        return Err(if stderr.is_empty() {
+            "Failed to inspect output image".into()
+        } else {
+            stderr
+        });
     }
 
     let raw_dims = String::from_utf8_lossy(&identify_output.stdout)
@@ -583,7 +803,7 @@ pub async fn run_single(
     }
 
     Ok(RunSingleResponse {
-        output_path: request.output_path,
+        output_path: output_path.to_string(),
         width: parts[0].parse::<u32>().map_err(|e| e.to_string())?,
         height: parts[1].parse::<u32>().map_err(|e| e.to_string())?,
     })

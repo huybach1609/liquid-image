@@ -1,8 +1,14 @@
 use tauri::Emitter;
 use tauri::Manager;
+use tokio_util::sync::CancellationToken;
+use std::sync::Mutex;
 
 #[cfg(all(desktop, target_os = "macos"))]
 mod app_menu;
+
+pub struct AppState {
+    pub batch_cancel_token: Mutex<Option<CancellationToken>>,
+}
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -22,6 +28,9 @@ mod magick_service;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(AppState {
+            batch_cancel_token: Mutex::new(None),
+        })
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_process::init())
         // .plugin(tauri_plugin_window_state::Builder::default().build())
@@ -74,7 +83,10 @@ pub fn run() {
             magick_service::create_image_proxy,
             magick_service::remove_proxy_file,
             magick_service::generate_preview,
-            magick_service::run_single
+            magick_service::run_single,
+            magick_service::run_batch,
+            magick_service::run_batch_dry_run,
+            magick_service::cancel_batch
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

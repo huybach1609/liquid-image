@@ -77,3 +77,34 @@ export async function runSingle(
 ): Promise<RunSingleResponse> {
   return invoke<RunSingleResponse>("run_single", { request });
 }
+
+export type BatchItem = {
+  inputPath: string;
+  outputPath: string;
+};
+
+export type RunBatchRequest = {
+  items: BatchItem[];
+  args: string[];
+  workers: number;
+  stopOnError: boolean;
+};
+
+export type BatchProgressEvent = {
+  index: number;
+  status: "success" | "error";
+  message?: string;
+  outputPath?: string;
+};
+
+export async function runBatch(request: RunBatchRequest): Promise<void> {
+  return invoke<void>("run_batch", { request });
+}
+
+export async function runBatchDryRun(request: RunBatchRequest): Promise<void> {
+  return invoke<void>("run_batch_dry_run", { request });
+}
+
+export async function cancelBatch(): Promise<void> {
+  return invoke<void>("cancel_batch");
+}

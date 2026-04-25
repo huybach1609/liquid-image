@@ -27,6 +27,9 @@
     "store:default",
     "process:default",
     "os:default",
-    "shell:default"
+    "shell:default",
+    "core:app:allow-name",
+    "core:app:allow-version",
+    "core:app:allow-tauri-version"
   ]
 }

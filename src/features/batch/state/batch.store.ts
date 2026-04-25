@@ -31,6 +31,11 @@ export interface BatchState {
   setRunning: (running: boolean) => void;
   setOutputDirectory: (path: string) => void;
   addLog: (level: BatchLogLine["level"], message: string) => void;
+  updateItemStatus: (
+    index: number,
+    status: BatchQueueItem["status"],
+    message?: string
+  ) => void;
 }
 
 export const useBatchStore = create<BatchState>()(
@@ -145,6 +150,25 @@ export const useBatchStore = create<BatchState>()(
               },
             ],
           })),
+
+        updateItemStatus: (index, status, message) =>
+          set((state) => {
+            const newQueue = [...state.queue];
+            if (newQueue[index]) {
+              newQueue[index] = { ...newQueue[index], status, message };
+            }
+
+            return {
+              queue: newQueue,
+              stats: {
+                total: newQueue.length,
+                queued: newQueue.filter((i) => i.status === "queued").length,
+                running: newQueue.filter((i) => i.status === "running").length,
+                done: newQueue.filter((i) => i.status === "done").length,
+                error: newQueue.filter((i) => i.status === "error").length,
+              },
+            };
+          }),
       }),
       {
         name: "batch-storage",

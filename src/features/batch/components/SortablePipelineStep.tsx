@@ -93,7 +93,7 @@ export function SortablePipelineStep({ step, index }: SortablePipelineStepProps)
         <div className="border-t border-border/50 bg-muted/20 p-4">
           <FunctionComponent
             params={step.params}
-            onChange={(newParams: any) => updateStepParams(step.id, newParams)}
+            onUpdateParam={(key: string, value: any) => updateStepParams(step.id, { [key]: value })}
           />
         </div>
       )}

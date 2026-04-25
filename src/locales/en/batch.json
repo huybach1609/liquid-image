@@ -29,7 +29,8 @@
     "nameOriginal": "Keep original names",
     "namePrefix": "Add prefix",
     "nameSuffix": "Add suffix",
-    "nameCounter": "Sequential (001...)"
+    "nameCounter": "Sequential (001...)",
+    "nameCustom": "Custom Pattern"
   },
   "log": {
     "title": "Execution Log",
