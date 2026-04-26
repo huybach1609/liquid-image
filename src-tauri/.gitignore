@@ -6,3 +6,4 @@
 # will have schema files for capabilities auto-completion
 /gen/schemas
 /output/
+/binaries/ImageMagick-7.1.2-19-portable-Q16-x64/*
