@@ -1,7 +1,30 @@
 use tauri::{command, AppHandle, Emitter};
 use tauri_plugin_shell::process::CommandEvent;
 
-use super::runner::{create_magick_command, get_magick_source};
+use super::runner::{create_magick_command, get_magick_source, set_magick_source, MagickSource};
+
+#[command]
+pub async fn check_magick_path(app: AppHandle, path: String) -> Result<MagickVersionInfo, String> {
+    let source = MagickSource::Custom(path);
+    let output = create_magick_command(&app, &source)?
+        .arg("-version")
+        .output()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let raw = String::from_utf8_lossy(&output.stdout).to_string();
+    Ok(parse_magick_version(&raw))
+}
+
+#[command]
+pub fn get_current_magick_source() -> MagickSource {
+    get_magick_source()
+}
+
+#[command]
+pub fn update_magick_source(source: MagickSource) {
+    set_magick_source(source);
+}
 
 const PREVIEW_MAX_EDGE: u32 = 1600;
 
@@ -42,7 +65,7 @@ fn parse_magick_version(raw: &str) -> MagickVersionInfo {
 #[command]
 pub async fn convert_image(app: AppHandle, path: String) -> Result<String, String> {
     let source = get_magick_source();
-    let output = create_magick_command(&app, source)?
+    let output = create_magick_command(&app, &source)?
         .arg("-convert")
         .arg(path)
         .output()
@@ -54,7 +77,7 @@ pub async fn convert_image(app: AppHandle, path: String) -> Result<String, Strin
 #[command]
 pub async fn check_version(app: AppHandle) -> Result<MagickVersionInfo, String> {
     let source = get_magick_source();
-    let output = create_magick_command(&app, source)?
+    let output = create_magick_command(&app, &source)?
         .arg("-version")
         .output()
         .await
@@ -82,7 +105,7 @@ pub async fn get_image_metadata(
     use std::fs;
 
     let source = get_magick_source();
-    let output = create_magick_command(&app, source)?
+    let output = create_magick_command(&app, &source)?
         .arg("identify")
         .arg("-format")
         .arg("%m|%w|%h")
@@ -141,7 +164,7 @@ pub async fn create_image_proxy(
     let proxy_path = preview_root.join(format!("proxy_{id}.webp"));
 
     let source = get_magick_source();
-    let mut command = create_magick_command(&app, source)?;
+    let mut command = create_magick_command(&app, &source)?;
 
     let lower_input = input_path.to_ascii_lowercase();
     if lower_input.ends_with(".jpg") || lower_input.ends_with(".jpeg") {
@@ -264,7 +287,7 @@ fn rescale_shave_tokens_for_proxy_preview(
 
 async fn identify_image_wh(app: &tauri::AppHandle, path: &str) -> Result<(u32, u32), String> {
     let source = get_magick_source();
-    let output = create_magick_command(app, source)?
+    let output = create_magick_command(app, &source)?
         .arg("identify")
         .arg("-format")
         .arg("%w|%h")
@@ -332,7 +355,7 @@ pub async fn generate_preview(
 
     let source = get_magick_source();
     let mut preview_cli_args: Vec<String> = Vec::new();
-    let mut command = create_magick_command(&app, source)?;
+    let mut command = create_magick_command(&app, &source)?;
 
     let from_proxy = request.from_proxy;
 
@@ -660,7 +683,7 @@ async fn dry_run_single_internal(
     args: &[String],
 ) -> Result<(), String> {
     let source = get_magick_source();
-    let mut command = create_magick_command(app, source)?.arg(input_path);
+    let mut command = create_magick_command(app, &source)?.arg(input_path);
 
     for arg in args {
         command = command.arg(arg);
@@ -700,7 +723,7 @@ async fn run_single_internal(
     fs::create_dir_all(output_parent).map_err(|e| e.to_string())?;
 
     let source = get_magick_source();
-    let mut command = create_magick_command(app, source)?.arg(input_path);
+    let mut command = create_magick_command(app, &source)?.arg(input_path);
 
     for arg in args {
         command = command.arg(arg);
@@ -731,7 +754,7 @@ async fn run_single_internal(
         return Err("ImageMagick failed to run command".into());
     }
 
-    let identify_output = create_magick_command(app, source)?
+    let identify_output = create_magick_command(app, &source)?
         .arg("identify")
         .arg("-format")
         .arg("%w|%h")

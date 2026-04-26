@@ -1,5 +1,6 @@
 use tauri::Emitter;
 use tauri::Manager;
+use tauri_plugin_store::StoreExt;
 use tokio_util::sync::CancellationToken;
 use std::sync::Mutex;
 
@@ -36,6 +37,18 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
+            // Load saved settings to initialize MagickSource
+            if let Ok(store) = app.store("settings.json") {
+                if let Some(val) = store.get("settings-storage") {
+                    if let Some(path) = val.get("state").and_then(|s| s.get("magickBinaryPath")).and_then(|p| p.as_str()) {
+                        if !path.is_empty() {
+                            println!("[magick] initializing with custom path: {path}");
+                            magick::runner::set_magick_source(magick::runner::MagickSource::Custom(path.to_string()));
+                        }
+                    }
+                }
+            }
+
             let source = magick::runner::get_magick_source();
             println!("[magick] using source: {source}");
 
@@ -88,7 +101,10 @@ pub fn run() {
             magick::service::run_single,
             magick::service::run_batch,
             magick::service::run_batch_dry_run,
-            magick::service::cancel_batch
+            magick::service::cancel_batch,
+            magick::service::check_magick_path,
+            magick::service::get_current_magick_source,
+            magick::service::update_magick_source
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

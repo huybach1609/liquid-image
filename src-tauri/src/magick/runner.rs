@@ -1,12 +1,14 @@
-use std::sync::OnceLock;
+use std::sync::{OnceLock, RwLock};
 use tauri::AppHandle;
 use tauri_plugin_shell::process::Command;
 use tauri_plugin_shell::ShellExt;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(tag = "type", content = "path", rename_all = "lowercase")]
 pub enum MagickSource {
     Sidecar,
     System,
+    Custom(String),
 }
 
 impl std::fmt::Display for MagickSource {
@@ -14,11 +16,15 @@ impl std::fmt::Display for MagickSource {
         match self {
             MagickSource::Sidecar => write!(f, "sidecar"),
             MagickSource::System => write!(f, "system"),
+            MagickSource::Custom(path) => write!(f, "custom({})", path),
         }
     }
 }
 
-static MAGICK_SOURCE: OnceLock<MagickSource> = OnceLock::new();
+fn global_source() -> &'static RwLock<MagickSource> {
+    static SOURCE: OnceLock<RwLock<MagickSource>> = OnceLock::new();
+    SOURCE.get_or_init(|| RwLock::new(detect_magick_source()))
+}
 
 pub fn detect_magick_source() -> MagickSource {
     if let Ok(val) = std::env::var("LI_MAGICK_SOURCE") {
@@ -44,15 +50,21 @@ pub fn detect_magick_source() -> MagickSource {
 }
 
 pub fn get_magick_source() -> MagickSource {
-    *MAGICK_SOURCE.get_or_init(detect_magick_source)
+    global_source().read().unwrap().clone()
 }
 
-pub fn create_magick_command(app: &AppHandle, source: MagickSource) -> Result<Command, String> {
+pub fn set_magick_source(source: MagickSource) {
+    let mut guard = global_source().write().unwrap();
+    *guard = source;
+}
+
+pub fn create_magick_command(app: &AppHandle, source: &MagickSource) -> Result<Command, String> {
     match source {
         MagickSource::Sidecar => app
             .shell()
             .sidecar("magick")
             .map_err(|e| format!("sidecar error: {e}")),
         MagickSource::System => Ok(app.shell().command("magick")),
+        MagickSource::Custom(path) => Ok(app.shell().command(path)),
     }
 }

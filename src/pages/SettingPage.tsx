@@ -12,6 +12,8 @@ import {
   RotateCcw,
   Check,
 } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-dialog";
 import { useTranslation } from "react-i18next";
 
 import { useSettingsStore } from "@/features/settings/state/settings.store";
@@ -125,6 +127,85 @@ export function SettingPage() {
   const appInfo = useAppInfo();
   const sidebarRef = React.useRef<HTMLElement>(null);
   const [isCompact, setIsCompact] = React.useState(false);
+  const [magickStatus, setMagickStatus] = React.useState<{
+    type: string;
+    path?: string;
+    version?: string;
+  } | null>(null);
+  const [isTesting, setIsTesting] = React.useState(false);
+
+  React.useEffect(() => {
+    const fetchMagickSource = async () => {
+      try {
+        const source = await invoke<any>("get_current_magick_source");
+        const version = await invoke<any>("check_version");
+        setMagickStatus({
+          type: source.type,
+          path: source.path,
+          version: version.versionName,
+        });
+      } catch (e) {
+        console.error("Failed to fetch magick source", e);
+      }
+    };
+    fetchMagickSource();
+  }, []);
+
+  const handleBrowseBinary = async () => {
+    try {
+      const selected = await open({
+        multiple: false,
+        filters: [
+          {
+            name: "Executable",
+            extensions: ["exe", "bat", "sh", ""],
+          },
+        ],
+      });
+      if (selected && typeof selected === "string") {
+        settings.setSetting("magickBinaryPath", selected);
+        await handleTestBinary(selected);
+      }
+    } catch (e) {
+      console.error("Browse error", e);
+    }
+  };
+
+  const handleDetectBinary = async () => {
+    // For now, reset to sidecar as "auto-detect"
+    try {
+      await invoke("update_magick_source", { source: { type: "sidecar" } });
+      const version = await invoke<any>("check_version");
+      setMagickStatus({
+        type: "sidecar",
+        version: version.versionName,
+      });
+      settings.setSetting("magickBinaryPath", "");
+    } catch (e) {
+      console.error("Detection failed", e);
+    }
+  };
+
+  const handleTestBinary = async (path: string) => {
+    if (!path) return;
+    setIsTesting(true);
+    try {
+      const info = await invoke<any>("check_magick_path", { path });
+      await invoke("update_magick_source", {
+        source: { type: "custom", path },
+      });
+      setMagickStatus({
+        type: "custom",
+        path,
+        version: info.versionName,
+      });
+    } catch (e) {
+      console.error("Test failed", e);
+      alert(`Failed to verify ImageMagick at: ${path}\n\nError: ${e}`);
+    } finally {
+      setIsTesting(false);
+    }
+  };
 
   React.useEffect(() => {
     if (!sidebarRef.current) return;
@@ -846,15 +927,51 @@ export function SettingPage() {
                       <SettingSection label="Binary">
                         <SettingGroup>
                           <div className="p-4">
-                            <div className="font-semibold mb-1.5">
-                              ImageMagick binary path
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="font-semibold">
+                                ImageMagick binary path
+                              </div>
+                              {magickStatus && (
+                                <div
+                                  className={cn(
+                                    "text-[11px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider",
+                                    magickStatus.type === "sidecar"
+                                      ? "bg-blue-500/10 text-blue-500"
+                                      : "bg-green-500/10 text-green-500",
+                                  )}
+                                >
+                                  {magickStatus.type === "sidecar"
+                                    ? "Bundled (Sidecar)"
+                                    : "Custom Path"}
+                                </div>
+                              )}
                             </div>
-                            <div className="text-muted-foreground leading-relaxed mb-3">
-                              Đường dẫn tới lệnh magick
+                            <div className="text-muted-foreground leading-relaxed mb-4 text-[13px]">
+                              {magickStatus?.type === "sidecar" ? (
+                                <>
+                                  Using built-in ImageMagick. Set a custom path
+                                  below to override.
+                                  {magickStatus.version && (
+                                    <span className="block mt-1 font-mono text-[11px] opacity-70">
+                                      Detected: {magickStatus.version}
+                                    </span>
+                                  )}
+                                </>
+                              ) : (
+                                <>
+                                  Using custom binary at this location.
+                                  {magickStatus?.version && (
+                                    <span className="block mt-1 font-mono text-[11px] opacity-70">
+                                      Version: {magickStatus.version}
+                                    </span>
+                                  )}
+                                </>
+                              )}
                             </div>
                             <div className="flex gap-3">
                               <Input
                                 value={settings.magickBinaryPath}
+                                placeholder="Auto (using sidecar)"
                                 onChange={(e) =>
                                   settings.setSetting(
                                     "magickBinaryPath",
@@ -867,15 +984,33 @@ export function SettingPage() {
                                 variant="outline"
                                 size="sm"
                                 className="h-9 px-3 font-medium"
+                                onClick={handleDetectBinary}
                               >
-                                Detect
+                                Use Bundled
                               </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
                                 className="h-9 px-3 font-medium"
+                                onClick={handleBrowseBinary}
                               >
                                 Browse…
+                              </Button>
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                className={cn(
+                                  "h-9 px-3 font-medium",
+                                  isTesting && "opacity-50 cursor-not-allowed",
+                                )}
+                                disabled={
+                                  !settings.magickBinaryPath || isTesting
+                                }
+                                onClick={() =>
+                                  handleTestBinary(settings.magickBinaryPath)
+                                }
+                              >
+                                {isTesting ? "Testing..." : "Test Path"}
                               </Button>
                             </div>
                           </div>
