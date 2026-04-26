@@ -11,19 +11,15 @@ import { cn } from "@/lib/utils";
 interface BlackWhiteFunctionProps {
   params?: Record<string, any>;
   onUpdateParam?: (key: string, value: any) => void;
-  selectedFile?: string | null;
 }
 
 const BlackWhiteFunction = ({
   params: propsParams,
   onUpdateParam: propsUpdateParam,
-  selectedFile: propsSelectedFile,
 }: BlackWhiteFunctionProps) => {
-  const storeSelectedFile = useSingleStore((s) => s.selectedFile);
   const storeFunctionParams = useSingleStore((s) => s.functionParams);
   const storeUpdateFunctionParam = useSingleStore((s) => s.updateFunctionParam);
 
-  const selectedFile = propsSelectedFile !== undefined ? propsSelectedFile : storeSelectedFile;
   const functionParams = propsParams !== undefined ? propsParams : storeFunctionParams;
   const updateFunctionParam = propsUpdateParam !== undefined ? propsUpdateParam : storeUpdateFunctionParam;
 

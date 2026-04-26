@@ -16,6 +16,7 @@ export function AppShell() {
   const { t } = useTranslation("common");
   const mode = useAppStore((s) => s.mode);
   const [nativeMenubar, setNativeMenubar] = useState<boolean | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const isFullFrameMode = mode === "single" || mode === "batch" || mode === "settings";
   const appWindow = getCurrentWindow();
 
@@ -27,11 +28,24 @@ export function AppShell() {
       .catch(() => setNativeMenubar(false));
   }, []);
 
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    void appWindow.onResized(() => {
+      void appWindow.isFullscreen().then(setIsFullscreen);
+    }).then((fn) => {
+      unlisten = fn;
+    });
+    void appWindow.isFullscreen().then(setIsFullscreen);
+    return () => {
+      unlisten?.();
+    };
+  }, [appWindow]);
+
   return (
     <main
       className={
         isFullFrameMode
-          ? "app-window-frame bg-background text-foreground"
+          ? `app-window-frame bg-background text-foreground${isFullscreen ? " app-window-frame--fullscreen" : ""}`
           : "min-h-screen bg-background p-6 text-foreground"
       }
     >

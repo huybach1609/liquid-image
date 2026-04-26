@@ -160,7 +160,13 @@
         background-color: transparent;
         box-shadow:
             0 20px 50px oklch(0 0 0 / 30%),
-            inset 0 0 0 0.5px oklch(1 0 0 / 10%);
+            inset 0 0 0 0.5px oklch(1 1 1 / 15%),
+            inset 0 1px 0 0 oklch(1 1 1 / 10%);
+    }
+
+    .app-window-frame--fullscreen {
+        border-radius: 0;
+        box-shadow: none;
     }
 
     .app-window-content {
