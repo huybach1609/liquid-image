@@ -1,9 +1,8 @@
 use tauri::{command, AppHandle, Emitter};
 use tauri_plugin_shell::process::CommandEvent;
-use tauri_plugin_shell::ShellExt;
 
-/// Long edge for proxy thumbnail and preview decode hint. Keep in sync with
-/// `PROXY_PREVIEW_MAX_EDGE` in `src/features/single/previewScale.ts`.
+use super::runner::{create_magick_command, get_magick_source};
+
 const PREVIEW_MAX_EDGE: u32 = 1600;
 
 #[derive(serde::Serialize)]
@@ -42,10 +41,8 @@ fn parse_magick_version(raw: &str) -> MagickVersionInfo {
 
 #[command]
 pub async fn convert_image(app: AppHandle, path: String) -> Result<String, String> {
-    let output = app
-        .shell()
-        .sidecar("magick")
-        .map_err(|e| e.to_string())?
+    let source = get_magick_source();
+    let output = create_magick_command(&app, source)?
         .arg("-convert")
         .arg(path)
         .output()
@@ -53,12 +50,11 @@ pub async fn convert_image(app: AppHandle, path: String) -> Result<String, Strin
         .map_err(|e| e.to_string())?;
     Ok(String::from_utf8_lossy(&output.stdout).to_string())
 }
+
 #[command]
 pub async fn check_version(app: AppHandle) -> Result<MagickVersionInfo, String> {
-    let output = app
-        .shell()
-        .sidecar("magick")
-        .map_err(|e| e.to_string())?
+    let source = get_magick_source();
+    let output = create_magick_command(&app, source)?
         .arg("-version")
         .output()
         .await
@@ -84,11 +80,9 @@ pub async fn get_image_metadata(
     path: String,
 ) -> Result<ImageMetadata, String> {
     use std::fs;
-    // identify -format "%m|%w|%h"
-    let output = app
-        .shell()
-        .sidecar("magick")
-        .map_err(|e| e.to_string())?
+
+    let source = get_magick_source();
+    let output = create_magick_command(&app, source)?
         .arg("identify")
         .arg("-format")
         .arg("%m|%w|%h")
@@ -136,8 +130,6 @@ pub async fn create_image_proxy(
     let preview_root = std::env::temp_dir().join("liquid-image-preview");
     fs::create_dir_all(&preview_root).map_err(|e| e.to_string())?;
 
-    // Unique name so the frontend `proxyPath` changes every load — fixed `base_proxy.webp`
-    // kept the same string and blocked `usePreviewPipeline` from re-running.
     let id = format!(
         "{}_{}",
         std::time::SystemTime::now()
@@ -148,7 +140,8 @@ pub async fn create_image_proxy(
     );
     let proxy_path = preview_root.join(format!("proxy_{id}.webp"));
 
-    let mut command = app.shell().sidecar("magick").map_err(|e| e.to_string())?;
+    let source = get_magick_source();
+    let mut command = create_magick_command(&app, source)?;
 
     let lower_input = input_path.to_ascii_lowercase();
     if lower_input.ends_with(".jpg") || lower_input.ends_with(".jpeg") {
@@ -183,7 +176,6 @@ pub async fn create_image_proxy(
     Ok(proxy_path.to_string_lossy().to_string())
 }
 
-/// Remove a preview proxy file created under `%TEMP%/liquid-image-preview/proxy_*.webp`.
 #[tauri::command]
 pub fn remove_proxy_file(path: String) -> Result<(), String> {
     use std::fs;
@@ -221,17 +213,13 @@ pub fn remove_proxy_file(path: String) -> Result<(), String> {
 pub struct GeneratePreviewRequest {
     input_path: String,
     operation: String,
-    /// Pipeline fingerprint from the frontend (not read here yet; used in TS for cache keys).
     #[allow(dead_code)]
     options_json: Option<String>,
     args: Option<Vec<String>>,
-    /// When true, `input_path` is already a downsampled WebP proxy — skip JPEG decode hints and resize pass.
     #[serde(default)]
     from_proxy: bool,
-    /// Full-resolution image width (px). With `from_proxy`, used to rescale `-shave` from UI/original space into proxy space.
     #[serde(default)]
     original_width: Option<u32>,
-    /// Full-resolution image height (px). Same as `original_width` for `-shave` rescaling.
     #[serde(default)]
     original_height: Option<u32>,
 }
@@ -247,8 +235,6 @@ fn parse_shave_geometry(token: &str) -> Option<(u32, u32)> {
     Some((h, v))
 }
 
-/// UI `-shave` values are in **original/full** pixels. Preview runs on the proxy — scale down:
-/// `final_h = round(ui_h * proxy_w / orig_w)`, `final_v = round(ui_v * proxy_h / orig_h)`.
 fn rescale_shave_tokens_for_proxy_preview(
     args: &mut [String],
     proxy_w: u32,
@@ -277,10 +263,8 @@ fn rescale_shave_tokens_for_proxy_preview(
 }
 
 async fn identify_image_wh(app: &tauri::AppHandle, path: &str) -> Result<(u32, u32), String> {
-    let output = app
-        .shell()
-        .sidecar("magick")
-        .map_err(|e| e.to_string())?
+    let source = get_magick_source();
+    let output = create_magick_command(app, source)?
         .arg("identify")
         .arg("-format")
         .arg("%w|%h")
@@ -312,7 +296,6 @@ async fn identify_image_wh(app: &tauri::AppHandle, path: &str) -> Result<(u32, u
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GeneratePreviewResponse {
-    /// WebP bytes as a `data:image/webp;base64,...` URI for direct `<img src>`.
     preview_data_uri: String,
     total_ms: u32,
     render_ms: u32,
@@ -347,13 +330,12 @@ pub async fn generate_preview(
 
     let total_started = Instant::now();
 
-    // Mirror argv into `preview_cli_args` so failure logs match the real shell invocation.
+    let source = get_magick_source();
     let mut preview_cli_args: Vec<String> = Vec::new();
-    let mut command = app.shell().sidecar("magick").map_err(|e| e.to_string())?;
+    let mut command = create_magick_command(&app, source)?;
 
     let from_proxy = request.from_proxy;
 
-    // 1. JPEG decode hint + resize/orientation — skipped when reading an existing proxy WebP
     if !from_proxy {
         let lower_input = request.input_path.to_ascii_lowercase();
         if lower_input.ends_with(".jpg") || lower_input.ends_with(".jpeg") {
@@ -378,7 +360,6 @@ pub async fn generate_preview(
         command = command.arg(&request.input_path);
     }
 
-    // 2. Effect argv from frontend (optionally rescale `-shave` for proxy preview — UI is full-res px)
     let mut effect_args: Vec<String> = request.args.clone().unwrap_or_default();
     if from_proxy && args_slice_contains_shave(&effect_args) {
         if let (Some(orig_w), Some(orig_h)) = (request.original_width, request.original_height) {
@@ -402,7 +383,6 @@ pub async fn generate_preview(
         command = command.arg(arg);
     }
 
-    // Write WebP to stdout (`webp:-`) instead of a temp file.
     preview_cli_args.extend([
         "-depth".into(),
         "8".into(),
@@ -425,9 +405,6 @@ pub async fn generate_preview(
 
     let render_started = Instant::now();
 
-    // `tauri_plugin_shell::Command::output()` reads stdout in *line* mode by default and also
-    // appends `\n` between chunks — that corrupts binary WebP from `magick ... webp:-`.
-    // Raw spawn + concat preserves bytes exactly.
     let (mut rx, _child) = command
         .set_raw_out(true)
         .spawn()
@@ -465,8 +442,8 @@ pub async fn generate_preview(
     let total_ms = total_started.elapsed().as_millis();
 
     println!(
-        "[preview-in-memory] op={} render={}ms total={}ms",
-        request.operation, render_ms, total_ms
+        "[preview-in-memory] op={} render={}ms total={}ms source={}",
+        request.operation, render_ms, total_ms, source
     );
     println!(
         "[preview-in-memory] cmd: magick {}",
@@ -480,7 +457,6 @@ pub async fn generate_preview(
     })
 }
 
-/// Renders one argv token for debug logs (quotes when needed, like a POSIX shell).
 fn format_cli_token_for_log(s: &str) -> String {
     if s.is_empty() || s.chars().any(char::is_whitespace) {
         let escaped = s.replace('\\', "\\\\").replace('"', "\\\"");
@@ -525,7 +501,7 @@ pub struct RunBatchRequest {
 #[serde(rename_all = "camelCase")]
 pub struct BatchProgressEvent {
     pub index: usize,
-    pub status: String, // "success" | "error"
+    pub status: String,
     pub message: Option<String>,
     pub output_path: Option<String>,
 }
@@ -555,7 +531,7 @@ pub async fn run_batch(
         *token_lock = Some(token.clone());
     }
 
-    let workers = request.workers.max(1).min(32);
+    let workers = request.workers.clamp(1, 32);
     let semaphore = Arc::new(Semaphore::new(workers as usize));
     let args = Arc::new(request.args);
     let items = request.items;
@@ -580,7 +556,7 @@ pub async fn run_batch(
             }
 
             let res = run_single_internal(&app_h, &item.input_path, &item.output_path, &args_h).await;
-            
+
             let event = match res {
                 Ok(resp) => BatchProgressEvent {
                     index,
@@ -603,7 +579,6 @@ pub async fn run_batch(
         handles.push(handle);
     }
 
-    // Wait for all tasks to complete or handle stop_on_error
     for handle in handles {
         if let Ok(Some(event)) = handle.await {
             if stop_on_error && event.status == "error" {
@@ -615,7 +590,6 @@ pub async fn run_batch(
         }
     }
 
-    // Clear token when done
     let mut token_lock = state.batch_cancel_token.lock().map_err(|e| e.to_string())?;
     *token_lock = None;
 
@@ -630,7 +604,7 @@ pub async fn run_batch_dry_run(
     use std::sync::Arc;
     use tokio::sync::Semaphore;
 
-    let workers = request.workers.max(1).min(32);
+    let workers = request.workers.clamp(1, 32);
     let semaphore = Arc::new(Semaphore::new(workers as usize));
     let args = Arc::new(request.args);
     let items = request.items;
@@ -648,9 +622,7 @@ pub async fn run_batch_dry_run(
 
         let handle = tokio::spawn(async move {
             let _permit = permit;
-            
-            // For dry run, we use 'identify' or 'magick ... -format "" info:'
-            // Here we use magick with the arguments but output to 'info:' to validate
+
             let res = dry_run_single_internal(&app_h, &item.input_path, &args_h).await;
 
             let event = match res {
@@ -687,19 +659,13 @@ async fn dry_run_single_internal(
     input_path: &str,
     args: &[String],
 ) -> Result<(), String> {
-    use tauri_plugin_shell::ShellExt;
-
-    let mut command = app
-        .shell()
-        .sidecar("magick")
-        .map_err(|e| e.to_string())?
-        .arg(input_path);
+    let source = get_magick_source();
+    let mut command = create_magick_command(app, source)?.arg(input_path);
 
     for arg in args {
         command = command.arg(arg);
     }
 
-    // info: is a special output that just reports image info and applies settings without writing
     let run_output = command
         .arg("info:")
         .output()
@@ -719,8 +685,6 @@ async fn dry_run_single_internal(
     Ok(())
 }
 
-/// Internal helper for run_single to avoid command recursion if needed, 
-/// but here we just reuse logic.
 async fn run_single_internal(
     app: &tauri::AppHandle,
     input_path: &str,
@@ -729,18 +693,14 @@ async fn run_single_internal(
 ) -> Result<RunSingleResponse, String> {
     use std::fs;
     use std::path::Path;
-    use tauri_plugin_shell::ShellExt;
 
     let output_parent = Path::new(output_path)
         .parent()
         .ok_or_else(|| "Invalid output path".to_string())?;
     fs::create_dir_all(output_parent).map_err(|e| e.to_string())?;
 
-    let mut command = app
-        .shell()
-        .sidecar("magick")
-        .map_err(|e| e.to_string())?
-        .arg(input_path);
+    let source = get_magick_source();
+    let mut command = create_magick_command(app, source)?.arg(input_path);
 
     for arg in args {
         command = command.arg(arg);
@@ -771,10 +731,7 @@ async fn run_single_internal(
         return Err("ImageMagick failed to run command".into());
     }
 
-    let identify_output = app
-        .shell()
-        .sidecar("magick")
-        .map_err(|e| e.to_string())?
+    let identify_output = create_magick_command(app, source)?
         .arg("identify")
         .arg("-format")
         .arg("%w|%h")

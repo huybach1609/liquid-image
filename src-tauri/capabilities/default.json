@@ -28,6 +28,20 @@
     "process:default",
     "os:default",
     "shell:default",
+    {
+      "identifier": "shell:allow-spawn",
+      "allow": [
+        { "name": "magick", "sidecar": true, "args": true },
+        { "name": "system-magick", "cmd": "magick", "args": true }
+      ]
+    },
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        { "name": "magick", "sidecar": true, "args": true },
+        { "name": "system-magick", "cmd": "magick", "args": true }
+      ]
+    },
     "core:app:allow-name",
     "core:app:allow-version",
     "core:app:allow-tauri-version"

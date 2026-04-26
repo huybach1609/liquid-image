@@ -6,6 +6,8 @@ use std::sync::Mutex;
 #[cfg(all(desktop, target_os = "macos"))]
 mod app_menu;
 
+mod magick;
+
 pub struct AppState {
     pub batch_cancel_token: Mutex<Option<CancellationToken>>,
 }
@@ -22,9 +24,6 @@ fn menubar_uses_native() -> bool {
     cfg!(target_os = "macos")
 }
 
-#[path = "magick-service.rs"]
-mod magick_service;
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -37,6 +36,9 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
+            let source = magick::runner::get_magick_source();
+            println!("[magick] using source: {source}");
+
             if let Some(window) = app.get_webview_window("main") {
                 // Ensure window is visible and focused regardless of saved state
                 let _ = window.set_decorations(false);
@@ -77,16 +79,16 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             menubar_uses_native,
-            magick_service::convert_image,
-            magick_service::check_version,
-            magick_service::get_image_metadata,
-            magick_service::create_image_proxy,
-            magick_service::remove_proxy_file,
-            magick_service::generate_preview,
-            magick_service::run_single,
-            magick_service::run_batch,
-            magick_service::run_batch_dry_run,
-            magick_service::cancel_batch
+            magick::service::convert_image,
+            magick::service::check_version,
+            magick::service::get_image_metadata,
+            magick::service::create_image_proxy,
+            magick::service::remove_proxy_file,
+            magick::service::generate_preview,
+            magick::service::run_single,
+            magick::service::run_batch,
+            magick::service::run_batch_dry_run,
+            magick::service::cancel_batch
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
