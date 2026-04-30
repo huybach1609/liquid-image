@@ -29,6 +29,7 @@ type OptionsPaneProps = {
   commandPreviews: CommandPreviewItem[];
   cliPreviewMode: "function" | "all";
   setCliPreviewMode: (mode: "function" | "all") => void;
+  showCliPreview: boolean;
 };
 
 export const OptionsPane = memo(function OptionsPane({
@@ -39,6 +40,7 @@ export const OptionsPane = memo(function OptionsPane({
   commandPreviews,
   cliPreviewMode,
   setCliPreviewMode,
+  showCliPreview,
 }: OptionsPaneProps) {
   const { t } = useTranslation("single");
 
@@ -65,25 +67,31 @@ export const OptionsPane = memo(function OptionsPane({
         </DropdownMenu>
       </div>
 
-      <ResizablePanelGroup orientation="vertical">
-        <ResizablePanel defaultSize={70} minSize={30}>
-          <div className="h-full overflow-auto px-4 py-3">
-            <SelectedFunctionComponent />
-          </div>
-        </ResizablePanel>
+      {showCliPreview ? (
+        <ResizablePanelGroup orientation="vertical">
+          <ResizablePanel defaultSize={70} minSize={30}>
+            <div className="h-full overflow-auto px-4 py-3">
+              <SelectedFunctionComponent />
+            </div>
+          </ResizablePanel>
 
-        <ResizableHandle withHandle />
+          <ResizableHandle withHandle />
 
-        <ResizablePanel defaultSize={30} minSize={10}>
-          <div className="h-full overflow-auto px-4 py-3">
-            <SingleCliPreview
-              commandPreviews={commandPreviews}
-              cliPreviewMode={cliPreviewMode}
-              setCliPreviewMode={setCliPreviewMode}
-            />
-          </div>
-        </ResizablePanel>
-      </ResizablePanelGroup>
+          <ResizablePanel defaultSize={30} minSize={10}>
+            <div className="h-full overflow-auto px-4 py-3">
+              <SingleCliPreview
+                commandPreviews={commandPreviews}
+                cliPreviewMode={cliPreviewMode}
+                setCliPreviewMode={setCliPreviewMode}
+              />
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      ) : (
+        <div className="flex-1 overflow-auto px-4 py-3">
+          <SelectedFunctionComponent />
+        </div>
+      )}
     </aside>
   );
 });

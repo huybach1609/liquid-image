@@ -17,6 +17,8 @@ type UsePreviewPipelineArgs = {
   debounceMs?: number;
   /** Full-res size of the source image — enables correct `-shave` scaling on the proxy in Rust. */
   fullImageDimensions?: { width: number; height: number } | null;
+  /** Preview max resolution setting (e.g., "800px", "1200px", "full") */
+  previewMaxResolution?: string;
 };
 
 export type PreviewState = {
@@ -40,6 +42,7 @@ export function usePreviewPipeline({
   previewRequestId = 0,
   debounceMs = DEFAULT_DEBOUNCE_MS,
   fullImageDimensions = null,
+  previewMaxResolution = "1200px",
 }: UsePreviewPipelineArgs): PreviewState {
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [previewWidth, setPreviewWidth] = useState<number | null>(null);
@@ -120,6 +123,7 @@ export function usePreviewPipeline({
               optionsJson,
               args: operationArgs,
               fromProxy: true,
+              maxResolution: previewMaxResolution,
               ...(fullImageDimensions &&
               Number.isFinite(fullImageDimensions.width) &&
               Number.isFinite(fullImageDimensions.height) &&

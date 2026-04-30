@@ -1,7 +1,7 @@
 export type Language = "en" | "vi" | "zh" | "ja" | "ko" | "fr" | "de";
 export type DateFormat = "YYYY-MM-DD" | "DD-MM-YYYY" | "MM-DD-YYYY" | "YYYYMMDD";
 export type FileSizeUnit = "MB_GB" | "MiB_GiB" | "KB";
-export type Theme = "system" | "light" | "dark";
+export type Theme = "system" | "light" | "dark" | "claude" | "claude-dark" | "notion" | "notion-dark" | "starbucks" | "starbucks-dark";
 export type FontSize = "small" | "default" | "large";
 export type SidebarWidth = "compact" | "default" | "wide";
 export type NamingPattern = "same-name" | "name-out" | "name-op" | "date-name" | "custom";

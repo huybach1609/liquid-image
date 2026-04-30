@@ -1,5 +1,18 @@
+export function previewMaxEdgeFromSetting(setting: string): number {
+  switch (setting) {
+    case "800px":
+      return 800;
+    case "1200px":
+      return 1200;
+    case "full":
+      return 99999;
+    default:
+      return 1200;
+  }
+}
+
 /** Must match `PREVIEW_TARGET` in `magick-service.rs` (`create_image_proxy`). */
-export const PROXY_PREVIEW_MAX_EDGE = 1600;
+export const PROXY_PREVIEW_MAX_EDGE = 1200;
 
 /**
  * Approximate pixel size of the WebP proxy (`-thumbnail WxH>`), used when decoded
@@ -8,8 +21,9 @@ export const PROXY_PREVIEW_MAX_EDGE = 1600;
 export function estimateProxyDimensions(
   fullWidth: number,
   fullHeight: number,
+  maxResolution: string = "1200px",
 ): { width: number; height: number } {
-  const max = PROXY_PREVIEW_MAX_EDGE;
+  const max = previewMaxEdgeFromSetting(maxResolution);
   if (
     !Number.isFinite(fullWidth) ||
     !Number.isFinite(fullHeight) ||

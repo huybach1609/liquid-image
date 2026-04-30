@@ -2,7 +2,8 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { createTauriStorage } from "@/shared/lib/zustand-tauri-store";
 import type { 
-  SettingsState
+  SettingsState,
+  Theme,
 } from "../types";
 
 export interface SettingsStoreState extends SettingsState {
@@ -22,7 +23,7 @@ export const initialSettings: SettingsState = {
   launchAtLogin: false,
 
   // Appearance
-  theme: "system",
+  theme: "system" as Theme,
   accentColor: "#7F77DD",
   fontSize: "default",
   sidebarWidth: "default",

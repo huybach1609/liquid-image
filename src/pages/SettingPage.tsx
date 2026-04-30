@@ -52,8 +52,8 @@ import type {
   FileSizeUnit,
   Theme,
   FontSize,
-  SidebarWidth,
   ConflictPolicy,
+  OnErrorPolicy,
   PreviewResolution,
   ColorProfile,
   SettingsState,
@@ -229,6 +229,10 @@ export function SettingPage() {
     setTimeout(() => setSaved(false), 2000);
   };
 
+  const handleThemeChange = (theme: Theme) => {
+    settings.setSetting("theme", theme);
+  };
+
   const handleResetSection = () => {
     // Determine which keys belong to the active section
     let keysToReset: (keyof SettingsState)[] = [];
@@ -244,7 +248,6 @@ export function SettingPage() {
     } else if (activeTab === "appearance") {
       keysToReset = [
         "theme",
-        "accentColor",
         "fontSize",
         "sidebarWidth",
         "showCliPreview",
@@ -262,8 +265,12 @@ export function SettingPage() {
       keysToReset = [
         "workers",
         "memoryLimit",
+        "diskCacheLimit",
         "livePreview",
         "previewMaxResolution",
+        "dryRunBeforeBatch",
+        "onErrorPolicy",
+        "saveErrorLog",
       ];
     } else if (activeTab === "imagick") {
       keysToReset = [
@@ -502,38 +509,79 @@ export function SettingPage() {
                         </SettingGroup>
                       </SettingSection>
 
-                      <SettingSection label="Startup">
+                      <SettingSection label="Batch options">
                         <SettingGroup>
                           <SettingRow
-                            name="Restore last session"
-                            description="Mở lại pipeline và file queue của lần dùng trước"
+                            name="Disk cache limit"
+                            description="Giới hạn bộ nhớ đệm trên đĩa cho ImageMagick"
+                          >
+                            <Select
+                              value={settings.diskCacheLimit}
+                              onValueChange={(v) =>
+                                settings.setSetting("diskCacheLimit", v)
+                              }
+                            >
+                              <SelectTrigger className="w-[140px] h-9 ">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="512 MB">512 MB</SelectItem>
+                                <SelectItem value="1 GB">1 GB</SelectItem>
+                                <SelectItem value="2 GB">2 GB</SelectItem>
+                                <SelectItem value="Unlimited">
+                                  Unlimited
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </SettingRow>
+                          <SettingRow
+                            name="Dry run before batch"
+                            description="Kiểm tra trước khi chạy batch thật"
                           >
                             <Switch
-                              checked={settings.restoreSession}
+                              checked={settings.dryRunBeforeBatch}
                               onCheckedChange={(v) =>
-                                settings.setSetting("restoreSession", v)
+                                settings.setSetting("dryRunBeforeBatch", v)
                               }
                             />
                           </SettingRow>
                           <SettingRow
-                            name="Check for updates on launch"
-                            description="Tự kiểm tra phiên bản mới khi khởi động"
+                            name="On error policy"
+                            description="Cách xử lý khi có lỗi trong batch"
                           >
-                            <Switch
-                              checked={settings.checkUpdates}
-                              onCheckedChange={(v) =>
-                                settings.setSetting("checkUpdates", v)
+                            <Select
+                              value={settings.onErrorPolicy}
+                              onValueChange={(v) =>
+                                settings.setSetting(
+                                  "onErrorPolicy",
+                                  v as OnErrorPolicy,
+                                )
                               }
-                            />
+                            >
+                              <SelectTrigger className="w-[200px] h-9 ">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="skip-and-continue">
+                                  Skip & continue
+                                </SelectItem>
+                                <SelectItem value="stop-all">
+                                  Stop all
+                                </SelectItem>
+                                <SelectItem value="retry-once">
+                                  Retry once
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
                           </SettingRow>
                           <SettingRow
-                            name="Launch at login"
-                            description="Khởi động cùng hệ thống (chạy nền ở tray)"
+                            name="Save error log"
+                            description="Ghi log lỗi vào file khi batch thất bại"
                           >
                             <Switch
-                              checked={settings.launchAtLogin}
+                              checked={settings.saveErrorLog}
                               onCheckedChange={(v) =>
-                                settings.setSetting("launchAtLogin", v)
+                                settings.setSetting("saveErrorLog", v)
                               }
                             />
                           </SettingRow>
@@ -546,55 +594,104 @@ export function SettingPage() {
                     <>
                       <SettingSection label="Theme">
                         <SettingGroup>
-                          <SettingRow
-                            name="Color theme"
-                            description="Giao diện sáng hoặc tối"
-                          >
-                            <Select
-                              value={settings.theme}
-                              onValueChange={(v) =>
-                                settings.setSetting("theme", v as Theme)
-                              }
-                            >
-                              <SelectTrigger className="w-[150px] h-9 ">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="system">
-                                  System default
-                                </SelectItem>
-                                <SelectItem value="light">Light</SelectItem>
-                                <SelectItem value="dark">Dark</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </SettingRow>
-                          <SettingRow
-                            name="Accent color"
-                            description="Màu nhấn cho nút và trạng thái active"
-                          >
-                            <div className="flex gap-2">
+                          <div className="p-4">
+                            <div className="font-semibold mb-1.5">
+                              Design theme
+                            </div>
+                            <div className="text-muted-foreground leading-relaxed mb-4">
+                              Chọn phong cách giao diện cho toàn bộ ứng dụng
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                               {[
-                                "#7F77DD",
-                                "#1D9E75",
-                                "#378ADD",
-                                "#D85A30",
-                                "#888780",
-                              ].map((color) => (
+                                {
+                                  id: "light" as Theme,
+                                  name: "Light",
+                                  desc: "Mặc định",
+                                  swatch:
+                                    "bg-gradient-to-br from-[#f5f5f3] to-[#e8e8e6]",
+                                },
+                                {
+                                  id: "dark" as Theme,
+                                  name: "Dark",
+                                  desc: "Tối giản",
+                                  swatch:
+                                    "bg-gradient-to-br from-[#1a1a2e] to-[#16162a]",
+                                },
+                                {
+                                  id: "claude" as Theme,
+                                  name: "Claude",
+                                  desc: "Cream, coral",
+                                  swatch:
+                                    "bg-gradient-to-br from-[#faf9f5] to-[#cc785c]",
+                                },
+                                {
+                                  id: "claude-dark" as Theme,
+                                  name: "Claude Dark",
+                                  desc: "Navy, coral",
+                                  swatch:
+                                    "bg-gradient-to-br from-[#181715] to-[#cc785c]",
+                                },
+                                {
+                                  id: "notion" as Theme,
+                                  name: "Notion",
+                                  desc: "White, blue",
+                                  swatch:
+                                    "bg-gradient-to-br from-[#ffffff] to-[#0075de]",
+                                },
+                                {
+                                  id: "notion-dark" as Theme,
+                                  name: "Notion Dark",
+                                  desc: "Dark, blue",
+                                  swatch:
+                                    "bg-gradient-to-br from-[#191919] to-[#0075de]",
+                                },
+                                {
+                                  id: "starbucks" as Theme,
+                                  name: "Starbucks",
+                                  desc: "Cream, green",
+                                  swatch:
+                                    "bg-gradient-to-br from-[#f2f0eb] to-[#006241]",
+                                },
+                                {
+                                  id: "starbucks-dark" as Theme,
+                                  name: "Starbucks Dark",
+                                  desc: "Dark green",
+                                  swatch:
+                                    "bg-gradient-to-br from-[#1E3932] to-[#00754A]",
+                                },
+                              ].map((t) => (
                                 <button
-                                  key={color}
+                                  key={t.id}
+                                  type="button"
                                   className={cn(
-                                    "size-6 rounded-full border border-border/50 transition-transform hover:scale-110",
-                                    settings.accentColor === color &&
-                                      "ring-2 ring-offset-2 ring-primary",
+                                    "group relative overflow-hidden rounded-xl border-2 p-3 text-left transition-all hover:shadow-md",
+                                    settings.theme === t.id
+                                      ? "border-primary ring-2 ring-primary/20"
+                                      : "border-border/60 hover:border-primary/40",
                                   )}
-                                  style={{ backgroundColor: color }}
-                                  onClick={() =>
-                                    settings.setSetting("accentColor", color)
-                                  }
-                                />
+                                  onClick={() => handleThemeChange(t.id)}
+                                >
+                                  <div
+                                    className={cn(
+                                      "h-12 rounded-lg mb-2.5",
+                                      t.swatch,
+                                    )}
+                                  />
+                                  <div className="text-[13px] font-semibold">
+                                    {t.name}
+                                  </div>
+                                  <div className="text-[11px] text-muted-foreground">
+                                    {t.desc}
+                                  </div>
+                                  {settings.theme === t.id && (
+                                    <div className="absolute top-2 right-2 size-5 rounded-full bg-primary flex items-center justify-center">
+                                      <Check className="size-3 text-primary-foreground" />
+                                    </div>
+                                  )}
+                                </button>
                               ))}
                             </div>
-                          </SettingRow>
+                          </div>
                           <SettingRow
                             name="Font size"
                             description="Kích thước chữ trong giao diện"
@@ -626,35 +723,6 @@ export function SettingPage() {
 
                       <SettingSection label="Layout">
                         <SettingGroup>
-                          <SettingRow
-                            name="Sidebar width"
-                            description="Độ rộng sidebar danh sách operation"
-                          >
-                            <Select
-                              value={settings.sidebarWidth}
-                              onValueChange={(v) =>
-                                settings.setSetting(
-                                  "sidebarWidth",
-                                  v as SidebarWidth,
-                                )
-                              }
-                            >
-                              <SelectTrigger className="w-[150px] h-9 ">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="compact">
-                                  Compact (160px)
-                                </SelectItem>
-                                <SelectItem value="default">
-                                  Default (180px)
-                                </SelectItem>
-                                <SelectItem value="wide">
-                                  Wide (220px)
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </SettingRow>
                           <SettingRow
                             name="Show CLI preview"
                             description="Hiện thanh lệnh magick phía dưới options panel"

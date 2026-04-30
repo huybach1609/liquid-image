@@ -26,8 +26,6 @@ pub fn update_magick_source(source: MagickSource) {
     set_magick_source(source);
 }
 
-const PREVIEW_MAX_EDGE: u32 = 1600;
-
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MagickVersionInfo {
@@ -139,16 +137,28 @@ pub async fn get_image_metadata(
     })
 }
 
+fn parse_preview_max_resolution(resolution: &Option<String>) -> u32 {
+    match resolution {
+        Some(ref s) if s == "800px" => 800,
+        Some(ref s) if s == "1200px" => 1200,
+        Some(ref s) if s == "full" => 99999,
+        _ => 1200,
+    }
+}
+
 #[tauri::command]
 pub async fn create_image_proxy(
     app: tauri::AppHandle,
     input_path: String,
+    max_resolution: Option<String>,
 ) -> Result<String, String> {
     use std::fs;
 
     if input_path.trim().is_empty() {
         return Err("Input path is required".into());
     }
+
+    let max_edge = parse_preview_max_resolution(&max_resolution);
 
     let preview_root = std::env::temp_dir().join("liquid-image-preview");
     fs::create_dir_all(&preview_root).map_err(|e| e.to_string())?;
@@ -168,7 +178,7 @@ pub async fn create_image_proxy(
 
     let lower_input = input_path.to_ascii_lowercase();
     if lower_input.ends_with(".jpg") || lower_input.ends_with(".jpeg") {
-        let jpeg_hint = format!("jpeg:size={PREVIEW_MAX_EDGE}x{PREVIEW_MAX_EDGE}");
+        let jpeg_hint = format!("jpeg:size={max_edge}x{max_edge}");
         command = command.arg("-define").arg(jpeg_hint);
     }
 
@@ -176,7 +186,7 @@ pub async fn create_image_proxy(
         .arg(&input_path)
         .arg("-auto-orient")
         .arg("-thumbnail")
-        .arg(format!("{PREVIEW_MAX_EDGE}x{PREVIEW_MAX_EDGE}>"))
+        .arg(format!("{max_edge}x{max_edge}>"))
         .arg("-depth")
         .arg("8")
         .arg("-strip")
@@ -245,6 +255,8 @@ pub struct GeneratePreviewRequest {
     original_width: Option<u32>,
     #[serde(default)]
     original_height: Option<u32>,
+    #[serde(default)]
+    max_resolution: Option<String>,
 }
 
 fn args_slice_contains_shave(args: &[String]) -> bool {
@@ -358,11 +370,12 @@ pub async fn generate_preview(
     let mut command = create_magick_command(&app, &source)?;
 
     let from_proxy = request.from_proxy;
+    let max_edge = parse_preview_max_resolution(&request.max_resolution);
 
     if !from_proxy {
         let lower_input = request.input_path.to_ascii_lowercase();
         if lower_input.ends_with(".jpg") || lower_input.ends_with(".jpeg") {
-            let jpeg_hint = format!("jpeg:size={PREVIEW_MAX_EDGE}x{PREVIEW_MAX_EDGE}");
+            let jpeg_hint = format!("jpeg:size={max_edge}x{max_edge}");
             preview_cli_args.extend(["-define".into(), jpeg_hint.clone()]);
             command = command.arg("-define").arg(jpeg_hint);
         }
@@ -372,12 +385,12 @@ pub async fn generate_preview(
         preview_cli_args.extend([
             "-auto-orient".into(),
             "-thumbnail".into(),
-            format!("{PREVIEW_MAX_EDGE}x{PREVIEW_MAX_EDGE}>"),
+            format!("{max_edge}x{max_edge}>"),
         ]);
         command = command
             .arg("-auto-orient")
             .arg("-thumbnail")
-            .arg(format!("{PREVIEW_MAX_EDGE}x{PREVIEW_MAX_EDGE}>"));
+            .arg(format!("{max_edge}x{max_edge}>"));
     } else {
         preview_cli_args.push(request.input_path.clone());
         command = command.arg(&request.input_path);

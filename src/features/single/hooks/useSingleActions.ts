@@ -38,6 +38,7 @@ type UseSingleActionsArgs = {
   setProxyPath: (value: string | null) => void;
   setFileMetadata: (value: ImageMetadata | null) => void;
   setRunStatus: (status: RunStatus, message?: string) => void;
+  previewMaxResolution: string;
 };
 
 type UseSingleActionsResult = {
@@ -62,12 +63,14 @@ export function useSingleActions({
   setProxyPath,
   setFileMetadata,
   setRunStatus,
+  previewMaxResolution,
 }: UseSingleActionsArgs): UseSingleActionsResult {
   const [outputPathOverride, setOutputPathOverride] = useState<string | null>(null);
   const [lastOutputPath, setLastOutputPath] = useState<string | null>(null);
   const [isPreparingProxy, setIsPreparingProxy] = useState(false);
   const lastProcessedOpenImageMenuRequestId = useRef(0);
   const previousProxyPathRef = useRef<string | null>(null);
+  const proxyResolutionRef = useRef<string | null>(null);
 
   const defaultOutputPath = useMemo(() => {
     const convertParams = functionParamsByFunction["Convert"] ?? {};
@@ -95,6 +98,40 @@ export function useSingleActions({
     previousProxyPathRef.current = proxyPath;
   }, [proxyPath]);
 
+  const recreateProxy = useCallback(
+    async (selectedPath: string) => {
+      setProxyPath(null);
+      setRunStatus("idle");
+      setIsPreparingProxy(true);
+
+      try {
+        proxyResolutionRef.current = previewMaxResolution;
+        await createImageProxy(selectedPath, previewMaxResolution)
+          .then((proxy) => {
+            setProxyPath(proxy);
+          })
+          .catch((error) => {
+            const message =
+              error instanceof Error ? error.message : t("errors.previewProxyFailed");
+            console.error("Failed to recreate preview proxy", error);
+            setRunStatus("error", message);
+            setProxyPath(null);
+          });
+      } finally {
+        setIsPreparingProxy(false);
+      }
+    },
+    [previewMaxResolution, setProxyPath, setRunStatus, t],
+  );
+
+  useEffect(() => {
+    if (!selectedFile) return;
+
+    if (proxyResolutionRef.current === previewMaxResolution) return;
+
+    void recreateProxy(selectedFile);
+  }, [selectedFile, previewMaxResolution, recreateProxy]);
+
   const ingestSelectedImagePath = useCallback(
     async (selectedPath: string) => {
       setSelectedFile(selectedPath);
@@ -105,7 +142,8 @@ export function useSingleActions({
       setIsPreparingProxy(true);
 
       try {
-        const proxyPromise = createImageProxy(selectedPath)
+        proxyResolutionRef.current = previewMaxResolution;
+        const proxyPromise = createImageProxy(selectedPath, previewMaxResolution)
           .then((proxy) => {
             setProxyPath(proxy);
           })
@@ -133,7 +171,7 @@ export function useSingleActions({
         setIsPreparingProxy(false);
       }
     },
-    [setFileMetadata, setProxyPath, setRunStatus, setSelectedFile, t],
+    [setFileMetadata, setProxyPath, setRunStatus, setSelectedFile, t, previewMaxResolution],
   );
 
   const pickAndOpenSingleImage = useCallback(async () => {

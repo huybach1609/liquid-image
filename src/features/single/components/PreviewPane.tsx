@@ -50,6 +50,7 @@ type PreviewPaneProps = {
   runStatus: "idle" | "running" | "success" | "error";
   onOpenOutputFolder: () => void;
   getFileNameFromPath: (filePath: string) => string;
+  showMetadata: boolean;
 };
 
 export const PreviewPane = memo(function PreviewPane({
@@ -72,6 +73,7 @@ export const PreviewPane = memo(function PreviewPane({
   runStatus,
   onOpenOutputFolder,
   getFileNameFromPath,
+  showMetadata,
 }: PreviewPaneProps) {
   const { t } = useTranslation("single");
 
@@ -150,7 +152,7 @@ export const PreviewPane = memo(function PreviewPane({
       </div>
 
       <footer className="flex items-center justify-between border-t border-border/70 px-4 py-3">
-        {fileMetadata && (
+        {showMetadata && fileMetadata && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Tooltip>
               <TooltipTrigger asChild>

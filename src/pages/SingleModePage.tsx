@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/resizable";
 import { useAppStore } from "@/app/store/app.store";
 import { useSingleStore } from "@/features/single/state/single.store";
+import { useSettingsStore } from "@/features/settings/state/settings.store";
 import { type NaturalCropRect } from "@/features/single/components/CanvasPreview";
 import { OperationsNav } from "@/features/single/components/OperationsNav";
 import { PreviewPane } from "@/features/single/components/PreviewPane";
@@ -194,6 +195,9 @@ export function SingleModePage() {
   ]);
   const previewOperationLabel =
     cliPreviewMode === "all" ? "all-edited-functions" : selectedFunctionName;
+  const previewMaxResolution = useSettingsStore(s => s.previewMaxResolution);
+  const showCliPreview = useSettingsStore(s => s.showCliPreview);
+  const showMetadata = useSettingsStore(s => s.showMetadata);
   const previewState = usePreviewPipeline({
     previewInputPath: proxyPath,
     operations: previewOperations,
@@ -204,6 +208,7 @@ export function SingleModePage() {
       fileMetadata && fileMetadata.width > 0 && fileMetadata.height > 0
         ? { width: fileMetadata.width, height: fileMetadata.height }
         : null,
+    previewMaxResolution,
   });
 
   const previewToFullScale = useMemo(():
@@ -218,6 +223,7 @@ export function SingleModePage() {
       const est = estimateProxyDimensions(
         fileMetadata.width,
         fileMetadata.height,
+        previewMaxResolution,
       );
       previewW = est.width;
       previewH = est.height;
@@ -228,7 +234,7 @@ export function SingleModePage() {
       previewWidth: previewW,
       previewHeight: previewH,
     };
-  }, [fileMetadata, previewState.width, previewState.height]);
+  }, [fileMetadata, previewState.width, previewState.height, previewMaxResolution]);
 
   const cropMethodRaw = functionParams.cropMethod;
   const cropMethod =
@@ -381,6 +387,7 @@ export function SingleModePage() {
       setProxyPath,
       setFileMetadata,
       setRunStatus,
+      previewMaxResolution,
     });
 
   return (
@@ -425,6 +432,7 @@ export function SingleModePage() {
           runStatus={runState.status}
           onOpenOutputFolder={handleOpenOutputFolder}
           getFileNameFromPath={getFileNameFromPath}
+          showMetadata={showMetadata}
         />
       </ResizablePanel>
 
@@ -439,6 +447,7 @@ export function SingleModePage() {
           commandPreviews={commandPreviews}
           cliPreviewMode={cliPreviewMode}
           setCliPreviewMode={setCliPreviewMode}
+          showCliPreview={showCliPreview}
         />
       </ResizablePanel>
     </ResizablePanelGroup>

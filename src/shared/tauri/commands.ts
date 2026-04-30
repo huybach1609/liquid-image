@@ -25,8 +25,8 @@ export async function getImageMetadata(path: string): Promise<ImageMetadata> {
   return invoke<ImageMetadata>("get_image_metadata", { path });
 }
 
-export async function createImageProxy(inputPath: string): Promise<string> {
-  return invoke<string>("create_image_proxy", { inputPath });
+export async function createImageProxy(inputPath: string, maxResolution?: string): Promise<string> {
+  return invoke<string>("create_image_proxy", { inputPath, maxResolution });
 }
 
 export async function removeProxyFile(path: string): Promise<void> {
@@ -46,6 +46,8 @@ export type GeneratePreviewRequest = {
    */
   originalWidth?: number;
   originalHeight?: number;
+  /** Preview max resolution setting (e.g., "800px", "1200px", "full") */
+  maxResolution?: string;
 };
 
 export type GeneratePreviewResponse = {

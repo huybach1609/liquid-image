@@ -10,6 +10,7 @@ import { SingleModePage } from "@/pages/SingleModePage";
 import { SettingPage } from "@/pages/SettingPage";
 import { menubarUsesNative } from "@/shared/tauri/commands";
 import { TooltipProvider } from "@/shared/components/ui/tooltip";
+import { useThemeSync } from "@/shared/hooks/useThemeSync";
 import { useTranslation } from "react-i18next";
 
 export function AppShell() {
@@ -20,6 +21,7 @@ export function AppShell() {
   const isFullFrameMode = mode === "single" || mode === "batch" || mode === "settings";
   const appWindow = getCurrentWindow();
 
+  useThemeSync();
   useMenubarBridge();
 
   useEffect(() => {
