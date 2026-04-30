@@ -1,7 +1,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **liquid-image** (1201 symbols, 2076 relationships, 43 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **liquid-image** (1211 symbols, 2135 relationships, 50 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -39,5 +39,13 @@ This project is indexed by GitNexus as **liquid-image** (1201 symbols, 2076 rela
 | Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
 | Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
+| Work in the Ui area (82 symbols) | `.claude/skills/generated/ui/SKILL.md` |
+| Work in the Operations area (28 symbols) | `.claude/skills/generated/operations/SKILL.md` |
+| Work in the Magick area (27 symbols) | `.claude/skills/generated/magick/SKILL.md` |
+| Work in the Single area (19 symbols) | `.claude/skills/generated/single/SKILL.md` |
+| Work in the Tauri area (18 symbols) | `.claude/skills/generated/tauri/SKILL.md` |
+| Work in the Pages area (13 symbols) | `.claude/skills/generated/pages/SKILL.md` |
+| Work in the Functions area (10 symbols) | `.claude/skills/generated/functions/SKILL.md` |
+| Work in the Components area (5 symbols) | `.claude/skills/generated/components/SKILL.md` |
 
 <!-- gitnexus:end -->

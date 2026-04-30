@@ -788,3 +788,248 @@ async fn run_single_internal(
         height: parts[1].parse::<u32>().map_err(|e| e.to_string())?,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_magick_version_standard_output_should_parse_correctly() {
+        let raw = "Version: ImageMagick 7.1.1-29 Q16-HDRI x86_64 2024-01-15 https://imagemagick.org";
+        let info = parse_magick_version(raw);
+        assert_eq!(info.version_name, "ImageMagick 7.1.1-29");
+        assert_eq!(info.about_line, "ImageMagick 7.1.1-29 (Q16-HDRI, x86_64)");
+    }
+
+    #[test]
+    fn parse_magick_version_multiline_output_should_find_version_line() {
+        let raw = r#"ImageMagick 7.1.1-28 Q16-HDRI x86_64 2024-01-10 https://imagemagick.org
+Copyright: (C) 1999 ImageMagick Studio LLC
+Version: ImageMagick 7.1.1-28 Q16-HDRI x86_64 2024-01-10 https://imagemagick.org"#;
+        let info = parse_magick_version(raw);
+        assert_eq!(info.version_name, "ImageMagick 7.1.1-28");
+        assert_eq!(info.about_line, "ImageMagick 7.1.1-28 (Q16-HDRI, x86_64)");
+    }
+
+    #[test]
+    fn parse_magick_version_empty_string_should_return_defaults() {
+        let raw = "";
+        let info = parse_magick_version(raw);
+        assert_eq!(info.version_name, "ImageMagick unknown");
+        assert_eq!(info.about_line, "ImageMagick unknown (Q16-HDRI, x86_64)");
+    }
+
+    #[test]
+    fn parse_magick_version_partial_output_should_handle_missing_parts() {
+        let raw = "Version: ImageMagick";
+        let info = parse_magick_version(raw);
+        assert_eq!(info.version_name, "ImageMagick unknown");
+    }
+
+    #[test]
+    fn format_cli_token_for_log_simple_token_should_return_as_is() {
+        assert_eq!(format_cli_token_for_log("-resize"), "-resize");
+    }
+
+    #[test]
+    fn format_cli_token_for_log_empty_string_should_be_quoted() {
+        assert_eq!(format_cli_token_for_log(""), "\"\"");
+    }
+
+    #[test]
+    fn format_cli_token_for_log_token_with_spaces_should_be_quoted() {
+        assert_eq!(
+            format_cli_token_for_log("100x100+10+20"),
+            "100x100+10+20"
+        );
+    }
+
+    #[test]
+    fn format_cli_token_for_log_token_with_space_should_be_quoted() {
+        assert_eq!(format_cli_token_for_log("hello world"), "\"hello world\"");
+    }
+
+    #[test]
+    fn format_cli_token_for_log_token_with_backslash_and_space_should_escape() {
+        assert_eq!(
+            format_cli_token_for_log("path\\to\\file with space"),
+            "\"path\\\\to\\\\file with space\""
+        );
+    }
+
+    #[test]
+    fn format_cli_token_for_log_token_with_quotes_should_escape() {
+        assert_eq!(
+            format_cli_token_for_log("say \"hello\""),
+            "\"say \\\"hello\\\"\""
+        );
+    }
+
+    #[test]
+    fn args_slice_contains_shave_with_shave_flag_should_return_true() {
+        let args = vec!["-resize".to_string(), "100x100".to_string(), "-shave".to_string(), "10x10".to_string()];
+        assert!(args_slice_contains_shave(&args));
+    }
+
+    #[test]
+    fn args_slice_contains_shave_without_shave_flag_should_return_false() {
+        let args = vec!["-resize".to_string(), "100x100".to_string()];
+        assert!(!args_slice_contains_shave(&args));
+    }
+
+    #[test]
+    fn args_slice_contains_shave_empty_args_should_return_false() {
+        let args: Vec<String> = vec![];
+        assert!(!args_slice_contains_shave(&args));
+    }
+
+    #[test]
+    fn parse_shave_geometry_standard_format_should_parse_correctly() {
+        assert_eq!(parse_shave_geometry("10x20"), Some((10, 20)));
+    }
+
+    #[test]
+    fn parse_shave_geometry_zero_values_should_parse() {
+        assert_eq!(parse_shave_geometry("0x0"), Some((0, 0)));
+    }
+
+    #[test]
+    fn parse_shave_geometry_invalid_format_should_return_none() {
+        assert_eq!(parse_shave_geometry("10"), None);
+    }
+
+    #[test]
+    fn parse_shave_geometry_non_numeric_should_return_none() {
+        assert_eq!(parse_shave_geometry("axb"), None);
+    }
+
+    #[test]
+    fn parse_shave_geometry_empty_string_should_return_none() {
+        assert_eq!(parse_shave_geometry(""), None);
+    }
+
+    #[test]
+    fn rescale_shave_tokens_should_scale_proportionally() {
+        let mut args = vec!["-shave".to_string(), "100x200".to_string()];
+        rescale_shave_tokens_for_proxy_preview(&mut args, 800, 600, 1600, 1200);
+        assert_eq!(args[1], "50x100");
+    }
+
+    #[test]
+    fn rescale_shave_tokens_should_handle_multiple_shave_flags() {
+        let mut args = vec![
+            "-shave".to_string(), "100x100".to_string(),
+            "-resize".to_string(), "500x500".to_string(),
+            "-shave".to_string(), "50x50".to_string(),
+        ];
+        rescale_shave_tokens_for_proxy_preview(&mut args, 400, 400, 800, 800);
+        assert_eq!(args[1], "50x50");
+        assert_eq!(args[5], "25x25");
+    }
+
+    #[test]
+    fn rescale_shave_tokens_should_not_modify_when_no_shave() {
+        let mut args = vec!["-resize".to_string(), "100x100".to_string()];
+        let original = args.clone();
+        rescale_shave_tokens_for_proxy_preview(&mut args, 800, 600, 1600, 1200);
+        assert_eq!(args, original);
+    }
+
+    #[test]
+    fn rescale_shave_tokens_should_return_early_when_original_dimensions_zero() {
+        let mut args = vec!["-shave".to_string(), "100x100".to_string()];
+        let original = args.clone();
+        rescale_shave_tokens_for_proxy_preview(&mut args, 800, 600, 0, 1200);
+        assert_eq!(args, original);
+    }
+
+    #[test]
+    fn rescale_shave_tokens_should_return_early_when_proxy_dimensions_zero() {
+        let mut args = vec!["-shave".to_string(), "100x100".to_string()];
+        let original = args.clone();
+        rescale_shave_tokens_for_proxy_preview(&mut args, 0, 600, 1600, 1200);
+        assert_eq!(args, original);
+    }
+
+    #[test]
+    fn batch_item_deserialize_should_parse_correctly() {
+        let json = r#"{"inputPath":"/path/to/input.jpg","outputPath":"/path/to/output.png"}"#;
+        let item: BatchItem = serde_json::from_str(json).unwrap();
+        assert_eq!(item.input_path, "/path/to/input.jpg");
+        assert_eq!(item.output_path, "/path/to/output.png");
+    }
+
+    #[test]
+    fn run_batch_request_deserialize_should_parse_correctly() {
+        let json = r#"{
+            "items": [
+                {"inputPath":"/a.jpg","outputPath":"/b.jpg"}
+            ],
+            "args": ["-resize", "100x100"],
+            "workers": 4,
+            "stopOnError": true
+        }"#;
+        let request: RunBatchRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(request.items.len(), 1);
+        assert_eq!(request.args, vec!["-resize", "100x100"]);
+        assert_eq!(request.workers, 4);
+        assert!(request.stop_on_error);
+    }
+
+    #[test]
+    fn run_single_request_deserialize_should_parse_correctly() {
+        let json = r#"{
+            "inputPath":"/path/to/input.jpg",
+            "outputPath":"/path/to/output.png",
+            "args":["-resize", "800x600"]
+        }"#;
+        let request: RunSingleRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(request.input_path, "/path/to/input.jpg");
+        assert_eq!(request.output_path, "/path/to/output.png");
+        assert_eq!(request.args, vec!["-resize", "800x600"]);
+    }
+
+    #[test]
+    fn generate_preview_request_deserialize_should_parse_correctly() {
+        let json = r#"{
+            "inputPath":"/path/to/image.jpg",
+            "operation":"resize",
+            "args":["-resize", "500x500"],
+            "fromProxy":true,
+            "originalWidth":1920,
+            "originalHeight":1080
+        }"#;
+        let request: GeneratePreviewRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(request.input_path, "/path/to/image.jpg");
+        assert_eq!(request.operation, "resize");
+        assert!(request.from_proxy);
+        assert_eq!(request.original_width, Some(1920));
+        assert_eq!(request.original_height, Some(1080));
+    }
+
+    #[test]
+    fn generate_preview_request_deserialize_should_handle_optional_fields() {
+        let json = r#"{
+            "inputPath":"/path/to/image.jpg",
+            "operation":"crop"
+        }"#;
+        let request: GeneratePreviewRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(request.input_path, "/path/to/image.jpg");
+        assert!(request.args.is_none());
+        assert!(!request.from_proxy);
+        assert!(request.original_width.is_none());
+    }
+
+    #[test]
+    fn batch_progress_event_serialize_should_produce_camel_case() {
+        let event = BatchProgressEvent {
+            index: 0,
+            status: "success".to_string(),
+            message: None,
+            output_path: Some("/path/to/output.jpg".to_string()),
+        };
+        let json = serde_json::to_string(&event).unwrap();
+        assert!(json.contains("outputPath"));
+        assert!(json.contains("success"));
+    }
+}

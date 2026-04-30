@@ -35,3 +35,7 @@ tokio = { version = "1", features = ["full"] }
 tokio-util = "0.7"
 thiserror = "1"
 
+[dev-dependencies]
+tempfile = "3"
+temp-env = "0.3"
+

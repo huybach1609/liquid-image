@@ -7,6 +7,7 @@ use std::sync::Mutex;
 #[cfg(all(desktop, target_os = "macos"))]
 mod app_menu;
 
+mod contracts;
 mod magick;
 
 pub struct AppState {
@@ -108,4 +109,59 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn greet_should_return_formatted_hello_message() {
+        let result = greet("World".to_string());
+        assert_eq!(result, "Hello, World! You've been greeted from Rust!");
+    }
+
+    #[test]
+    fn greet_should_handle_empty_name() {
+        let result = greet("".to_string());
+        assert_eq!(result, "Hello, ! You've been greeted from Rust!");
+    }
+
+    #[test]
+    fn greet_should_handle_special_characters() {
+        let result = greet("Rust 🦀".to_string());
+        assert_eq!(result, "Hello, Rust 🦀! You've been greeted from Rust!");
+    }
+
+    #[test]
+    fn menubar_uses_native_should_return_true_on_macos() {
+        #[cfg(target_os = "macos")]
+        assert!(menubar_uses_native());
+
+        #[cfg(not(target_os = "macos"))]
+        assert!(!menubar_uses_native());
+    }
+
+    #[test]
+    fn app_state_should_initialize_with_none_token() {
+        let state = AppState {
+            batch_cancel_token: Mutex::new(None),
+        };
+        let token = state.batch_cancel_token.lock().unwrap();
+        assert!(token.is_none());
+    }
+
+    #[test]
+    fn app_state_should_store_and_retrieve_cancel_token() {
+        let state = AppState {
+            batch_cancel_token: Mutex::new(None),
+        };
+        let token = CancellationToken::new();
+        {
+            let mut guard = state.batch_cancel_token.lock().unwrap();
+            *guard = Some(token.clone());
+        }
+        let guard = state.batch_cancel_token.lock().unwrap();
+        assert!(guard.is_some());
+    }
 }
