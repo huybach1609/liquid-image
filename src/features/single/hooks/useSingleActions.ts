@@ -265,10 +265,14 @@ export function useSingleActions({
       return;
     }
 
-    const outputPath = Array.isArray(picked) ? picked[0] : picked;
-    if (!outputPath) {
+    const pickedPath = Array.isArray(picked) ? picked[0] : picked;
+    if (!pickedPath) {
       return;
     }
+
+    const pickedDir = getDirectoryPath(pickedPath);
+    const pickedName = getFileNameWithoutExtension(pickedPath);
+    const outputPath = `${pickedDir}/${pickedName}.${outputExt}`;
 
     setOutputPathOverride(outputPath);
 

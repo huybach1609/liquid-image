@@ -26,7 +26,7 @@ const VignetteFunction = ({
 
   return (
     <div className="flex flex-col gap-6">
-      <Badge variant="secondary" className="w-fit bg-primary/10 text-primary hover:bg-primary/15 border-none px-2 py-0.5 text-[10px] uppercase tracking-wider">
+      <Badge variant="secondary" className="w-fit bg-primary/10 text-primary hover:bg-primary/15 border-none px-2 py-0.5 text-xs uppercase tracking-wider">
         vignette effect
       </Badge>
 
@@ -51,7 +51,7 @@ const VignetteFunction = ({
             value={[softness]}
             onValueChange={(v) => updateFunctionParam("vignetteSoftness", v[0])}
           />
-          <p className="text-[11px] text-muted-foreground/60 leading-relaxed">
+          <p className="text-xs text-muted-foreground/60 leading-relaxed">
             Higher sigma = softer fade at edges.
           </p>
         </div>

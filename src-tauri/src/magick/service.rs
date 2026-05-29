@@ -33,6 +33,15 @@ pub struct MagickVersionInfo {
     about_line: String,
 }
 
+#[derive(serde::Serialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct MagickFormatInfo {
+    name: String,
+    module: String,
+    mode: String,
+    description: String,
+}
+
 fn parse_magick_version(raw: &str) -> MagickVersionInfo {
     let version_line = raw
         .lines()
@@ -58,6 +67,116 @@ fn parse_magick_version(raw: &str) -> MagickVersionInfo {
         version_name,
         about_line,
     }
+}
+
+fn is_magick_mode(token: &str) -> bool {
+    token.len() == 3 && token.chars().all(|ch| matches!(ch, 'r' | 'w' | '+' | '-'))
+}
+
+fn normalize_magick_format_name(name: &str) -> String {
+    name.trim_end_matches('*').to_string()
+}
+
+fn parse_magick_format_entry(line: &str) -> Option<MagickFormatInfo> {
+    let trimmed = line.trim();
+    if trimmed.is_empty() || trimmed.starts_with("Format") || trimmed.starts_with('-') {
+        return None;
+    }
+
+    let mut parts = trimmed.split_whitespace();
+    let name = parts.next()?;
+
+    let second = parts.next()?;
+    let (module, mode, description_start) = if is_magick_mode(second) {
+        (String::new(), second.to_string(), parts.next())
+    } else {
+        let mode = parts.next()?;
+        if !is_magick_mode(mode) {
+            return None;
+        }
+        (second.to_string(), mode.to_string(), parts.next())
+    };
+
+    let mut description = description_start
+        .map(std::string::ToString::to_string)
+        .unwrap_or_default();
+    let remainder = parts.collect::<Vec<_>>().join(" ");
+    if !remainder.is_empty() {
+        if !description.is_empty() {
+            description.push(' ');
+        }
+        description.push_str(&remainder);
+    }
+
+    Some(MagickFormatInfo {
+        name: normalize_magick_format_name(name),
+        module,
+        mode,
+        description,
+    })
+}
+
+fn parse_magick_format_catalog(raw: &str) -> Vec<MagickFormatInfo> {
+    let mut formats = Vec::new();
+    let mut current: Option<MagickFormatInfo> = None;
+
+    for line in raw.lines() {
+        if let Some(entry) = parse_magick_format_entry(line) {
+            if let Some(previous) = current.replace(entry) {
+                formats.push(previous);
+            }
+            continue;
+        }
+
+        let continuation = line.trim();
+        if continuation.is_empty() {
+            continue;
+        }
+
+        if let Some(current_entry) = current.as_mut() {
+            if !current_entry.description.is_empty() {
+                current_entry.description.push(' ');
+            }
+            current_entry.description.push_str(continuation);
+        }
+    }
+
+    if let Some(entry) = current {
+        formats.push(entry);
+    }
+
+    formats
+}
+
+// list of supported formats can be obtained by running `magick -list format` and parsing the output
+#[command]
+pub async fn list_magick_formats(app: AppHandle) -> Result<Vec<MagickFormatInfo>, String> {
+    let source = get_magick_source();
+    let output = create_magick_command(&app, &source)?
+        .arg("-list")
+        .arg("format")
+        .output()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        eprintln!("[magick] list formats failed source={source}");
+        return Err(if stderr.is_empty() {
+            "Failed to list ImageMagick formats".into()
+        } else {
+            eprintln!("[magick] list formats stderr: {stderr}");
+            stderr
+        });
+    }
+
+    let raw = String::from_utf8_lossy(&output.stdout);
+    let formats = parse_magick_format_catalog(&raw);
+    println!(
+        "[magick] list formats ok source={source} count={}",
+        formats.len()
+    );
+    Ok(formats)
 }
 
 #[command]
@@ -514,7 +633,13 @@ pub async fn run_single(
         return Err("Output path is required".into());
     }
 
-    run_single_internal(&app, &request.input_path, &request.output_path, &request.args).await
+    run_single_internal(
+        &app,
+        &request.input_path,
+        &request.output_path,
+        &request.args,
+    )
+    .await
 }
 
 #[derive(serde::Deserialize)]
@@ -580,7 +705,11 @@ pub async fn run_batch(
             break;
         }
 
-        let permit = semaphore.clone().acquire_owned().await.map_err(|e| e.to_string())?;
+        let permit = semaphore
+            .clone()
+            .acquire_owned()
+            .await
+            .map_err(|e| e.to_string())?;
         let app_h = app.clone();
         let args_h = args.clone();
         let token_h = token.clone();
@@ -591,7 +720,8 @@ pub async fn run_batch(
                 return None;
             }
 
-            let res = run_single_internal(&app_h, &item.input_path, &item.output_path, &args_h).await;
+            let res =
+                run_single_internal(&app_h, &item.input_path, &item.output_path, &args_h).await;
 
             let event = match res {
                 Ok(resp) => BatchProgressEvent {
@@ -808,7 +938,8 @@ mod tests {
 
     #[test]
     fn parse_magick_version_standard_output_should_parse_correctly() {
-        let raw = "Version: ImageMagick 7.1.1-29 Q16-HDRI x86_64 2024-01-15 https://imagemagick.org";
+        let raw =
+            "Version: ImageMagick 7.1.1-29 Q16-HDRI x86_64 2024-01-15 https://imagemagick.org";
         let info = parse_magick_version(raw);
         assert_eq!(info.version_name, "ImageMagick 7.1.1-29");
         assert_eq!(info.about_line, "ImageMagick 7.1.1-29 (Q16-HDRI, x86_64)");
@@ -840,6 +971,59 @@ Version: ImageMagick 7.1.1-28 Q16-HDRI x86_64 2024-01-10 https://imagemagick.org
     }
 
     #[test]
+    fn parse_magick_format_catalog_should_parse_rows_and_continuations() {
+        let raw = r#"
+Format  Module    Mode  Description
+-------------------------------------------------------------------------------
+      PNG* PNG      rw-   Portable Network Graphics (libpng 1.6.58)
+             See http://www.libpng.org/ for details about the PNG format.
+      JPEG JPEG     rw-   Joint Photographic Experts Group JFIF format
+      TIFF TIFF     rw+   Tagged Image File Format
+"#;
+
+        let formats = parse_magick_format_catalog(raw);
+
+        assert_eq!(formats.len(), 3);
+        assert_eq!(
+            formats[0],
+            MagickFormatInfo {
+                name: "PNG".into(),
+                module: "PNG".into(),
+                mode: "rw-".into(),
+                description: "Portable Network Graphics (libpng 1.6.58) See http://www.libpng.org/ for details about the PNG format.".into(),
+            }
+        );
+        assert_eq!(formats[1].name, "JPEG");
+        assert_eq!(formats[2].mode, "rw+");
+    }
+
+    #[test]
+    fn parse_magick_format_catalog_should_parse_sidecar_three_column_rows() {
+        let raw = r#"
+Format  Mode  Description
+-------------------------------------------------------------------------------
+      3FR  r--   Hasselblad CFV/H3D39II Raw Format
+       AI  rw-   Adobe Illustrator CS2
+      SVG  rw+   Scalable Vector Graphics
+"#;
+
+        let formats = parse_magick_format_catalog(raw);
+
+        assert_eq!(formats.len(), 3);
+        assert_eq!(
+            formats[0],
+            MagickFormatInfo {
+                name: "3FR".into(),
+                module: "".into(),
+                mode: "r--".into(),
+                description: "Hasselblad CFV/H3D39II Raw Format".into(),
+            }
+        );
+        assert_eq!(formats[1].module, "");
+        assert_eq!(formats[2].name, "SVG");
+    }
+
+    #[test]
     fn format_cli_token_for_log_simple_token_should_return_as_is() {
         assert_eq!(format_cli_token_for_log("-resize"), "-resize");
     }
@@ -851,10 +1035,7 @@ Version: ImageMagick 7.1.1-28 Q16-HDRI x86_64 2024-01-10 https://imagemagick.org
 
     #[test]
     fn format_cli_token_for_log_token_with_spaces_should_be_quoted() {
-        assert_eq!(
-            format_cli_token_for_log("100x100+10+20"),
-            "100x100+10+20"
-        );
+        assert_eq!(format_cli_token_for_log("100x100+10+20"), "100x100+10+20");
     }
 
     #[test]
@@ -880,7 +1061,12 @@ Version: ImageMagick 7.1.1-28 Q16-HDRI x86_64 2024-01-10 https://imagemagick.org
 
     #[test]
     fn args_slice_contains_shave_with_shave_flag_should_return_true() {
-        let args = vec!["-resize".to_string(), "100x100".to_string(), "-shave".to_string(), "10x10".to_string()];
+        let args = vec![
+            "-resize".to_string(),
+            "100x100".to_string(),
+            "-shave".to_string(),
+            "10x10".to_string(),
+        ];
         assert!(args_slice_contains_shave(&args));
     }
 
@@ -931,9 +1117,12 @@ Version: ImageMagick 7.1.1-28 Q16-HDRI x86_64 2024-01-10 https://imagemagick.org
     #[test]
     fn rescale_shave_tokens_should_handle_multiple_shave_flags() {
         let mut args = vec![
-            "-shave".to_string(), "100x100".to_string(),
-            "-resize".to_string(), "500x500".to_string(),
-            "-shave".to_string(), "50x50".to_string(),
+            "-shave".to_string(),
+            "100x100".to_string(),
+            "-resize".to_string(),
+            "500x500".to_string(),
+            "-shave".to_string(),
+            "50x50".to_string(),
         ];
         rescale_shave_tokens_for_proxy_preview(&mut args, 400, 400, 800, 800);
         assert_eq!(args[1], "50x50");

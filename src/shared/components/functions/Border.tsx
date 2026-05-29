@@ -29,7 +29,7 @@ const BorderFunction = ({
 
   return (
     <div className="flex flex-col gap-6">
-      <Badge variant="secondary" className="w-fit bg-primary/10 text-primary hover:bg-primary/15 border-none px-2 py-0.5 text-[10px] uppercase tracking-wider">
+      <Badge variant="secondary" className="w-fit bg-primary/10 text-primary hover:bg-primary/15 border-none px-2 py-0.5 text-xs uppercase tracking-wider">
         border / frame
       </Badge>
 
@@ -57,7 +57,7 @@ const BorderFunction = ({
               />
             </div>
             <div className="flex flex-col gap-0.5">
-              <span className="font-mono text-[11px] font-medium uppercase tracking-tight text-muted-foreground">
+              <span className="font-mono text-xs font-medium uppercase tracking-tight text-muted-foreground">
                 {color}
               </span>
             </div>
@@ -68,7 +68,7 @@ const BorderFunction = ({
 
         <div className="flex flex-col gap-5">
           <div className="flex items-center justify-between">
-            <Label className="text-[12px] text-muted-foreground/70 font-normal cursor-pointer" htmlFor="frame-toggle">
+            <Label className="text-xs text-muted-foreground/70 font-normal cursor-pointer" htmlFor="frame-toggle">
               3D frame effect
             </Label>
             <Switch

@@ -104,7 +104,7 @@ export const CropFunction = ({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-2">
-        <p className="text-[11px] font-medium tracking-[0.06em] text-muted-foreground uppercase">
+        <p className="text-xs font-medium tracking-[0.06em] text-muted-foreground uppercase">
           {t("cropForm.methodHeading")}
         </p>
         <div
@@ -143,7 +143,7 @@ export const CropFunction = ({
                   <span className="block text-xs font-medium text-foreground">
                     {t(`cropForm.methods.${id}.name`)}
                   </span>
-                  <span className="mt-0.5 block text-[10px] leading-snug text-muted-foreground">
+                  <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
                     {t(`cropForm.methods.${id}.desc`)}
                   </span>
                 </span>
@@ -171,7 +171,7 @@ export const CropFunction = ({
             <div className="flex flex-col gap-1.5">
               <Label
                 htmlFor="crop-aspect"
-                className="text-[11px] font-medium text-muted-foreground"
+                className="text-xs font-medium text-muted-foreground"
               >
                 {t("cropForm.aspectRatio")}
               </Label>
@@ -213,14 +213,14 @@ export const CropFunction = ({
             </div>
 
             <div className="flex flex-col gap-2">
-              <p className="text-[11px] font-medium text-muted-foreground">
+              <p className="text-xs font-medium text-muted-foreground">
                 {t("cropForm.positionSize")}
               </p>
               <div className="flex gap-2">
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <Label
                     htmlFor="crop-x"
-                    className="text-[11px] text-muted-foreground"
+                    className="text-xs text-muted-foreground"
                   >
                     {t("cropForm.coordX")}
                   </Label>
@@ -233,7 +233,7 @@ export const CropFunction = ({
                       placeholder="0"
                       onChange={(e) => setNumberParam("cropX", e.target.value)}
                     />
-                    <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[10px] text-muted-foreground">
+                    <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-xs text-muted-foreground">
                       {t("cropForm.px")}
                     </span>
                   </div>
@@ -241,7 +241,7 @@ export const CropFunction = ({
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <Label
                     htmlFor="crop-y"
-                    className="text-[11px] text-muted-foreground"
+                    className="text-xs text-muted-foreground"
                   >
                     {t("cropForm.coordY")}
                   </Label>
@@ -254,7 +254,7 @@ export const CropFunction = ({
                       placeholder="0"
                       onChange={(e) => setNumberParam("cropY", e.target.value)}
                     />
-                    <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[10px] text-muted-foreground">
+                    <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-xs text-muted-foreground">
                       {t("cropForm.px")}
                     </span>
                   </div>
@@ -264,7 +264,7 @@ export const CropFunction = ({
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <Label
                     htmlFor="crop-w"
-                    className="text-[11px] text-muted-foreground"
+                    className="text-xs text-muted-foreground"
                   >
                     {t("cropForm.coordW")}
                   </Label>
@@ -277,7 +277,7 @@ export const CropFunction = ({
                       placeholder="0"
                       onChange={(e) => setNumberParam("cropW", e.target.value)}
                     />
-                    <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[10px] text-muted-foreground">
+                    <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-xs text-muted-foreground">
                       {t("cropForm.px")}
                     </span>
                   </div>
@@ -285,7 +285,7 @@ export const CropFunction = ({
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <Label
                     htmlFor="crop-h"
-                    className="text-[11px] text-muted-foreground"
+                    className="text-xs text-muted-foreground"
                   >
                     {t("cropForm.coordH")}
                   </Label>
@@ -298,19 +298,19 @@ export const CropFunction = ({
                       placeholder="0"
                       onChange={(e) => setNumberParam("cropH", e.target.value)}
                     />
-                    <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[10px] text-muted-foreground">
+                    <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-xs text-muted-foreground">
                       {t("cropForm.px")}
                     </span>
                   </div>
                 </div>
               </div>
-              <p className="text-[10px] leading-snug text-muted-foreground">
+              <p className="text-xs leading-snug text-muted-foreground">
                 {t("cropForm.freeHint")}
               </p>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <span className="text-[11px] font-medium text-muted-foreground">
+              <span className="text-xs font-medium text-muted-foreground">
                 {t("cropForm.gravity.label")}
               </span>
 
@@ -324,7 +324,7 @@ export const CropFunction = ({
                           type="button"
                           size="sm"
                           variant={on ? "default" : "outline"}
-                          className="h-7 min-w-0 flex-1 px-1 text-[11px] font-medium"
+                          className="h-7 min-w-0 flex-1 px-1 text-sm font-medium"
                           onClick={() =>
                             updateFunctionParam("cropGravity", opt)
                           }
@@ -346,11 +346,11 @@ export const CropFunction = ({
 
       {cropMethod === "trim" ? (
         <div className="flex flex-col gap-2">
-          <Label className="text-[11px] font-medium text-muted-foreground">
+          <Label className="text-xs font-medium text-muted-foreground">
             {t("cropForm.fuzzTolerance")}
           </Label>
           <div className="flex items-center gap-2">
-            <span className="w-7 shrink-0 text-[11px] font-medium text-muted-foreground">
+            <span className="w-7 shrink-0 text-xs font-medium text-muted-foreground">
               {t("cropForm.trimPctMin")}
             </span>
             <Slider
@@ -363,11 +363,11 @@ export const CropFunction = ({
                 updateFunctionParam("cropTrimFuzz", v[0] ?? 0)
               }
             />
-            <span className="w-10 shrink-0 text-right font-mono text-[11px] text-foreground tabular-nums">
+            <span className="w-10 shrink-0 text-right font-mono text-xs text-foreground tabular-nums">
               {cropTrimFuzz}%
             </span>
           </div>
-          <p className="text-[10px] leading-snug text-muted-foreground">
+          <p className="text-xs leading-snug text-muted-foreground">
             {t("cropForm.trimHint")}
           </p>
         </div>
@@ -376,11 +376,11 @@ export const CropFunction = ({
       {cropMethod === "shave" ? (
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-2">
-            <Label className="text-[11px] font-medium text-muted-foreground">
+            <Label className="text-xs font-medium text-muted-foreground">
               {t("cropForm.shaveAmount")}
             </Label>
             <div className="flex items-center gap-2">
-              <span className="w-7 shrink-0 text-[11px] font-medium text-muted-foreground">
+              <span className="w-7 shrink-0 text-xs font-medium text-muted-foreground">
                 {t("cropForm.shaveHorizontal")}
               </span>
               <Slider
@@ -393,12 +393,12 @@ export const CropFunction = ({
                   updateFunctionParam("cropShaveH", v[0] ?? 0)
                 }
               />
-              <span className="w-11 shrink-0 text-right font-mono text-[11px] text-foreground tabular-nums">
+              <span className="w-11 shrink-0 text-right font-mono text-xs text-foreground tabular-nums">
                 {cropShaveH}px
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-7 shrink-0 text-[11px] font-medium text-muted-foreground">
+              <span className="w-7 shrink-0 text-xs font-medium text-muted-foreground">
                 {t("cropForm.shaveVertical")}
               </span>
               <Slider
@@ -411,12 +411,12 @@ export const CropFunction = ({
                   updateFunctionParam("cropShaveV", v[0] ?? 0)
                 }
               />
-              <span className="w-11 shrink-0 text-right font-mono text-[11px] text-foreground tabular-nums">
+              <span className="w-11 shrink-0 text-right font-mono text-xs text-foreground tabular-nums">
                 {cropShaveV}px
               </span>
             </div>
           </div>
-          <p className="text-[10px] leading-snug text-muted-foreground">
+          <p className="text-xs leading-snug text-muted-foreground">
             {t("cropForm.shaveHint")}
           </p>
         </div>

@@ -59,7 +59,7 @@ export function SortablePipelineStep({ step, index }: SortablePipelineStepProps)
           {step.isExpanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
         </button>
 
-        <div className="flex size-6 items-center justify-center rounded-full bg-muted text-[11px] font-bold text-muted-foreground">
+        <div className="flex size-6 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">
           {index + 1}
         </div>
 

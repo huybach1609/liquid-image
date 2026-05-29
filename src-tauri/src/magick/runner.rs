@@ -37,7 +37,8 @@ pub fn detect_magick_source() -> MagickSource {
 
     // macOS debug builds: prefer system magick (installed via brew)
     // Production builds and other platforms default to bundled sidecar
-    if cfg!(debug_assertions) && cfg!(target_os = "macos")
+    if cfg!(debug_assertions)
+        && cfg!(target_os = "macos")
         && std::process::Command::new("magick")
             .arg("-version")
             .output()
@@ -185,7 +186,10 @@ mod tests {
     fn get_and_set_magick_source_should_roundtrip() {
         let original = get_magick_source();
         set_magick_source(MagickSource::Custom("/test/path".to_string()));
-        assert_eq!(get_magick_source(), MagickSource::Custom("/test/path".to_string()));
+        assert_eq!(
+            get_magick_source(),
+            MagickSource::Custom("/test/path".to_string())
+        );
         set_magick_source(original);
     }
 }

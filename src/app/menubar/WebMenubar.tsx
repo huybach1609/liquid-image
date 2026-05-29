@@ -24,12 +24,12 @@ import { cn } from "@/lib/utils";
 const menubarRootClass =
   "h-full min-h-0 gap-0.5 rounded-none border-0 bg-transparent p-0 shadow-none";
 
-const triggerClass = "px-2 py-0.5 text-[12px] font-medium";
+const triggerClass = "px-2 py-0.5 text-sm font-medium";
 
-const contentClass = "min-w-[220px] text-[12px]";
+const contentClass = "min-w-[220px] text-sm";
 
 const soonBadge = (
-  <span className="ml-1.5 rounded px-1 py-px text-[9px] font-medium uppercase tracking-wide bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-100">
+  <span className="ml-1.5 rounded px-1 py-px text-xs font-medium uppercase tracking-wide bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-100">
     soon
   </span>
 );
@@ -157,7 +157,7 @@ export function WebMenubar() {
             <MenubarShortcut>⌘⇧Z</MenubarShortcut>
           </MenubarItem>
           <MenubarSeparator />
-          <MenubarLabel className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted-foreground">
+          <MenubarLabel className="text-xs font-medium uppercase tracking-[0.06em] text-muted-foreground">
             Pipeline
           </MenubarLabel>
           <MenubarItem disabled>
@@ -256,7 +256,7 @@ export function WebMenubar() {
             <MenubarShortcut>⌘L</MenubarShortcut>
           </MenubarItem>
           <MenubarSeparator />
-          <MenubarLabel className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted-foreground">
+          <MenubarLabel className="text-xs font-medium uppercase tracking-[0.06em] text-muted-foreground">
             Quick load
           </MenubarLabel>
           <MenubarItem disabled>Web optimise (WEBP q80)</MenubarItem>
@@ -279,7 +279,7 @@ export function WebMenubar() {
           <MenubarItem disabled>Show metadata bar</MenubarItem>
           <MenubarItem disabled>Show pipeline steps</MenubarItem>
           <MenubarSeparator />
-          <MenubarLabel className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted-foreground">
+          <MenubarLabel className="text-xs font-medium uppercase tracking-[0.06em] text-muted-foreground">
             Canvas zoom
           </MenubarLabel>
           <MenubarItem disabled>

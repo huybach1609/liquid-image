@@ -1,6 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 
 import type { MagickVersionInfo } from "@/shared/types/common";
+import type { MagickFormatInfo } from "@/shared/types/magick";
+
+let magickFormatCatalogPromise: Promise<MagickFormatInfo[]> | null = null;
+let magickFormatCatalogCache: MagickFormatInfo[] | null = null;
 
 export async function greet(name: string): Promise<string> {
   return invoke<string>("greet", { name });
@@ -24,6 +28,34 @@ export type ImageMetadata = {
 export async function getImageMetadata(path: string): Promise<ImageMetadata> {
   return invoke<ImageMetadata>("get_image_metadata", { path });
 }
+
+export async function getImageFormatInfo(): Promise<MagickFormatInfo[]> {
+  if (magickFormatCatalogCache) {
+    return magickFormatCatalogCache;
+  }
+
+  if (!magickFormatCatalogPromise) {
+    magickFormatCatalogPromise = invoke<MagickFormatInfo[]>("list_magick_formats")
+      .then((formats) => {
+        magickFormatCatalogCache = formats;
+        return formats;
+      })
+      .finally(() => {
+        magickFormatCatalogPromise = null;
+      });
+  }
+
+  return magickFormatCatalogPromise;
+}
+
+export function getCachedImageFormatInfo(): MagickFormatInfo[] | null {
+  return magickFormatCatalogCache;
+}
+
+export function preloadImageFormatInfo(): Promise<MagickFormatInfo[]> {
+  return getImageFormatInfo();
+}
+
 
 export async function createImageProxy(inputPath: string, maxResolution?: string): Promise<string> {
   return invoke<string>("create_image_proxy", { inputPath, maxResolution });

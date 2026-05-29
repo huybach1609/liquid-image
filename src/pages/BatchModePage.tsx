@@ -48,7 +48,7 @@ export function BatchModePage() {
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex-1 h-full flex items-center justify-center text-[11px] font-semibold tracking-wider uppercase transition-all ${
+                className={`flex-1 h-full flex items-center justify-center text-xs font-semibold tracking-wider uppercase transition-all ${
                   activeTab === tab.id
                     ? "bg-background border-x border-border/70 text-primary"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/30"

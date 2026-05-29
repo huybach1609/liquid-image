@@ -16,7 +16,7 @@ export function BatchSettingsPanel() {
   return (
     <div className="space-y-6">
       <div className="space-y-3">
-        <label className="flex items-center gap-2 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+        <label className="flex items-center gap-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
           <Cpu className="size-3" />
           {t("settings.performance", "Performance")}
         </label>
@@ -39,13 +39,13 @@ export function BatchSettingsPanel() {
           <div className="flex items-center justify-between gap-3">
             <div className="space-y-0.5">
               <p className="text-xs font-medium">{t("settings.onError", "On Error")}</p>
-              <p className="text-[10px] text-muted-foreground">{t("settings.onErrorDesc", "Handling policy for failed items.")}</p>
+              <p className="text-xs text-muted-foreground">{t("settings.onErrorDesc", "Handling policy for failed items.")}</p>
             </div>
             <Select 
               value={onErrorPolicy}
               onValueChange={(value) => setSetting("onErrorPolicy", value as any)}
             >
-              <SelectTrigger className="h-7 text-[11px] min-w-[120px]">
+              <SelectTrigger className="h-7 text-xs min-w-[120px]">
                 <SelectValue placeholder={t("settings.onError", "On Error")} />
               </SelectTrigger>
               <SelectContent>
@@ -58,7 +58,7 @@ export function BatchSettingsPanel() {
       </div>
 
       <div className="space-y-3 pt-2 border-t border-border/50">
-        <label className="flex items-center gap-2 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+        <label className="flex items-center gap-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
           <Settings2 className="size-3" />
           {t("output.naming", "File Naming")}
         </label>
@@ -101,7 +101,7 @@ export function BatchSettingsPanel() {
       </div>
 
       <div className="space-y-3 pt-2 border-t border-border/50">
-        <label className="flex items-center gap-2 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+        <label className="flex items-center gap-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
           <Zap className="size-3" />
           {t("settings.advanced", "Advanced")}
         </label>
@@ -109,7 +109,7 @@ export function BatchSettingsPanel() {
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground">{t("settings.dryRunLimit", "Dry Run Limit")}</span>
             <Select defaultValue="1">
-              <SelectTrigger className="h-7 text-[11px] min-w-[80px]">
+              <SelectTrigger className="h-7 text-xs min-w-[80px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

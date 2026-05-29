@@ -31,7 +31,7 @@ const RotateFunction = ({
 
   return (
     <div className="flex flex-col gap-6">
-      <Badge variant="secondary" className="w-fit bg-primary/10 text-primary hover:bg-primary/15 border-none px-2 py-0.5 text-[10px] uppercase tracking-wider">
+      <Badge variant="secondary" className="w-fit bg-primary/10 text-primary hover:bg-primary/15 border-none px-2 py-0.5 text-xs uppercase tracking-wider">
         rotate
       </Badge>
 
@@ -53,7 +53,7 @@ const RotateFunction = ({
               key={deg}
               variant="outline"
               size="sm"
-              className="h-7 min-w-14 text-[10px] font-medium"
+              className="h-7 min-w-14 text-xs font-medium"
               onClick={() => setAngle(deg)}
             >
               {deg === 0 ? "Reset" : `${deg > 0 ? "+" : ""}${deg}°`}
@@ -76,7 +76,7 @@ const RotateFunction = ({
                 key={opt.value}
                 variant="outline"
                 className={cn(
-                  "text-[11px] h-8 px-2",
+                  "text-xs h-8 px-2",
                   background === opt.value
                     ? "bg-primary/10 text-primary border-primary/20"
                     : "text-muted-foreground/70 border-border/40"
@@ -91,7 +91,7 @@ const RotateFunction = ({
 
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <Label className="text-[12px] text-muted-foreground/70 font-normal cursor-pointer" htmlFor="auto-orient">
+            <Label className="text-xs text-muted-foreground/70 font-normal cursor-pointer" htmlFor="auto-orient">
               Auto-orient (EXIF)
             </Label>
             <Switch
@@ -100,7 +100,7 @@ const RotateFunction = ({
               onCheckedChange={(v) => updateFunctionParam("rotateAutoOrient", v)}
             />
           </div>
-          <p className="text-[11px] text-muted-foreground/60 leading-relaxed">
+          <p className="text-xs text-muted-foreground/60 leading-relaxed">
             Reads EXIF to correct camera rotation.
           </p>
         </div>

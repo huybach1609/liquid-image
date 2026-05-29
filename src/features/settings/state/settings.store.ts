@@ -9,6 +9,7 @@ import type {
 export interface SettingsStoreState extends SettingsState {
   // Generic setter
   setSetting: <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => void;
+  setSettings: (next: Partial<SettingsState>) => void;
   resetSettings: () => void;
   resetSection: (keys: (keyof SettingsState)[]) => void;
 }
@@ -25,7 +26,7 @@ export const initialSettings: SettingsState = {
   // Appearance
   theme: "system" as Theme,
   accentColor: "#7F77DD",
-  fontSize: "default",
+  fontSize: 13.5,
   sidebarWidth: "default",
   showCliPreview: true,
   showMetadata: true,
@@ -71,6 +72,7 @@ export const useSettingsStore = create<SettingsStoreState>()(
       ...initialSettings,
 
       setSetting: (key, value) => set({ [key]: value }),
+      setSettings: (next) => set(next),
       
       resetSettings: () => set(initialSettings),
       
@@ -85,6 +87,18 @@ export const useSettingsStore = create<SettingsStoreState>()(
     {
       name: "settings-storage",
       storage: createJSONStorage(() => createTauriStorage("settings.json")),
+      version: 3,
+      migrate: (persistedState) => {
+        const nextState = persistedState as Partial<SettingsState> & {
+          fontSize?: unknown;
+        };
+
+        if (typeof nextState.fontSize !== "number") {
+          nextState.fontSize = 13.5;
+        }
+
+        return nextState as SettingsState;
+      },
     }
   )
 );

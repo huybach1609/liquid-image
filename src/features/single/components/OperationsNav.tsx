@@ -50,7 +50,7 @@ export const OperationsNav = memo(function OperationsNav({
   return (
     <aside ref={operationsPanelRef} className="h-full">
       <div
-        className={`flex h-14 items-center border-b border-border/70 text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase ${
+        className={`flex h-14 items-center border-b border-border/70 text-xs font-medium tracking-[0.08em] text-muted-foreground uppercase ${
           isCompact ? "justify-center px-2" : "px-5"
         }`}
       >
@@ -67,7 +67,7 @@ export const OperationsNav = memo(function OperationsNav({
                   type="button"
                   aria-pressed={isSelected}
                   aria-label={item.label}
-                  className={`flex h-12 w-full items-center border-r-2 py-2 text-[13px] leading-5 transition-colors outline-none ${
+                  className={`flex h-12 w-full items-center border-r-2 py-2 text-sm leading-5 transition-colors outline-none ${
                     isCompact ? "justify-center gap-0 px-2" : "gap-2 px-5 text-left"
                   } ${
                     isSelected

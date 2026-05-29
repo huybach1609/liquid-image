@@ -39,7 +39,7 @@ const TextLogoFunction = ({
 
   return (
     <div className="flex flex-col gap-6">
-      <Badge variant="secondary" className="w-fit bg-primary/10 text-primary hover:bg-primary/15 border-none px-2 py-0.5 text-[10px] uppercase tracking-wider">
+      <Badge variant="secondary" className="w-fit bg-primary/10 text-primary hover:bg-primary/15 border-none px-2 py-0.5 text-xs uppercase tracking-wider">
         text / logo
       </Badge>
 
@@ -49,7 +49,7 @@ const TextLogoFunction = ({
           <Input
             value={text}
             onChange={(e) => updateFunctionParam("textLogoText", e.target.value)}
-            className="h-8 text-[11px] font-mono"
+            className="h-8 text-xs font-mono"
             placeholder="Enter watermark text..."
           />
         </div>
@@ -62,7 +62,7 @@ const TextLogoFunction = ({
                 key={f}
                 variant="outline"
                 className={cn(
-                  "text-[10px] h-8 px-1",
+                  "text-xs h-8 px-1",
                   font === f
                     ? "bg-primary/10 text-primary border-primary/20"
                     : "text-muted-foreground/70 border-border/40"
@@ -108,7 +108,7 @@ const TextLogoFunction = ({
                   key={g}
                   variant="outline"
                   className={cn(
-                    "text-[10px] h-8 p-0",
+                    "text-xs h-8 p-0",
                     gravity === g
                       ? "bg-primary/10 text-primary border-primary/20"
                       : "text-muted-foreground/70 border-border/40"
@@ -133,7 +133,7 @@ const TextLogoFunction = ({
                 className="absolute inset-[-20%] size-[140%] cursor-pointer border-none bg-transparent p-0"
               />
             </div>
-            <span className="font-mono text-[11px] font-medium uppercase tracking-tight text-muted-foreground">
+            <span className="font-mono text-xs font-medium uppercase tracking-tight text-muted-foreground">
               {color}
             </span>
           </div>

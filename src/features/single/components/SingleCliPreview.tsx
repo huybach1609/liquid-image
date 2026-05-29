@@ -34,7 +34,7 @@ export function SingleCliPreview({
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="mb-1 flex w-full cursor-pointer items-center justify-between gap-1 border-0 bg-transparent p-0 text-left text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase hover:text-foreground"
+            className="mb-1 flex w-full cursor-pointer items-center justify-between gap-1 border-0 bg-transparent p-0 text-left text-xs font-medium tracking-[0.08em] text-muted-foreground uppercase hover:text-foreground"
           >
             <span>{t("cli.panelHeading")}</span>
             <span className="flex gap-1 lowercase text-primary">
@@ -62,7 +62,7 @@ export function SingleCliPreview({
         {commandPreviews.map((item) => (
           <div key={item.label} className="space-y-1">
             {commandPreviews.length > 1 ? (
-              <p className="text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
+              <p className="text-xs font-medium tracking-[0.08em] text-muted-foreground uppercase">
                 {item.label}
               </p>
             ) : null}

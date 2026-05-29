@@ -7,20 +7,20 @@ export function buildConvertOperationArgs(
   const outputFormat = getStringParam(effectiveParams, "outputFormat", "PNG")
     .trim()
     .toUpperCase();
-  const quality = getNumberParam(effectiveParams, "quality", 85);
+  const quality = getNumberParam(effectiveParams, "quality", 90);
 
+  parts.push("-quality", String(quality));
   if (outputFormat === "WEBP") {
     const method = Math.min(
       6,
       Math.max(0, getNumberParam(effectiveParams, "webpMethod", 1)),
     );
     parts.push("-define", `webp:method=${method}`);
-  } else {
-    parts.push("-quality", String(quality));
-    if (outputFormat === "PNG") {
-      const zlibLevel = Math.min(9, Math.max(0, Math.round(quality / 10)));
-      parts.push("-define", `png:compression-level=${zlibLevel}`);
-    }
+  }
+
+  if (outputFormat === "PNG") {
+    const zlibLevel = Math.min(9, Math.max(0, Math.round(quality / 10)));
+    parts.push("-define", `png:compression-level=${zlibLevel}`);
   }
 
   if (outputFormat === "GIF") {

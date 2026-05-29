@@ -20,7 +20,7 @@ export function BatchOutputPanel() {
   return (
     <div className="space-y-6">
       <div className="space-y-3">
-        <label className="flex items-center gap-2 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+        <label className="flex items-center gap-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
           <FolderOpen className="size-3" />
           {t("output.destination", "Destination Directory")}
         </label>
@@ -37,13 +37,13 @@ export function BatchOutputPanel() {
             <FolderOpen className="size-4" />
           </button>
         </div>
-        <p className="text-[10px] text-muted-foreground italic">
+        <p className="text-xs text-muted-foreground italic">
           {t("output.hint", "Processed images will be saved here.")}
         </p>
       </div>
 
       <div className="space-y-3 pt-2 border-t border-border/50">
-        <label className="flex items-center gap-2 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+        <label className="flex items-center gap-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
           <Settings2 className="size-3" />
           {t("output.naming", "File Naming")}
         </label>

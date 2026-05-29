@@ -8,7 +8,10 @@ import { useAppStore } from "@/app/store/app.store";
 import { BatchModePage } from "@/pages/BatchModePage";
 import { SingleModePage } from "@/pages/SingleModePage";
 import { SettingPage } from "@/pages/SettingPage";
-import { menubarUsesNative } from "@/shared/tauri/commands";
+import {
+  menubarUsesNative,
+  preloadImageFormatInfo,
+} from "@/shared/tauri/commands";
 import { TooltipProvider } from "@/shared/components/ui/tooltip";
 import { useThemeSync } from "@/shared/hooks/useThemeSync";
 import { useTranslation } from "react-i18next";
@@ -28,6 +31,12 @@ export function AppShell() {
     void menubarUsesNative()
       .then(setNativeMenubar)
       .catch(() => setNativeMenubar(false));
+  }, []);
+
+  useEffect(() => {
+    void preloadImageFormatInfo().catch((error) => {
+      console.error("[magick] failed to preload format catalog", error);
+    });
   }, []);
 
   useEffect(() => {
@@ -62,7 +71,7 @@ export function AppShell() {
               }
             }}
           >
-            <span className="shrink-0 text-foreground/80 text-[11px] font-medium uppercase tracking-[0.04em]">
+            <span className="shrink-0 text-sm font-medium uppercase tracking-[0.04em] text-foreground/80">
               liquid-image
             </span>
             {nativeMenubar === false ? (

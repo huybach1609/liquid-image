@@ -27,14 +27,14 @@ export function BatchQueuePanel() {
   return (
     <aside className="grid h-full min-h-0 grid-rows-[auto_1fr_auto] border-r border-border/70">
       <header className="flex items-center justify-between border-b border-border/70 px-4 py-3">
-        <p className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
+        <p className="text-xs font-medium tracking-[0.08em] text-muted-foreground uppercase">
           {t("queue.title", "Input Queue")}
         </p>
         <div className="flex items-center gap-2">
           {queue.length > 0 && (
             <button
               onClick={clearQueue}
-              className="text-[10px] text-muted-foreground hover:text-destructive"
+              className="text-xs text-muted-foreground hover:text-destructive"
             >
               {t("queue.clear", "Clear")}
             </button>
@@ -74,7 +74,7 @@ export function BatchQueuePanel() {
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{item.fileName}</p>
-                  <p className="truncate text-[10px] text-muted-foreground">{item.path}</p>
+                  <p className="truncate text-xs text-muted-foreground">{item.path}</p>
                 </div>
                 <div className="flex items-center gap-1.5 pt-0.5">
                   {item.status === "running" && <Loader2 className="size-3.5 animate-spin text-primary" />}
@@ -88,16 +88,14 @@ export function BatchQueuePanel() {
                   </button>
                 </div>
               </div>
-              {item.errorMessage && (
-                <p className="mt-1 text-[10px] text-destructive truncate">{item.errorMessage}</p>
-              )}
+              {item.errorMessage && <p className="mt-1 truncate text-xs text-destructive">{item.errorMessage}</p>}
             </div>
           ))
         )}
       </div>
 
       <footer className="border-t border-border/70 px-4 py-3 bg-muted/10">
-        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
           <p>
             {stats.total} {t("queue.total", "total")}
           </p>

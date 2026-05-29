@@ -34,7 +34,7 @@ const NormalizeColorFunction = ({
 
   return (
     <div className="flex flex-col gap-6">
-      <Badge variant="secondary" className="w-fit bg-primary/10 text-primary hover:bg-primary/15 border-none px-2 py-0.5 text-[10px] uppercase tracking-wider">
+      <Badge variant="secondary" className="w-fit bg-primary/10 text-primary hover:bg-primary/15 border-none px-2 py-0.5 text-xs uppercase tracking-wider">
         color normalization
       </Badge>
 
@@ -51,7 +51,7 @@ const NormalizeColorFunction = ({
                 key={opt.value}
                 variant="outline"
                 className={cn(
-                  "text-[11px] h-8 justify-start px-3",
+                  "text-xs h-8 justify-start px-3",
                   method === opt.value
                     ? "bg-primary/10 text-primary border-primary/20"
                     : "text-muted-foreground/70 border-border/40"
@@ -78,7 +78,7 @@ const NormalizeColorFunction = ({
         <Alert className="bg-primary/5 border-primary/20 p-3">
           <div className="flex gap-2 items-start">
             <InfoIcon className="size-3.5 text-primary mt-0.5 shrink-0" />
-            <AlertDescription className="text-[11px] text-muted-foreground leading-normal">
+            <AlertDescription className="text-xs text-muted-foreground leading-normal">
               {METHOD_DESCRIPTIONS[method]}
             </AlertDescription>
           </div>

@@ -1,6 +1,14 @@
-import { X, Gauge } from "lucide-react";
-import { useState } from "react";
+import { Gauge, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -17,35 +25,36 @@ import { getNumberParam, getStringParam } from "@/lib/functionParams";
 import { cn } from "@/lib/utils";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "../ui/input";
+import {
+  getCachedImageFormatInfo,
+  getImageFormatInfo,
+} from "@/shared/tauri/commands";
+import type { MagickFormatInfo } from "@/shared/types/magick";
 
-const OUTPUT_FORMATS = ["PNG", "JPEG", "WEBP", "GIF", "TIFF", "BMP"] as const;
 const COLOR_DEPTHS = [8, 16, 32] as const;
 const DITHER_OPTIONS = ["None", "Floyd-Steinberg"] as const;
 
-type OutputFormat = (typeof OUTPUT_FORMATS)[number];
 type DitherMode = (typeof DITHER_OPTIONS)[number];
 
-function normalizeOutputFormat(v: string): OutputFormat {
+function normalizeOutputFormat(v: string): string {
   const normalized = v.trim().toUpperCase();
+  if (!normalized) return "PNG";
   if (normalized === "JPEG" || normalized === "JPG") return "JPEG";
-  if (normalized === "WEBP") return "WEBP";
-  if (normalized === "GIF") return "GIF";
-  if (normalized === "TIFF") return "TIFF";
-  if (normalized === "BMP") return "BMP";
-  return "PNG";
+  return normalized;
 }
 
-function getQualityLabel(format: OutputFormat): string {
+function getQualityLabel(format: string): string {
   if (format === "JPEG") return "Quality (JPEG)";
   if (format === "PNG") return "Compression level (PNG)";
+  if (format === "WEBP") return "Quality (WEBP)";
   return "Quality";
 }
 
-function getQualityHint(format: OutputFormat, quality: number): string {
+function getQualityHint(format: string, quality: number): string {
   if (format === "PNG") {
     return `zlib level: ~${Math.round(quality / 10)} (${quality}÷10)`;
   }
-  if (format === "JPEG") {
+  if (format === "JPEG" || format === "WEBP") {
     return quality >= 90
       ? "High quality, larger file size"
       : "Balanced quality and size";
@@ -85,7 +94,7 @@ const ConvertFunction = ({
   const outputFormat = normalizeOutputFormat(
     getStringParam(functionParams, "outputFormat", defaultExt),
   );
-  const quality = getNumberParam(functionParams, "quality", 85);
+  const quality = getNumberParam(functionParams, "quality", 90);
   const webpMethod = Math.min(
     6,
     Math.max(0, getNumberParam(functionParams, "webpMethod", 1)),
@@ -103,49 +112,121 @@ const ConvertFunction = ({
 
   const isWebp = outputFormat === "WEBP";
   const isGif = outputFormat === "GIF";
+  const [formatCatalog, setFormatCatalog] = useState<MagickFormatInfo[]>(
+    () => getCachedImageFormatInfo() ?? [],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void getImageFormatInfo()
+      .then((results) => {
+        if (!cancelled) {
+          setFormatCatalog(results);
+        }
+      })
+      .catch((error) => {
+        console.error("[convert] failed to load format catalog", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const formatOptions = useMemo(() => {
+    const catalogByName = new Map<string, MagickFormatInfo>();
+
+    for (const format of formatCatalog) {
+      const name = normalizeOutputFormat(format.name);
+      if (!format.mode.toLowerCase().includes("w")) continue;
+      if (!catalogByName.has(name)) {
+        catalogByName.set(name, { ...format, name });
+      }
+    }
+
+    if (!catalogByName.has(outputFormat)) {
+      catalogByName.set(outputFormat, {
+        name: outputFormat,
+        module: "CUSTOM",
+        mode: "rw+",
+        description: "Current output format",
+      });
+    }
+
+    const ordered = Array.from(catalogByName.values()).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
+    return {
+      catalogByName,
+      names: ordered.map((format) => format.name),
+    };
+  }, [formatCatalog, outputFormat]);
 
   return (
     <div className="space-y-3">
       <div className="space-y-1">
         <Label className="text-xs text-muted-foreground">Output format</Label>
-        <Select
+        <Combobox
+          items={formatOptions.names}
           value={outputFormat}
-          onValueChange={(value) =>
-            updateFunctionParam("outputFormat", normalizeOutputFormat(value))
-          }
+          onValueChange={(value) => {
+            updateFunctionParam(
+              "outputFormat",
+              normalizeOutputFormat(value ?? "PNG"),
+            );
+          }}
         >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select an output format" />
-          </SelectTrigger>
-          <SelectContent position="popper">
-            {OUTPUT_FORMATS.map((format) => (
-              <SelectItem key={format} value={format}>
-                {format}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <ComboboxInput
+            className="w-full"
+            placeholder="Select an output format"
+          />
+          <ComboboxContent>
+            <ComboboxEmpty>No writable formats found.</ComboboxEmpty>
+            <ComboboxList>
+              {(item) => {
+                const name = item as string;
+                const format = formatOptions.catalogByName.get(name);
+                return (
+                  <ComboboxItem key={name} value={name}>
+                    <div className="flex w-full flex-col gap-0.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium">{name}</span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {format?.mode ?? "rw+"}
+                        </span>
+                      </div>
+                      <span className="line-clamp-1 text-xs text-muted-foreground/80">
+                        {format?.description || format?.module || "Image format"}
+                      </span>
+                    </div>
+                  </ComboboxItem>
+                );
+              }}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
       </div>
 
-      {!isWebp ? (
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">
-            {getQualityLabel(outputFormat)}
-          </Label>
-          <Slider
-            min={0}
-            max={100}
-            value={[quality]}
-            onValueChange={(value) =>
-              updateFunctionParam("quality", value[0] ?? 85)
-            }
-          />
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>{getQualityHint(outputFormat, quality)}</span>
-            <span>{quality}</span>
-          </div>
+      <div className="space-y-1">
+        <Label className="text-xs text-muted-foreground">
+          {getQualityLabel(outputFormat)}
+        </Label>
+        <Slider
+          min={0}
+          max={100}
+          value={[quality]}
+          onValueChange={(value) =>
+            updateFunctionParam("quality", value[0] ?? 90)
+          }
+        />
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>{getQualityHint(outputFormat, quality)}</span>
+          <span>{quality}</span>
         </div>
-      ) : (
+      </div>
+
+      {isWebp ? (
         <div className="space-y-3.5 py-1">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -173,17 +254,17 @@ const ConvertFunction = ({
               onValueChange={(v) => updateFunctionParam("webpMethod", 6 - v[0])}
             />
           </div>
-          <div className="flex items-center justify-between px-0.5 text-[10px] text-muted-foreground/60">
+          <div className="flex items-center justify-between px-0.5 text-xs text-muted-foreground/60">
             <span>Slow</span>
             <span className="translate-x-1">Normal</span>
             <span className="-translate-x-1">Fast</span>
             <span>Very Fast</span>
           </div>
-          <p className="text-[10px] italic text-muted-foreground/40">
+          <p className="text-xs italic text-muted-foreground/40">
             * Slower methods provide higher quality and smaller file sizes.
           </p>
         </div>
-      )}
+      ) : null}
 
       {isGif ? (
         <div className="space-y-1.5">
@@ -197,7 +278,7 @@ const ConvertFunction = ({
                   type="button"
                   size="sm"
                   variant={active ? "default" : "outline"}
-                  className="h-7 text-[11px]"
+                  className="h-7 text-xs"
                   onClick={() => updateFunctionParam("dither", option)}
                 >
                   {option}
@@ -215,7 +296,7 @@ const ConvertFunction = ({
             type="button"
             size="sm"
             variant={stripMetadata ? "default" : "outline"}
-            className="h-7 text-[11px]"
+            className="h-7 text-xs"
             onClick={() => updateFunctionParam("stripMetadata", true)}
           >
             Yes (-strip)
@@ -224,7 +305,7 @@ const ConvertFunction = ({
             type="button"
             size="sm"
             variant={!stripMetadata ? "default" : "outline"}
-            className="h-7 text-[11px]"
+            className="h-7 text-xs"
             onClick={() => updateFunctionParam("stripMetadata", false)}
           >
             No
@@ -316,7 +397,7 @@ const ConvertFunction = ({
                     type="button"
                     size="sm"
                     variant={colorDepth === depth ? "default" : "outline"}
-                    className="h-7 text-[11px]"
+                    className="h-7 text-xs"
                     onClick={() => updateFunctionParam("colorDepth", depth)}
                   >
                     {depth}-bit

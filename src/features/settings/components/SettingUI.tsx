@@ -20,7 +20,7 @@ export function SettingSection({
 }: SettingSectionProps) {
   return (
     <div className={cn("mb-8", className)}>
-      <div className="mb-3 text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
+      <div className="mb-3 text-xs font-bold tracking-wider text-muted-foreground uppercase">
         {label}
       </div>
       {children}

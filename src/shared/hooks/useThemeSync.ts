@@ -15,6 +15,7 @@ const THEME_CLASSES = [
 export function useThemeSync() {
   const settingsTheme = useSettingsStore((s) => s.theme);
   const accentColor = useSettingsStore((s) => s.accentColor);
+  const fontSize = useSettingsStore((s) => s.fontSize);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -35,4 +36,11 @@ export function useThemeSync() {
       document.documentElement.style.setProperty("--accent", accentColor);
     }
   }, [accentColor]);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--app-font-size",
+      `${fontSize}px`,
+    );
+  }, [fontSize]);
 }

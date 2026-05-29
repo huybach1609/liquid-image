@@ -50,7 +50,7 @@ const ComposeFunction = ({
 
   return (
     <div className="flex flex-col gap-6">
-      <Badge variant="secondary" className="w-fit bg-primary/10 text-primary hover:bg-primary/15 border-none px-2 py-0.5 text-[10px] uppercase tracking-wider">
+      <Badge variant="secondary" className="w-fit bg-primary/10 text-primary hover:bg-primary/15 border-none px-2 py-0.5 text-xs uppercase tracking-wider">
         composite / blend
       </Badge>
 
@@ -60,7 +60,7 @@ const ComposeFunction = ({
           <Input
             value={overlayPath}
             onChange={(e) => updateFunctionParam("composeOverlayPath", e.target.value)}
-            className="h-8 text-[11px] font-mono"
+            className="h-8 text-xs font-mono"
             placeholder="e.g. assets/logo.png"
           />
         </div>
@@ -73,7 +73,7 @@ const ComposeFunction = ({
                 key={mode}
                 variant="outline"
                 className={cn(
-                  "text-[10px] h-8 px-1",
+                  "text-xs h-8 px-1",
                   blendMode === mode
                     ? "bg-primary/10 text-primary border-primary/20"
                     : "text-muted-foreground/70 border-border/40"
@@ -99,21 +99,21 @@ const ComposeFunction = ({
 
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-2">
-            <Label className="text-[11px] font-medium text-muted-foreground/70">X offset</Label>
+            <Label className="text-xs font-medium text-muted-foreground/70">X offset</Label>
             <Input
               type="number"
               value={offsetX}
               onChange={(e) => updateFunctionParam("composeOffsetX", parseInt(e.target.value) || 0)}
-              className="h-8 text-[11px] font-mono"
+              className="h-8 text-xs font-mono"
             />
           </div>
           <div className="flex flex-col gap-2">
-            <Label className="text-[11px] font-medium text-muted-foreground/70">Y offset</Label>
+            <Label className="text-xs font-medium text-muted-foreground/70">Y offset</Label>
             <Input
               type="number"
               value={offsetY}
               onChange={(e) => updateFunctionParam("composeOffsetY", parseInt(e.target.value) || 0)}
-              className="h-8 text-[11px] font-mono"
+              className="h-8 text-xs font-mono"
             />
           </div>
         </div>
@@ -121,7 +121,7 @@ const ComposeFunction = ({
         <Alert className="bg-primary/5 border-primary/20 p-3">
           <div className="flex gap-2 items-start">
             <InfoIcon className="size-3.5 text-primary mt-0.5 shrink-0" />
-            <AlertDescription className="text-[11px] text-muted-foreground leading-normal">
+            <AlertDescription className="text-xs text-muted-foreground leading-normal">
               {BLEND_DESCRIPTIONS[blendMode]}
             </AlertDescription>
           </div>

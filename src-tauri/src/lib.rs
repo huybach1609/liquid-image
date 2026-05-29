@@ -1,8 +1,8 @@
+use std::sync::Mutex;
 use tauri::Emitter;
 use tauri::Manager;
 use tauri_plugin_store::StoreExt;
 use tokio_util::sync::CancellationToken;
-use std::sync::Mutex;
 
 #[cfg(all(desktop, target_os = "macos"))]
 mod app_menu;
@@ -41,10 +41,16 @@ pub fn run() {
             // Load saved settings to initialize MagickSource
             if let Ok(store) = app.store("settings.json") {
                 if let Some(val) = store.get("settings-storage") {
-                    if let Some(path) = val.get("state").and_then(|s| s.get("magickBinaryPath")).and_then(|p| p.as_str()) {
+                    if let Some(path) = val
+                        .get("state")
+                        .and_then(|s| s.get("magickBinaryPath"))
+                        .and_then(|p| p.as_str())
+                    {
                         if !path.is_empty() {
                             println!("[magick] initializing with custom path: {path}");
-                            magick::runner::set_magick_source(magick::runner::MagickSource::Custom(path.to_string()));
+                            magick::runner::set_magick_source(
+                                magick::runner::MagickSource::Custom(path.to_string()),
+                            );
                         }
                     }
                 }
@@ -103,6 +109,7 @@ pub fn run() {
             magick::service::run_batch,
             magick::service::run_batch_dry_run,
             magick::service::cancel_batch,
+            magick::service::list_magick_formats,
             magick::service::check_magick_path,
             magick::service::get_current_magick_source,
             magick::service::update_magick_source

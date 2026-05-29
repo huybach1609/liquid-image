@@ -41,36 +41,36 @@ const ScaleResizeFunction = ({
 
   return (
     <div className="flex flex-col gap-6">
-      <Badge variant="secondary" className="w-fit bg-primary/10 text-primary hover:bg-primary/15 border-none px-2 py-0.5 text-[10px] uppercase tracking-wider">
+      <Badge variant="secondary" className="w-fit bg-primary/10 text-primary hover:bg-primary/15 border-none px-2 py-0.5 text-xs uppercase tracking-wider">
         scale / resize
       </Badge>
 
       <div className="flex flex-col gap-5">
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-2">
-            <Label className="text-[11px] font-medium text-muted-foreground/70">Width (px)</Label>
+            <Label className="text-xs font-medium text-muted-foreground/70">Width (px)</Label>
             <Input
               type="number"
               min={1}
               value={width}
               onChange={(e) => updateFunctionParam("resizeWidth", parseInt(e.target.value) || 0)}
-              className="h-8 text-[11px] font-mono"
+              className="h-8 text-xs font-mono"
             />
           </div>
           <div className="flex flex-col gap-2">
-            <Label className="text-[11px] font-medium text-muted-foreground/70">Height (px)</Label>
+            <Label className="text-xs font-medium text-muted-foreground/70">Height (px)</Label>
             <Input
               type="number"
               min={1}
               value={height}
               onChange={(e) => updateFunctionParam("resizeHeight", parseInt(e.target.value) || 0)}
-              className="h-8 text-[11px] font-mono"
+              className="h-8 text-xs font-mono"
             />
           </div>
         </div>
 
         <div className="flex items-center justify-between">
-          <Label className="text-[12px] text-muted-foreground/70 font-normal cursor-pointer" htmlFor="ratio-toggle">
+          <Label className="text-xs text-muted-foreground/70 font-normal cursor-pointer" htmlFor="ratio-toggle">
             Keep aspect ratio
           </Label>
           <Switch
@@ -91,7 +91,7 @@ const ScaleResizeFunction = ({
               key={`${w}x${h}`}
               variant="outline"
               size="sm"
-              className="h-7 px-2 text-[10px] font-medium"
+              className="h-7 px-2 text-xs font-medium"
               onClick={() => setSize(w, h)}
             >
               {w}×{h}
@@ -112,7 +112,7 @@ const ScaleResizeFunction = ({
                   variant="outline"
                   size="sm"
                   className={cn(
-                    "h-8 text-[10px] px-1 font-medium capitalize transition-all border-border/40",
+                    "h-8 text-xs px-1 font-medium capitalize transition-all border-border/40",
                     active
                       ? "bg-primary/10 text-primary border-primary/20 hover:bg-primary/15 hover:text-primary"
                       : "text-muted-foreground/70 hover:bg-accent/5 hover:text-foreground",
@@ -124,7 +124,7 @@ const ScaleResizeFunction = ({
               );
             })}
           </div>
-          <p className="text-[11px] text-muted-foreground/60 leading-relaxed min-h-8">
+          <p className="text-xs text-muted-foreground/60 leading-relaxed min-h-8">
             {METHOD_DESCRIPTIONS[method]}
           </p>
         </div>

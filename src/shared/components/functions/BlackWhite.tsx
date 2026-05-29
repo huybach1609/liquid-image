@@ -38,7 +38,7 @@ const BlackWhiteFunction = ({
 
   return (
     <div className="flex flex-col gap-6">
-      <Badge variant="secondary" className="w-fit bg-primary/10 text-primary hover:bg-primary/15 border-none px-2 py-0.5 text-[10px] uppercase tracking-wider">
+      <Badge variant="secondary" className="w-fit bg-primary/10 text-primary hover:bg-primary/15 border-none px-2 py-0.5 text-xs uppercase tracking-wider">
         monochrome
       </Badge>
 
@@ -52,7 +52,7 @@ const BlackWhiteFunction = ({
             value={[intensity]}
             onValueChange={(v) => handleIntensityChange(v[0])}
           />
-          <p className="text-[11px] text-muted-foreground/60">Convert image to monochrome style.</p>
+          <p className="text-xs text-muted-foreground/60">Convert image to monochrome style.</p>
         </div>
 
         <Separator className="bg-border/40" />
@@ -70,7 +70,7 @@ const BlackWhiteFunction = ({
                 key={opt.value}
                 variant="outline"
                 className={cn(
-                  "text-[11px] h-8 px-2",
+                  "text-xs h-8 px-2",
                   method === opt.value
                     ? "bg-primary/10 text-primary border-primary/20"
                     : "text-muted-foreground/70 border-border/40"
@@ -87,7 +87,7 @@ const BlackWhiteFunction = ({
 
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <Label className="text-[12px] text-muted-foreground/70 font-normal cursor-pointer" htmlFor="dither-toggle">
+            <Label className="text-xs text-muted-foreground/70 font-normal cursor-pointer" htmlFor="dither-toggle">
               Dither (Floyd-Steinberg)
             </Label>
             <Switch
@@ -98,7 +98,7 @@ const BlackWhiteFunction = ({
           </div>
 
           <div className="flex items-center justify-between">
-            <Label className="text-[12px] text-muted-foreground/70 font-normal cursor-pointer" htmlFor="thresh-toggle">
+            <Label className="text-xs text-muted-foreground/70 font-normal cursor-pointer" htmlFor="thresh-toggle">
               Black threshold
             </Label>
             <Switch
@@ -118,7 +118,7 @@ const BlackWhiteFunction = ({
                 value={[thresholdValue]}
                 onValueChange={(v) => handleIntensityChange(v[0])}
               />
-              <p className="text-[11px] text-muted-foreground/60">Pixels below this % → black, above → white.</p>
+              <p className="text-xs text-muted-foreground/60">Pixels below this % → black, above → white.</p>
             </div>
           )}
         </div>

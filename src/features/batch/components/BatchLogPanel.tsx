@@ -8,19 +8,19 @@ export function BatchLogPanel() {
 
   return (
     <div className="flex h-full flex-col font-mono">
-      <div className="mb-4 flex items-center gap-2 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+      <div className="mb-4 flex items-center gap-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
         <Terminal className="size-3" />
         {t("log.title", "Execution Log")}
       </div>
       
       {logs.length === 0 ? (
         <div className="flex-1 flex items-center justify-center border border-dashed border-border/50 rounded-lg bg-muted/5 opacity-40">
-          <p className="text-[10px] text-muted-foreground italic">
+          <p className="text-xs text-muted-foreground italic">
             {t("log.empty", "No log entries yet. Run a batch to see output.")}
           </p>
         </div>
       ) : (
-        <div className="flex-1 overflow-auto space-y-1.5 p-3 border border-border/50 rounded-lg bg-black/5 dark:bg-black/20 text-[11px]">
+        <div className="flex-1 overflow-auto space-y-1.5 p-3 border border-border/50 rounded-lg bg-black/5 dark:bg-black/20 text-sm">
           {logs.map((log) => (
             <div key={log.id} className="flex gap-2 leading-relaxed">
               <span className="text-muted-foreground/50 tabular-nums">
