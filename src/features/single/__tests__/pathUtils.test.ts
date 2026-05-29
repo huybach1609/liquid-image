@@ -5,7 +5,6 @@ import {
   getFileExtension, 
   getDirectoryPath, 
   normalizeOutputDir, 
-  normalizeOutputName, 
   normalizeOutputExt 
 } from "../pathUtils";
 
