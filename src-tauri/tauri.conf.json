@@ -29,8 +29,25 @@
       "assetProtocol": {
         "enable": true,
         "scope": [
-          "/tmp/liquid-image-preview/*",
-          "$TMP/liquid-image-preview/*"
+          "$TEMP/**",
+          "$TEMP/**/*",
+          "/tmp/**",
+          "/tmp/**/*",
+          "$HOME/**",
+          "$HOME/**/*",
+          "$APPDATA/**",
+          "$APPDATA/**/*",
+          "$APPLOCALDATA/**",
+          "$APPLOCALDATA/**/*",
+          "$PICTURE/**",
+          "$PICTURE/**/*",
+          "$DOWNLOAD/**",
+          "$DOWNLOAD/**/*",
+          "$DOCUMENT/**",
+          "$DOCUMENT/**/*",
+          "$DESKTOP/**",
+          "$DESKTOP/**/*",
+          "**/*"
         ]
       }
     }
