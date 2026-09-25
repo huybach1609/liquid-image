@@ -851,7 +851,7 @@ async fn dry_run_single_internal(
     Ok(())
 }
 
-async fn run_single_internal(
+pub(crate) async fn run_single_internal(
     app: &tauri::AppHandle,
     input_path: &str,
     output_path: &str,

@@ -64,6 +64,10 @@ export const initialSettings: SettingsState = {
   playSound: true,
   showDockProgress: true,
   showTrayBadge: true,
+
+  // Context Menu Integration
+  contextMenuEnabled: true,
+  contextMenuFormats: ["webp", "png", "jpeg", "avif"],
 };
 
 export const useSettingsStore = create<SettingsStoreState>()(
@@ -87,7 +91,7 @@ export const useSettingsStore = create<SettingsStoreState>()(
     {
       name: "settings-storage",
       storage: createJSONStorage(() => createTauriStorage("settings.json")),
-      version: 3,
+      version: 4,
       migrate: (persistedState) => {
         const nextState = persistedState as Partial<SettingsState> & {
           fontSize?: unknown;
@@ -95,6 +99,14 @@ export const useSettingsStore = create<SettingsStoreState>()(
 
         if (typeof nextState.fontSize !== "number") {
           nextState.fontSize = 13.5;
+        }
+
+        if (typeof nextState.contextMenuEnabled !== "boolean") {
+          nextState.contextMenuEnabled = true;
+        }
+
+        if (!Array.isArray(nextState.contextMenuFormats)) {
+          nextState.contextMenuFormats = ["webp", "png", "jpeg", "avif"];
         }
 
         return nextState as SettingsState;

@@ -31,8 +31,8 @@ describe("buildSingleCliPreview", () => {
       }
     });
     
-    // magick "photo.png" -define webp:method=4 "/tmp/photo_out.webp"
-    expect(result).toBe('magick "photo.png" -define webp:method=4 "/tmp/photo_out.webp"');
+    // magick "photo.png" -quality 90 -define webp:method=4 "/tmp/photo_out.webp"
+    expect(result).toBe('magick "photo.png" -quality 90 -define webp:method=4 "/tmp/photo_out.webp"');
   });
 
   it("should handle spaces in filenames by quoting", () => {
@@ -46,7 +46,7 @@ describe("buildSingleCliPreview", () => {
       }
     });
     
-    expect(result).toBe('magick "my photo.jpg" -quality 85 -define png:compression-level=9 "./my out/my output.png"');
+    expect(result).toBe('magick "my photo.jpg" -quality 90 -define png:compression-level=9 "./my out/my output.png"');
   });
 
   it("should handle JPEG/JPG extension mapping", () => {
