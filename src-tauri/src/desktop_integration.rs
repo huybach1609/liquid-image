@@ -139,32 +139,15 @@ mod windows_impl {
     use winreg::RegKey;
 
     const HKCU_IMAGE_SHELL: &str = r"Software\Classes\SystemFileAssociations\image\shell";
+    const EXTRA_EXTENSIONS: &[&str] = &[
+        ".webp", ".avif", ".heic", ".heif", ".jxl", ".svg", ".ico", ".tiff", ".tif"
+    ];
 
-    pub fn check_status() -> Result<(bool, Option<String>), String> {
-        let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-        let path = format!(r"{}\LiquidImage", HKCU_IMAGE_SHELL);
-        if hkcu.open_subkey(&path).is_ok() {
-            Ok((true, Some(format!(r"HKEY_CURRENT_USER\{}", path))))
-        } else {
-            Ok((false, None))
-        }
-    }
-
-    pub fn register(formats: &[String]) -> Result<String, String> {
-        let current_exe = std::env::current_exe()
-            .map_err(|e| format!("Failed to get current executable path: {e}"))?;
-        let exe_str = current_exe.to_str().ok_or("Invalid UTF-8 in exe path")?;
-        let exe_quoted = format!("\"{}\"", exe_str);
-
-        let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-        let (shell_key, _) = hkcu
-            .create_subkey(HKCU_IMAGE_SHELL)
-            .map_err(|e| format!("Failed to create/open shell registry key: {e}"))?;
-
-        let (liquid_key, _) = shell_key
-            .create_subkey("LiquidImage")
-            .map_err(|e| format!("Failed to create LiquidImage key: {e}"))?;
-
+    fn populate_liquid_menu(
+        liquid_key: &RegKey,
+        exe_quoted: &str,
+        formats: &[String],
+    ) -> Result<(), String> {
         liquid_key
             .set_value("MUIVerb", &"Convert with Liquid Image")
             .map_err(|e| e.to_string())?;
@@ -215,6 +198,53 @@ mod windows_impl {
         let cmd_str = format!("{} --open \"%1\"", exe_quoted);
         cmd_key.set_value("", &cmd_str).map_err(|e| e.to_string())?;
 
+        Ok(())
+    }
+
+    pub fn check_status() -> Result<(bool, Option<String>), String> {
+        let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+        let path = format!(r"{}\LiquidImage", HKCU_IMAGE_SHELL);
+        if hkcu.open_subkey(&path).is_ok() {
+            Ok((true, Some(format!(r"HKEY_CURRENT_USER\{}", path))))
+        } else {
+            Ok((false, None))
+        }
+    }
+
+    pub fn register(formats: &[String]) -> Result<String, String> {
+        let current_exe = std::env::current_exe()
+            .map_err(|e| format!("Failed to get current executable path: {e}"))?;
+        let exe_str = current_exe.to_str().ok_or("Invalid UTF-8 in exe path")?;
+        let exe_quoted = format!("\"{}\"", exe_str);
+
+        let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+
+        // 1. Register for generic "image" class (jpg, png, bmp, etc.)
+        let (image_shell_key, _) = hkcu
+            .create_subkey(HKCU_IMAGE_SHELL)
+            .map_err(|e| format!("Failed to create/open shell registry key: {e}"))?;
+        let (image_liquid_key, _) = image_shell_key
+            .create_subkey("LiquidImage")
+            .map_err(|e| format!("Failed to create LiquidImage key: {e}"))?;
+        populate_liquid_menu(&image_liquid_key, &exe_quoted, formats)?;
+
+        // 2. Register for specific modern extensions (webp, avif, heic, etc.)
+        // which Windows does not categorize under SystemFileAssociations\image by default
+        for ext in EXTRA_EXTENSIONS {
+            // Set PerceivedType = "image"
+            if let Ok((ext_key, _)) = hkcu.create_subkey(format!(r"Software\Classes\{}", ext)) {
+                let _ = ext_key.set_value("PerceivedType", &"image");
+            }
+
+            // Register SystemFileAssociations\<ext>\shell\LiquidImage
+            let ext_shell_path = format!(r"Software\Classes\SystemFileAssociations\{}\shell", ext);
+            if let Ok((ext_shell_key, _)) = hkcu.create_subkey(&ext_shell_path) {
+                if let Ok((ext_liquid_key, _)) = ext_shell_key.create_subkey("LiquidImage") {
+                    let _ = populate_liquid_menu(&ext_liquid_key, &exe_quoted, formats);
+                }
+            }
+        }
+
         Ok(format!(r"HKEY_CURRENT_USER\{}\LiquidImage", HKCU_IMAGE_SHELL))
     }
 
@@ -223,6 +253,14 @@ mod windows_impl {
         if let Ok(shell_key) = hkcu.open_subkey_with_flags(HKCU_IMAGE_SHELL, KEY_ALL_ACCESS) {
             let _ = shell_key.delete_subkey_all("LiquidImage");
         }
+
+        for ext in EXTRA_EXTENSIONS {
+            let ext_shell_path = format!(r"Software\Classes\SystemFileAssociations\{}\shell", ext);
+            if let Ok(ext_shell_key) = hkcu.open_subkey_with_flags(&ext_shell_path, KEY_ALL_ACCESS) {
+                let _ = ext_shell_key.delete_subkey_all("LiquidImage");
+            }
+        }
+
         Ok(())
     }
 }

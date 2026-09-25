@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  xmlns:desktop4="http://schemas.microsoft.com/appx/manifest/desktop/windows10/4"
+  xmlns:desktop5="http://schemas.microsoft.com/appx/manifest/desktop/windows10/5"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
+  IgnorableNamespaces="uap uap10 desktop desktop4 desktop5 rescap com">
+
+  <Identity
+    Name="vn.io.weback1609.liquid-image"
+    Publisher="CN=LiquidImage"
+    Version="0.1.0.0"
+    ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>Liquid Image</DisplayName>
+    <PublisherDisplayName>Liquid Image</PublisherDisplayName>
+    <Logo>icons\32x32.png</Logo>
+    <uap10:AllowExternalContent>true</uap10:AllowExternalContent>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.22621.0" />
+  </Dependencies>
+
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+    <rescap:Capability Name="unvirtualizedResources" />
+  </Capabilities>
+
+  <Applications>
+    <Application
+      Id="LiquidImageApp"
+      Executable="liquid-image.exe"
+      uap10:HostRuntimeId="LiquidImageHostRuntime"
+      EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="Liquid Image"
+        Description="Liquid Image - High Performance Image Converter"
+        BackgroundColor="transparent"
+        Square150x150Logo="icons\64x64.png"
+        Square44x44Logo="icons\32x32.png" />
+      <Extensions>
+        <!-- Windows 11 Modern Top-Level Context Menu Registration -->
+        <desktop4:FileExplorerContextMenus>
+          <!-- Generic Image Types -->
+          <desktop4:ItemType Type="SystemFileAssociations\image">
+            <desktop5:ItemContextMenu Id="LiquidImage.ImageContext" MultiSelectModel="Player">
+              <desktop5:Verb Id="ConvertWithLiquidImage" Clsid="{D17117C3-8991-44B7-B597-9BC785BD98E1}" />
+            </desktop5:ItemContextMenu>
+          </desktop4:ItemType>
+
+          <!-- Modern WebP Files -->
+          <desktop4:ItemType Type="SystemFileAssociations\.webp">
+            <desktop5:ItemContextMenu Id="LiquidImage.WebpContext" MultiSelectModel="Player">
+              <desktop5:Verb Id="ConvertWebpWithLiquidImage" Clsid="{D17117C3-8991-44B7-B597-9BC785BD98E1}" />
+            </desktop5:ItemContextMenu>
+          </desktop4:ItemType>
+
+          <!-- Modern AVIF Files -->
+          <desktop4:ItemType Type="SystemFileAssociations\.avif">
+            <desktop5:ItemContextMenu Id="LiquidImage.AvifContext" MultiSelectModel="Player">
+              <desktop5:Verb Id="ConvertAvifWithLiquidImage" Clsid="{D17117C3-8991-44B7-B597-9BC785BD98E1}" />
+            </desktop5:ItemContextMenu>
+          </desktop4:ItemType>
+        </desktop4:FileExplorerContextMenus>
+
+        <!-- In-process COM Server for the IExplorerCommand Handler -->
+        <com:Extension Category="windows.comServer">
+          <com:ComServer>
+            <com:SurrogateServer DisplayName="Liquid Image Context Menu Handler">
+              <com:Class
+                Id="D17117C3-8991-44B7-B597-9BC785BD98E1"
+                Path="LiquidImageCommand.dll"
+                ThreadingModel="STA" />
+            </com:SurrogateServer>
+          </com:ComServer>
+        </com:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+</Package>
