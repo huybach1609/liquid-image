@@ -306,6 +306,19 @@
       "copied": "Copied!",
       "resetAll": "Reset all settings",
       "resetConfirm": "Are you sure you want to reset all settings to defaults? This action cannot be undone."
+    },
+    "update": {
+      "checking": "Checking for updates...",
+      "upToDate": "You are using the latest version",
+      "available": "New version available: v{{version}}",
+      "noReleases": "No official releases found on GitHub yet",
+      "error": "Failed to check for updates. Check your internet connection.",
+      "dialogTitle": "Software Update Available",
+      "current": "Current version",
+      "latest": "Latest version",
+      "changelog": "Release Notes",
+      "downloadAction": "Download from GitHub",
+      "laterAction": "Remind Me Later"
     }
   }
 }

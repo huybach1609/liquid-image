@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { appConfigDir } from "@tauri-apps/api/path";
 import { openPath } from "@tauri-apps/plugin-opener";
 import {
+  AlertCircle,
   Check,
   Copy,
   Cpu,
@@ -18,6 +19,11 @@ import {
   SettingRow,
   SettingSection,
 } from "@/features/settings/components/SettingUI";
+import { UpdateDialog } from "@/features/settings/components/UpdateDialog";
+import {
+  checkForAppUpdate,
+  type UpdateCheckResult,
+} from "@/shared/services/updateChecker";
 
 interface AboutSectionProps {
   appName: string;
@@ -38,7 +44,12 @@ export function AboutSection({
   const [configPath, setConfigPath] = useState<string>("");
   const [isCopied, setIsCopied] = useState(false);
   const [isCheckingUpdates, setIsCheckingUpdates] = useState(false);
-  const [updateFeedback, setUpdateFeedback] = useState<string | null>(null);
+  const [updateFeedback, setUpdateFeedback] = useState<{
+    text: string;
+    variant: "success" | "warning" | "error";
+  } | null>(null);
+  const [updateResult, setUpdateResult] = useState<UpdateCheckResult | null>(null);
+  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
 
   useEffect(() => {
     void appConfigDir()
@@ -66,14 +77,44 @@ export function AboutSection({
     }
   };
 
-  const handleCheckUpdates = () => {
+  const handleCheckUpdates = async () => {
     setIsCheckingUpdates(true);
     setUpdateFeedback(null);
-    setTimeout(() => {
+
+    try {
+      const result = await checkForAppUpdate(appVersion);
+
+      if (result.status === "update_available") {
+        setUpdateResult(result);
+        setIsUpdateDialogOpen(true);
+      } else if (result.status === "up_to_date") {
+        setUpdateFeedback({
+          text: t("about.update.upToDate"),
+          variant: "success",
+        });
+        setTimeout(() => setUpdateFeedback(null), 4000);
+      } else if (result.status === "no_releases") {
+        setUpdateFeedback({
+          text: t("about.update.noReleases"),
+          variant: "warning",
+        });
+        setTimeout(() => setUpdateFeedback(null), 4000);
+      } else {
+        setUpdateFeedback({
+          text: result.errorMessage || t("about.update.error"),
+          variant: "error",
+        });
+        setTimeout(() => setUpdateFeedback(null), 4000);
+      }
+    } catch {
+      setUpdateFeedback({
+        text: t("about.update.error"),
+        variant: "error",
+      });
+      setTimeout(() => setUpdateFeedback(null), 4000);
+    } finally {
       setIsCheckingUpdates(false);
-      setUpdateFeedback(t("about.latestVersion"));
-      setTimeout(() => setUpdateFeedback(null), 3500);
-    }, 900);
+    }
   };
 
   const handleReset = () => {
@@ -131,13 +172,24 @@ export function AboutSection({
               )}
               <span>
                 {isCheckingUpdates
-                  ? t("about.checkingUpdates")
+                  ? t("about.update.checking")
                   : t("about.checkForUpdates")}
               </span>
             </Button>
             {updateFeedback && (
-              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium animate-in fade-in slide-in-from-top-1 duration-200">
-                {updateFeedback}
+              <span
+                className={`text-[11px] font-medium animate-in fade-in slide-in-from-top-1 duration-200 flex items-center gap-1.5 ${
+                  updateFeedback.variant === "success"
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : updateFeedback.variant === "warning"
+                    ? "text-amber-600 dark:text-amber-400"
+                    : "text-destructive"
+                }`}
+              >
+                {updateFeedback.variant !== "success" && (
+                  <AlertCircle className="size-3 shrink-0" />
+                )}
+                {updateFeedback.text}
               </span>
             )}
           </div>
@@ -227,6 +279,13 @@ export function AboutSection({
           </SettingRow>
         </SettingGroup>
       </SettingSection>
+
+      {/* Software Update Modal */}
+      <UpdateDialog
+        isOpen={isUpdateDialogOpen}
+        updateData={updateResult}
+        onClose={() => setIsUpdateDialogOpen(false)}
+      />
     </div>
   );
 }

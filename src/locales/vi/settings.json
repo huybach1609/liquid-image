@@ -306,6 +306,19 @@
       "copied": "Đã sao chép!",
       "resetAll": "Khôi phục cài đặt gốc",
       "resetConfirm": "Bạn có chắc chắn muốn khôi phục toàn bộ cài đặt về mặc định? Hành động này không thể hoàn tác."
+    },
+    "update": {
+      "checking": "Đang kiểm tra bản cập nhật...",
+      "upToDate": "Bạn đang sử dụng phiên bản mới nhất",
+      "available": "Đã có bản cập nhật mới: v{{version}}",
+      "noReleases": "Chưa có bản phát hành chính thức nào trên GitHub",
+      "error": "Không thể kiểm tra cập nhật. Vui lòng kiểm tra kết nối mạng.",
+      "dialogTitle": "Có bản cập nhật mới",
+      "current": "Phiên bản hiện tại",
+      "latest": "Phiên bản mới nhất",
+      "changelog": "Thông tin phát hành & Thay đổi",
+      "downloadAction": "Tải về từ GitHub",
+      "laterAction": "Để sau"
     }
   }
 }

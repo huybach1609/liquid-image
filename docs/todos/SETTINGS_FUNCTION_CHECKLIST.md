@@ -129,7 +129,7 @@ Hệ thống Cài đặt được tổ chức thành **8 tab chức năng chính
 | **Đường dẫn thư mục cấu hình (Config Dir)** | *(N/A)* | 🟢 | **Hoạt động hoàn chỉnh**. Lấy động từ `appConfigDir()` của Tauri path API, hiển thị rõ ràng đường dẫn lưu trữ thực tế trên máy người dùng. |
 | **Nút mở thư mục cấu hình trên hệ thống** | *(N/A)* | 🟢 | **Hoạt động hoàn chỉnh**. Sử dụng `openPath` từ `@tauri-apps/plugin-opener` mở trực tiếp File Manager của OS. |
 | **Sao chép thông tin chẩn đoán (Diagnostics)** | *(N/A)* | 🟢 | **Hoạt động hoàn chỉnh**. Tổng hợp OS, App Version, Magick Engine Version, Config Path và copy vào clipboard người dùng. |
-| **Kiểm tra bản cập nhật mới** | *(N/A)* | 🟡 | Nút bấm phản hồi chuyển trạng thái đang kiểm tra (`Checking...`), nhưng hiện tại chỉ giả lập timeout 1.2s trước khi báo "Bạn đang dùng phiên bản mới nhất" (chưa kết nối Tauri Updater API). |
+| **Kiểm tra bản cập nhật mới** | *(N/A)* | 🟢 | **Hoạt động hoàn chỉnh**. Kiểm tra trực tiếp qua GitHub Releases API (`huybach1609/liquid-image`), so sánh SemVer, hiển thị hộp thoại cập nhật (`UpdateDialog`) với Release Notes và nút tải về trình duyệt. |
 | **Khôi phục toàn bộ cài đặt (Reset All)** | `resetSettings` | 🟢 | **Hoạt động hoàn chỉnh**. Có hộp thoại xác nhận an toàn, khôi phục toàn bộ giá trị trong `useSettingsStore` về `initialSettings`. |
 
 ---
