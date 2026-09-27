@@ -14,6 +14,16 @@ describe("format", () => {
       expect(formatFileSize(1500)).toBe("1.46 KB");
       expect(formatFileSize(1500, 1)).toBe("1.5 KB");
     });
+
+    it("should support MiB_GiB binary units", () => {
+      expect(formatFileSize(1048576, 2, "MiB_GiB")).toBe("1 MiB");
+      expect(formatFileSize(1073741824, 2, "MiB_GiB")).toBe("1 GiB");
+    });
+
+    it("should support KB unit", () => {
+      expect(formatFileSize(1048576, 0, "KB")).toBe("1024 KB");
+      expect(formatFileSize(1500, 1, "KB")).toBe("1.5 KB");
+    });
   });
 
   describe("formatTime", () => {

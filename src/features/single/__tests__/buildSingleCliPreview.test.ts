@@ -62,4 +62,35 @@ describe("buildSingleCliPreview", () => {
     
     expect(result).toContain("./out.jpg");
   });
+
+  it("should apply defaultFlags stripMetadata and defaultColorProfile when function is not Convert", () => {
+    const result = buildSingleCliPreview({
+      selectedFile: "input.png",
+      selectedFunction: "Rotate",
+      functionParams: { rotateDegrees: 180 },
+      defaultFlags: {
+        stripMetadata: true,
+        defaultColorProfile: "Adobe RGB",
+      },
+    });
+
+    expect(result).toContain("-strip");
+    expect(result).toContain("-colorspace Adobe98");
+    expect(result).toContain("-rotate 180");
+  });
+
+  it("should map Adobe RGB to Adobe98 in Convert operation", () => {
+    const result = buildSingleCliPreview({
+      selectedFile: "input.png",
+      selectedFunction: "Convert",
+      functionParams: {
+        outputFormat: "JPEG",
+        colorProfile: "Adobe RGB",
+        stripMetadata: true,
+      },
+    });
+
+    expect(result).toContain("-strip");
+    expect(result).toContain("-colorspace Adobe98");
+  });
 });

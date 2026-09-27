@@ -69,4 +69,20 @@ describe("BatchStore", () => {
     expect(state.stats.done).toBe(1);
     expect(state.stats.running).toBe(0);
   });
+
+  it("should inherit stripMetadata and colorProfile from settings when adding Convert step", async () => {
+    const { useSettingsStore } = await import("@/features/settings/state/settings.store");
+    useSettingsStore.setState({
+      stripMetadata: true,
+      defaultColorProfile: "Adobe RGB",
+    });
+
+    useBatchStore.getState().addStep("Convert");
+    const pipeline = useBatchStore.getState().pipeline;
+    const convertStep = pipeline.find((s) => s.functionId === "Convert");
+
+    expect(convertStep).toBeDefined();
+    expect(convertStep?.params.stripMetadata).toBe(true);
+    expect(convertStep?.params.colorProfile).toBe("Adobe RGB");
+  });
 });

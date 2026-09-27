@@ -61,6 +61,19 @@ export function SettingPage() {
     return () => observer.disconnect();
   }, []);
 
+  const handleTabChange = React.useCallback((tab: SettingsTab) => {
+    if (tab === "notifications" || tab === "shortcuts") {
+      return;
+    }
+    setActiveTab(tab);
+  }, []);
+
+  React.useEffect(() => {
+    if (activeTab === "notifications" || activeTab === "shortcuts") {
+      setActiveTab("general");
+    }
+  }, [activeTab]);
+
   return (
     <div className="flex h-full w-full overflow-hidden border-t border-border/40 bg-background">
       <ResizablePanelGroup className="h-full w-full">
@@ -75,7 +88,7 @@ export function SettingPage() {
             isCompact={isCompact}
             appName={appInfo.name}
             appVersion={appInfo.version}
-            onTabChange={setActiveTab}
+            onTabChange={handleTabChange}
             onBack={() => setMode("single")}
           />
         </ResizablePanel>
@@ -169,6 +182,7 @@ export function SettingPage() {
                       appName={appInfo.name}
                       appVersion={appInfo.version}
                       tauriVersion={appInfo.tauriVersion}
+                      magickVersion={magickStatus?.version}
                       onResetAllSettings={handleResetAllSettings}
                     />
                   )}

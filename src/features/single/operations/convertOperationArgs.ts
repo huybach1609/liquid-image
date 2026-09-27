@@ -35,7 +35,8 @@ export function buildConvertOperationArgs(
 
   const profile = getStringParam(effectiveParams, "colorProfile", "None");
   if (profile && profile !== "None") {
-    parts.push("-colorspace", profile);
+    const cs = profile === "Adobe RGB" ? "Adobe98" : profile;
+    parts.push("-colorspace", cs);
   }
 
   const colorDepth = getNumberParam(effectiveParams, "colorDepth", 0);

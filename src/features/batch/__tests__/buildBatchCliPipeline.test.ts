@@ -25,6 +25,48 @@ describe("buildBatchCliPipeline", () => {
       expect(args).toContain("90");
       expect(args).not.toContain("-rotate");
     });
+
+    it("should include diskCacheLimit and memoryLimit flags if specified", () => {
+      const pipeline: any[] = [
+        {
+          id: "1",
+          functionId: "Convert",
+          enabled: true,
+          params: { outputFormat: "PNG" }
+        }
+      ];
+
+      const args = buildBatchCliArgs(pipeline, {
+        diskCacheLimit: "1 GB",
+        memoryLimit: "512 MB"
+      });
+
+      expect(args).toContain("-limit");
+      expect(args).toContain("disk");
+      expect(args).toContain("1GB");
+      expect(args).toContain("memory");
+      expect(args).toContain("512MB");
+    });
+
+    it("should include -strip and -colorspace flags when specified in options without Convert step", () => {
+      const pipeline: any[] = [
+        {
+          id: "1",
+          functionId: "Rotate",
+          enabled: true,
+          params: { rotateDegrees: 90 },
+        },
+      ];
+
+      const args = buildBatchCliArgs(pipeline, {
+        stripMetadata: true,
+        defaultColorProfile: "Adobe RGB",
+      });
+
+      expect(args).toContain("-strip");
+      expect(args).toContain("-colorspace");
+      expect(args).toContain("Adobe98");
+    });
   });
 
   describe("buildBatchOutputPath", () => {
@@ -47,6 +89,29 @@ describe("buildBatchCliPipeline", () => {
         4 // index 4 -> 005
       );
       expect(path).toBe("./out/img_005.jpg");
+    });
+
+    it("should handle {date} pattern with custom dateFormat", () => {
+      const fixedDate = new Date(2026, 8, 26); // 2026-09-26
+      const pathYMD = buildBatchOutputPath(
+        "/home/user/photo.jpg",
+        "./out",
+        "png",
+        "{date}_{name}",
+        0,
+        { dateFormat: "YYYY-MM-DD", now: fixedDate }
+      );
+      expect(pathYMD).toBe("./out/2026-09-26_photo.png");
+
+      const pathDMY = buildBatchOutputPath(
+        "/home/user/photo.jpg",
+        "./out",
+        "png",
+        "date-name",
+        0,
+        { dateFormat: "DD-MM-YYYY", now: fixedDate }
+      );
+      expect(pathDMY).toBe("./out/26-09-2026_photo.png");
     });
 
     it("should handle windows paths", () => {

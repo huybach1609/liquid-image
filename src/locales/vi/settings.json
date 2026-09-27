@@ -1,0 +1,311 @@
+{
+  "general": {
+    "sections": {
+      "languageRegion": "Ngôn ngữ & Khu vực",
+      "batchOptions": "Tùy chọn xử lý hàng loạt"
+    },
+    "language": {
+      "name": "Ngôn ngữ",
+      "description": "Chọn ngôn ngữ hiển thị cho toàn bộ giao diện ứng dụng"
+    },
+    "languages": {
+      "en": "English",
+      "vi": "Tiếng Việt"
+    },
+    "dateFormat": {
+      "name": "Định dạng ngày",
+      "description": "Định dạng dùng khi thay thế biến {date} trong tên file đầu ra"
+    },
+    "dateFormats": {
+      "YYYY-MM-DD": "YYYY-MM-DD",
+      "DD-MM-YYYY": "DD-MM-YYYY",
+      "MM-DD-YYYY": "MM-DD-YYYY",
+      "YYYYMMDD": "YYYYMMDD"
+    },
+    "fileSizeUnit": {
+      "name": "Đơn vị kích thước tệp",
+      "description": "Tiêu chuẩn hiển thị dung lượng tệp ảnh trong danh sách và xem trước"
+    },
+    "fileSizeUnits": {
+      "MB_GB": "MB / GB (Tiêu chuẩn 1024)",
+      "MiB_GiB": "MiB / GiB (Nhị phân IEC)",
+      "KB": "KB (Chỉ dùng Kilobytes)"
+    },
+    "diskCacheLimit": {
+      "name": "Giới hạn cache đĩa",
+      "description": "Cờ giới hạn bộ nhớ đệm trên đĩa của ImageMagick (-limit disk) khi xử lý tác vụ nặng"
+    },
+    "dryRunBeforeBatch": {
+      "name": "Chạy thử trước khi xử lý",
+      "description": "Tự động kiểm tra nhanh tính hợp lệ của tham số trước khi bắt đầu xử lý hàng loạt"
+    },
+    "onErrorPolicy": {
+      "name": "Chính sách khi gặp lỗi",
+      "description": "Chiến lược xử lý hàng đợi khi có một ảnh xử lý thất bại"
+    },
+    "onErrorPolicies": {
+      "skip-and-continue": "Bỏ qua & Tiếp tục",
+      "stop-all": "Dừng lại ngay lập tức",
+      "retry-once": "Thử lại một lần rồi tiếp tục"
+    },
+    "saveErrorLog": {
+      "name": "Lưu nhật ký lỗi",
+      "description": "Tự động xuất tệp nhật ký chi tiết vào thư mục đầu ra khi có tác vụ gặp lỗi"
+    }
+  },
+  "appearance": {
+    "sections": {
+      "theme": "Giao diện & Phong cách",
+      "typography": "Cỡ chữ & Tỷ lệ",
+      "layout": "Bố cục giao diện"
+    },
+    "theme": {
+      "title": "Chủ đề giao diện",
+      "subtitle": "Chọn phong cách thẩm mỹ cho toàn bộ không gian làm việc",
+      "modes": {
+        "all": "Tất cả",
+        "light": "Sáng",
+        "dark": "Tối"
+      },
+      "items": {
+        "light": {
+          "name": "Light",
+          "desc": "Sáng mặc định tinh gọn"
+        },
+        "dark": {
+          "name": "Dark",
+          "desc": "Tối huyền bí độ tương phản cao"
+        },
+        "claude": {
+          "name": "Claude",
+          "desc": "Màu kem ấm & đất nung terracotta"
+        },
+        "claude-dark": {
+          "name": "Claude Dark",
+          "desc": "Màu than chì & đất nung terracotta"
+        },
+        "notion": {
+          "name": "Notion",
+          "desc": "Trắng hiện đại & xanh cobalt"
+        },
+        "notion-dark": {
+          "name": "Notion Dark",
+          "desc": "Xám đậm tối giản & xanh cobalt"
+        },
+        "starbucks": {
+          "name": "Starbucks",
+          "desc": "Kem sữa tự nhiên & xanh rừng"
+        },
+        "starbucks-dark": {
+          "name": "Starbucks Dark",
+          "desc": "Xanh thẫm & ngọc lục bảo"
+        }
+      }
+    },
+    "fontSize": {
+      "name": "Cỡ chữ cơ sở",
+      "description": "Điều chỉnh tỷ lệ chữ toàn giao diện. Áp dụng trực tiếp theo thời gian thực.",
+      "preview": "Hình ảnh chất lượng cao được xử lý mượt mà",
+      "presets": {
+        "compact": "Nhỏ gọn",
+        "default": "Mặc định",
+        "comfortable": "Vừa vặn",
+        "large": "Lớn"
+      }
+    },
+    "showCliPreview": {
+      "name": "Hiện xem trước lệnh CLI",
+      "description": "Hiển thị thanh dòng lệnh ImageMagick phía dưới bảng điều khiển"
+    },
+    "showMetadata": {
+      "name": "Hiện thông tin ảnh",
+      "description": "Hiển thị kích thước, định dạng và dung lượng ở thanh công cụ dưới khung xem"
+    }
+  },
+  "files": {
+    "sections": {
+      "locations": "Thư mục mặc định",
+      "naming": "Đặt tên tệp",
+      "contextMenu": "Trình quản lý tệp & Menu ngữ cảnh"
+    },
+    "outputFolder": {
+      "name": "Thư mục xuất mặc định",
+      "description": "Thư mục mặc định khi lưu file output",
+      "placeholder": "Chọn thư mục xuất mặc định..."
+    },
+    "presetFolder": {
+      "name": "Thư mục preset mặc định",
+      "description": "Nơi lưu và load pipeline preset",
+      "placeholder": "Chọn thư mục preset..."
+    },
+    "browse": "Chọn…",
+    "namingPattern": {
+      "name": "Mẫu đặt tên mặc định",
+      "description": "Biến: {name} {date} {op} {width} {height}"
+    },
+    "conflictPolicy": {
+      "name": "Khi trùng tên file",
+      "description": "Khi file đầu ra đã tồn tại"
+    },
+    "conflictOptions": {
+      "ask": "Hỏi tôi",
+      "overwrite": "Ghi đè",
+      "rename": "Đổi tên (+1)",
+      "skip": "Bỏ qua"
+    },
+    "autoOpenOutput": {
+      "name": "Tự mở thư mục xuất",
+      "description": "Tự mở Finder/Explorer sau khi xử lý xong"
+    },
+    "contextMenu": {
+      "windowsTitle": "Windows File Explorer Menu",
+      "linuxTitle": "Dolphin / File Manager Menu",
+      "genericTitle": "File Manager Menu",
+      "windowsDescription": "Tích hợp menu chuột phải khi click vào file ảnh trong Windows File Explorer (Registry HKCU)",
+      "linuxDescription": "Tích hợp menu chuột phải khi click vào file ảnh trong Dolphin (KDE Linux ServiceMenu)",
+      "genericDescription": "Tích hợp menu chuột phải khi click vào file ảnh trong trình quản lý tệp",
+      "quickFormatsTitle": "Định dạng chuyển đổi nhanh (Quick Convert Formats)",
+      "windowsSubtitle": "Chọn các định dạng bạn muốn hiển thị trong menu ngữ cảnh chuột phải của Windows File Explorer.",
+      "linuxSubtitle": "Chọn các định dạng bạn muốn hiển thị trong menu ngữ cảnh chuột phải của Dolphin.",
+      "genericSubtitle": "Chọn các định dạng bạn muốn hiển thị trong menu ngữ cảnh chuột phải.",
+      "enabledFormats": "Định dạng đã bật ({{count}})",
+      "clearAll": "Bỏ chọn tất cả",
+      "deselect": "Bỏ chọn {{format}}",
+      "noFormatsSelected": "Chưa chọn định dạng nào cho context menu. Hãy chọn các định dạng bên dưới.",
+      "quickPresets": "Phổ biến (Quick presets)",
+      "searchFormats": "Tìm kiếm từ thư viện ImageMagick ({{count}} định dạng hỗ trợ ghi)",
+      "searchPlaceholder": "Tìm định dạng ImageMagick hỗ trợ (vd: JXL, HEIC, ICO, PDF, TGA...)",
+      "noMatchingFormats": "Không tìm thấy định dạng nào phù hợp.",
+      "systemStatus": "Trạng thái hệ thống:",
+      "registeredRegistry": "Đã đăng ký Registry",
+      "registeredServiceMenu": "Đã cài đặt ServiceMenu",
+      "notRegistered": "Chưa đăng ký",
+      "processing": "Đang xử lý...",
+      "installOrUpdate": "Cài đặt / Cập nhật",
+      "uninstall": "Gỡ bỏ",
+      "installSuccess": "Đã cài đặt thành công ({{path}})",
+      "installError": "Lỗi cài đặt: {{error}}",
+      "uninstallSuccess": "Đã gỡ bỏ thành công.",
+      "uninstallError": "Lỗi gỡ bỏ: {{error}}"
+    }
+  },
+  "notifications": {
+    "notifyBatchComplete": {
+      "name": "Hoàn thành xử lý hàng loạt",
+      "description": "Thông báo khi toàn bộ batch xử lý xong"
+    },
+    "notifyError": {
+      "name": "Có lỗi xảy ra",
+      "description": "Thông báo khi có file bị lỗi trong batch"
+    },
+    "playSound": {
+      "name": "Phát âm thanh",
+      "description": "Phát âm thanh kèm thông báo"
+    }
+  },
+  "processing": {
+    "sections": {
+      "performance": "Hiệu năng & Tài nguyên hệ thống",
+      "preview": "Xem trước & Khung vẽ (Preview Canvas)",
+      "batchSafety": "Xử lý hàng loạt & An toàn tác vụ"
+    },
+    "workers": {
+      "name": "Số luồng xử lý (Batch workers)",
+      "description": "Số lượng tác vụ chạy song song trong hàng đợi (khuyến nghị ≤ số nhân CPU)"
+    },
+    "workersOptions": {
+      "1": "1 (Chế độ an toàn / Tiết kiệm)",
+      "2": "2 (Xử lý 2 luồng)",
+      "4": "4 (Khuyến nghị chuẩn)",
+      "8": "8 (Tối đa công suất)"
+    },
+    "memoryLimit": {
+      "name": "Giới hạn RAM mỗi tác vụ",
+      "description": "Cờ giới hạn bộ nhớ RAM (-limit memory) cho từng tiến trình ImageMagick"
+    },
+    "diskCacheLimit": {
+      "name": "Giới hạn cache đĩa",
+      "description": "Cờ giới hạn bộ nhớ đệm trên đĩa (-limit disk) khi thao tác với tệp lớn"
+    },
+    "livePreview": {
+      "name": "Xem trước trực tiếp (Live preview)",
+      "description": "Tự động hiển thị và kết xuất lại ảnh xem trước tức thì khi kéo thanh trượt thông số"
+    },
+    "previewMaxResolution": {
+      "name": "Độ phân giải xem trước tối đa",
+      "description": "Độ phân giải tối đa của khung xem trước (800px nhanh, 1200px cân bằng, full nguyên bản)"
+    },
+    "previewResolutionOptions": {
+      "800px": "800px (Nhanh / Tiết kiệm RAM)",
+      "1200px": "1200px (Mặc định cân bằng)",
+      "full": "Full size (Kích thước gốc)"
+    },
+    "dryRunBeforeBatch": {
+      "name": "Chạy thử trước khi xử lý",
+      "description": "Tự động kiểm tra nhanh tính hợp lệ của tham số trước khi bắt đầu xử lý hàng loạt"
+    },
+    "onErrorPolicy": {
+      "name": "Chính sách khi gặp lỗi",
+      "description": "Chiến lược xử lý hàng đợi khi có một ảnh xử lý thất bại"
+    },
+    "saveErrorLog": {
+      "name": "Lưu nhật ký lỗi",
+      "description": "Tự động xuất tệp nhật ký chi tiết vào thư mục đầu ra khi có tác vụ gặp lỗi"
+    }
+  },
+  "imagick": {
+    "sections": {
+      "binary": "Engine & Tệp thực thi",
+      "defaultFlags": "Cờ mặc định"
+    },
+    "binary": {
+      "title": "Tệp thực thi ImageMagick",
+      "subtitle": "Trình xử lý đồ họa cốt lõi của ứng dụng",
+      "sidecarBadge": "Tích hợp sẵn (Sidecar)",
+      "customBadge": "Đường dẫn tuỳ chỉnh",
+      "sidecarDesc": "Đang dùng ImageMagick tích hợp sẵn trong ứng dụng. Bạn có thể chỉ định đường dẫn bên dưới nếu muốn dùng bản riêng.",
+      "customDesc": "Đang sử dụng ImageMagick từ đường dẫn tuỳ chỉnh.",
+      "detected": "Phiên bản phát hiện: {{version}}",
+      "placeholder": "Tự động (dùng sidecar tích hợp)",
+      "useBundled": "Dùng bản tích hợp",
+      "browse": "Chọn…",
+      "test": "Kiểm tra",
+      "testing": "Đang kiểm tra...",
+      "testSuccess": "Đã xác thực: {{version}}",
+      "testError": "Không thể thực thi tệp tại đường dẫn này"
+    },
+    "stripMetadata": {
+      "name": "Xoá metadata mặc định",
+      "description": "Tự động thêm -strip vào mọi lệnh để xoá EXIF, thumbnail, bình luận giúp giảm dung lượng tệp"
+    },
+    "colorProfile": {
+      "name": "Profile màu",
+      "description": "Profile màu đích mặc định khi xuất và chuyển đổi ảnh"
+    }
+  },
+  "about": {
+    "badge": "Mã nguồn mở",
+    "subtitle": "Công cụ xử lý & tối ưu hoá hình ảnh chuyên nghiệp",
+    "stack": "Xây dựng với Tauri v{{tauri}} + React 19 + Rust",
+    "checkForUpdates": "Kiểm tra cập nhật",
+    "checkingUpdates": "Đang kiểm tra...",
+    "latestVersion": "Bạn đang dùng phiên bản mới nhất",
+    "sections": {
+      "systemInfo": "Thông tin hệ thống & Môi trường",
+      "maintenance": "Dữ liệu & Khôi phục"
+    },
+    "info": {
+      "appVersion": "Phiên bản ứng dụng",
+      "tauriVersion": "Phiên bản Tauri",
+      "engineVersion": "Động cơ ImageMagick",
+      "configPath": "Thư mục cấu hình"
+    },
+    "actions": {
+      "openConfig": "Mở thư mục cấu hình",
+      "copyPath": "Sao chép đường dẫn",
+      "copied": "Đã sao chép!",
+      "resetAll": "Khôi phục cài đặt gốc",
+      "resetConfirm": "Bạn có chắc chắn muốn khôi phục toàn bộ cài đặt về mặc định? Hành động này không thể hoàn tác."
+    }
+  }
+}

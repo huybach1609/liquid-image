@@ -1,10 +1,17 @@
+import { useTranslation } from "react-i18next";
 import {
   SettingGroup,
   SettingRow,
   SettingSection,
 } from "@/features/settings/components/SettingUI";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { ColorProfile, SettingsState } from "@/features/settings/types";
 import { MagickBinaryField } from "../components/MagickBinaryField";
 import type { MagickStatus } from "../hooks/useSettingsDraft";
@@ -31,9 +38,11 @@ export function ImagickSettingsSection({
   onDetectBinary,
   onTestBinary,
 }: ImagickSettingsSectionProps) {
+  const { t } = useTranslation("settings");
+
   return (
     <>
-      <SettingSection label="Binary">
+      <SettingSection label={t("imagick.sections.binary")}>
         <SettingGroup>
           <MagickBinaryField
             value={draft.magickBinaryPath}
@@ -47,11 +56,12 @@ export function ImagickSettingsSection({
         </SettingGroup>
       </SettingSection>
 
-      <SettingSection label="Default flags">
+      <SettingSection label={t("imagick.sections.defaultFlags")}>
         <SettingGroup>
           <SettingRow
-            name="Strip metadata by default"
-            description="Thêm -strip vào mọi lệnh"
+            name={t("imagick.stripMetadata.name")}
+            description={t("imagick.stripMetadata.description")}
+            descriptionVariant="tooltip"
           >
             <Switch
               checked={draft.stripMetadata}
@@ -59,8 +69,9 @@ export function ImagickSettingsSection({
             />
           </SettingRow>
           <SettingRow
-            name="Color profile"
-            description="Profile màu mặc định cho output"
+            name={t("imagick.colorProfile.name")}
+            description={t("imagick.colorProfile.description")}
+            descriptionVariant="tooltip"
           >
             <Select
               value={draft.defaultColorProfile}

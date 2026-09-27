@@ -1,10 +1,42 @@
-export function formatFileSize(bytes: number, decimalPoint = 2): string {
+import type { FileSizeUnit } from "@/features/settings/types";
+import { useSettingsStore } from "@/features/settings/state/settings.store";
+
+export function formatFileSize(
+  bytes: number,
+  decimalPoint = 2,
+  unit?: FileSizeUnit
+): string {
   if (bytes === 0) return "0 Bytes";
-  const k = 1024;
+
+  let activeUnit = unit;
+  if (!activeUnit) {
+    try {
+      activeUnit = useSettingsStore.getState().fileSizeUnit;
+    } catch {
+      activeUnit = "MB_GB";
+    }
+  }
+
   const dm = decimalPoint < 0 ? 0 : decimalPoint;
+
+  if (activeUnit === "KB") {
+    const kb = bytes / 1024;
+    return `${parseFloat(kb.toFixed(dm))} KB`;
+  }
+
+  const k = 1024;
+  if (activeUnit === "MiB_GiB") {
+    const sizes = ["Bytes", "KiB", "MiB", "GiB", "TiB", "PiB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    const safeIdx = Math.min(Math.max(i, 0), sizes.length - 1);
+    return `${parseFloat((bytes / Math.pow(k, safeIdx)).toFixed(dm))} ${sizes[safeIdx]}`;
+  }
+
+  // Standard "MB_GB"
   const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
+  const safeIdx = Math.min(Math.max(i, 0), sizes.length - 1);
+  return `${parseFloat((bytes / Math.pow(k, safeIdx)).toFixed(dm))} ${sizes[safeIdx]}`;
 }
 
 export function formatTime(seconds: number): string {

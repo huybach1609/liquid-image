@@ -7,6 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useSettingsStore } from "@/features/settings/state/settings.store";
 import { supportedLocales, type AppLocale } from "@/i18n/resources";
 import { Languages } from "lucide-react";
 
@@ -36,6 +37,7 @@ export function LanguageSwitcher() {
             className={lng === current ? "bg-muted/80" : undefined}
             onClick={() => {
               void i18n.changeLanguage(lng);
+              useSettingsStore.getState().setSetting("language", lng);
             }}
           >
             {t(`language.${lng}`)}

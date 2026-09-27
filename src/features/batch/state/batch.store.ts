@@ -38,6 +38,18 @@ export interface BatchState {
   ) => void;
 }
 
+import { useSettingsStore } from "@/features/settings/state/settings.store";
+
+export function getDefaultBatchOutputDirectory(): string {
+  try {
+    const configured = useSettingsStore.getState().outputFolder;
+    if (configured && configured.trim()) return configured.trim();
+  } catch {
+    // fallback if store not yet ready
+  }
+  return "./out/";
+}
+
 export const useBatchStore = create<BatchState>()(
   devtools(
     persist(
@@ -46,7 +58,7 @@ export const useBatchStore = create<BatchState>()(
         pipeline: [],
         logs: [],
         isRunning: false,
-        outputDirectory: "./out/",
+        outputDirectory: getDefaultBatchOutputDirectory(),
         stats: { total: 0, queued: 0, running: 0, done: 0, error: 0 },
 
         addFiles: (files) =>
@@ -87,7 +99,22 @@ export const useBatchStore = create<BatchState>()(
             stats: { total: 0, queued: 0, running: 0, done: 0, error: 0 },
           }),
 
-        addStep: (functionId) =>
+        addStep: (functionId) => {
+          const initialParams: Record<string, unknown> = {};
+          if (functionId === "Convert") {
+            try {
+              const settings = useSettingsStore.getState();
+              if (settings.stripMetadata !== undefined) {
+                initialParams.stripMetadata = settings.stripMetadata;
+              }
+              if (settings.defaultColorProfile && settings.defaultColorProfile !== "None") {
+                initialParams.colorProfile = settings.defaultColorProfile;
+              }
+            } catch {
+              // fallback if settings store not yet initialized
+            }
+          }
+
           set((state) => ({
             pipeline: [
               ...state.pipeline,
@@ -95,11 +122,12 @@ export const useBatchStore = create<BatchState>()(
                 id: crypto.randomUUID(),
                 functionId,
                 enabled: true,
-                params: {},
+                params: initialParams,
                 isExpanded: true,
               },
             ],
-          })),
+          }));
+        },
 
         removeStep: (id) =>
           set((state) => ({

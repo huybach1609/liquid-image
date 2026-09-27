@@ -1,6 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { open } from "@tauri-apps/plugin-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
 import {
   Select,
   SelectContent,
@@ -14,15 +24,20 @@ import {
   SettingRow,
   SettingSection,
 } from "@/features/settings/components/SettingUI";
+import { cn } from "@/lib/utils";
 import type { ConflictPolicy, SettingsState } from "@/features/settings/types";
 import {
   checkDolphinIntegrationStatus,
   registerDolphinServiceMenu,
   unregisterDolphinServiceMenu,
+  getImageFormatInfo,
+  getCachedImageFormatInfo,
   type DolphinIntegrationStatus,
 } from "@/shared/tauri/commands";
+import type { MagickFormatInfo } from "@/shared/types/magick";
+import { Check, X } from "lucide-react";
 
-const AVAILABLE_FORMATS = ["webp", "png", "jpeg", "avif", "gif", "tiff", "bmp"];
+const AVAILABLE_PRESET_FORMATS = ["webp", "png", "jpeg", "avif", "gif", "tiff", "bmp"];
 
 interface FilesSettingsSectionProps {
   draft: SettingsState;
@@ -36,6 +51,7 @@ export function FilesSettingsSection({
   draft,
   onUpdateSetting,
 }: FilesSettingsSectionProps) {
+  const { t } = useTranslation("settings");
   const [dolphinStatus, setDolphinStatus] = useState<DolphinIntegrationStatus | null>(null);
   const [isOperating, setIsOperating] = useState(false);
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
@@ -53,12 +69,102 @@ export function FilesSettingsSection({
     void loadStatus();
   }, []);
 
+  const [formatCatalog, setFormatCatalog] = useState<MagickFormatInfo[]>(
+    () => getCachedImageFormatInfo() ?? [],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    void getImageFormatInfo()
+      .then((results) => {
+        if (!cancelled) {
+          setFormatCatalog(results);
+        }
+      })
+      .catch((error) => {
+        console.error("[settings] failed to load format catalog", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const formatOptions = useMemo(() => {
+    const catalogByName = new Map<string, MagickFormatInfo>();
+
+    for (const format of formatCatalog) {
+      if (!format.mode.toLowerCase().includes("w")) continue;
+      const name = format.name.trim().toUpperCase();
+      if (!name || name.startsWith("*")) continue;
+      if (!catalogByName.has(name)) {
+        catalogByName.set(name, { ...format, name });
+      }
+    }
+
+    for (const preset of AVAILABLE_PRESET_FORMATS) {
+      const upper = preset.toUpperCase();
+      if (!catalogByName.has(upper)) {
+        catalogByName.set(upper, {
+          name: upper,
+          module: "IMAGE",
+          mode: "rw+",
+          description: `${upper} image format`,
+        });
+      }
+    }
+
+    const ordered = Array.from(catalogByName.values()).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
+    return {
+      catalogByName,
+      names: ordered.map((format) => format.name),
+    };
+  }, [formatCatalog]);
+
+  const selectedFormats = useMemo(() => {
+    return (draft.contextMenuFormats || []).map((f) => f.toLowerCase());
+  }, [draft.contextMenuFormats]);
+
   const handleToggleFormat = (fmt: string) => {
-    const current = draft.contextMenuFormats || [];
-    const next = current.includes(fmt)
-      ? current.filter((f) => f !== fmt)
-      : [...current, fmt];
+    const clean = fmt.trim().toLowerCase();
+    if (!clean) return;
+    const current = (draft.contextMenuFormats || []).map((f) => f.toLowerCase());
+    const next = current.includes(clean)
+      ? current.filter((f) => f !== clean)
+      : [...current, clean];
     onUpdateSetting("contextMenuFormats", next);
+  };
+
+  const handleBrowseOutputFolder = async () => {
+    try {
+      const selected = await open({
+        directory: true,
+        multiple: false,
+        defaultPath: draft.outputFolder || undefined,
+      });
+      if (selected && typeof selected === "string") {
+        onUpdateSetting("outputFolder", selected);
+      }
+    } catch (e) {
+      console.error("Browse output folder error", e);
+    }
+  };
+
+  const handleBrowsePresetFolder = async () => {
+    try {
+      const selected = await open({
+        directory: true,
+        multiple: false,
+        defaultPath: draft.presetFolder || undefined,
+      });
+      if (selected && typeof selected === "string") {
+        onUpdateSetting("presetFolder", selected);
+      }
+    } catch (e) {
+      console.error("Browse preset folder error", e);
+    }
   };
 
   const handleRegisterDolphin = async () => {
@@ -66,10 +172,14 @@ export function FilesSettingsSection({
     setActionFeedback(null);
     try {
       const path = await registerDolphinServiceMenu(draft.contextMenuFormats || []);
-      setActionFeedback(`Đã cài đặt ServiceMenu thành công (${path})`);
+      setActionFeedback(t("files.contextMenu.installSuccess", { path }));
       await loadStatus();
     } catch (err: any) {
-      setActionFeedback(`Lỗi cài đặt: ${err?.message || err}`);
+      setActionFeedback(
+        t("files.contextMenu.installError", {
+          error: err?.message || String(err),
+        }),
+      );
     } finally {
       setIsOperating(false);
     }
@@ -80,68 +190,127 @@ export function FilesSettingsSection({
     setActionFeedback(null);
     try {
       await unregisterDolphinServiceMenu();
-      setActionFeedback(`Đã gỡ bỏ ServiceMenu.`);
+      setActionFeedback(t("files.contextMenu.uninstallSuccess"));
       await loadStatus();
     } catch (err: any) {
-      setActionFeedback(`Lỗi gỡ bỏ: ${err?.message || err}`);
+      setActionFeedback(
+        t("files.contextMenu.uninstallError", {
+          error: err?.message || String(err),
+        }),
+      );
     } finally {
       setIsOperating(false);
     }
   };
+
+  const contextMenuTitle =
+    dolphinStatus?.platform === "windows"
+      ? t("files.contextMenu.windowsTitle")
+      : dolphinStatus?.platform === "linux"
+      ? t("files.contextMenu.linuxTitle")
+      : t("files.contextMenu.genericTitle");
+
+  const contextMenuDescription =
+    dolphinStatus?.platform === "windows"
+      ? t("files.contextMenu.windowsDescription")
+      : dolphinStatus?.platform === "linux"
+      ? t("files.contextMenu.linuxDescription")
+      : t("files.contextMenu.genericDescription");
+
+  const contextMenuSubtitle =
+    dolphinStatus?.platform === "windows"
+      ? t("files.contextMenu.windowsSubtitle")
+      : dolphinStatus?.platform === "linux"
+      ? t("files.contextMenu.linuxSubtitle")
+      : t("files.contextMenu.genericSubtitle");
+
   return (
     <>
-      <SettingSection label="Default locations">
+      <SettingSection label={t("files.sections.locations")}>
         <SettingGroup>
-          <div className="p-4 border-b border-border/60">
-            <div className="font-semibold mb-1.5">Default output folder</div>
-            <div className="text-muted-foreground leading-relaxed mb-3">
-              Thư mục mặc định khi lưu file output
-            </div>
-            <div className="flex gap-3">
+          <SettingRow
+            name={t("files.outputFolder.name")}
+            description={t("files.outputFolder.description")}
+          >
+            <div className="flex items-center gap-2 w-full max-w-sm sm:w-[320px]">
               <Input
                 value={draft.outputFolder}
+                placeholder={t("files.outputFolder.placeholder")}
                 onChange={(e) => onUpdateSetting("outputFolder", e.target.value)}
-                className="flex-1 h-9 font-mono bg-muted/20"
+                className="flex-1 h-9 font-mono bg-muted/20 text-xs"
               />
-              <Button variant="outline" size="sm" className="h-9 px-3 font-medium">
-                Browse…
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 px-3 font-medium shrink-0"
+                onClick={handleBrowseOutputFolder}
+              >
+                {t("files.browse")}
               </Button>
             </div>
-          </div>
-          <div className="p-4">
-            <div className="font-semibold mb-1.5">Default preset folder</div>
-            <div className="text-muted-foreground leading-relaxed mb-3">
-              Nơi lưu và load pipeline preset
-            </div>
-            <div className="flex gap-3">
+          </SettingRow>
+
+          <SettingRow
+            name={t("files.presetFolder.name")}
+            description={t("files.presetFolder.description")}
+          >
+            <div className="flex items-center gap-2 w-full max-w-sm sm:w-[320px]">
               <Input
                 value={draft.presetFolder}
+                placeholder={t("files.presetFolder.placeholder")}
                 onChange={(e) => onUpdateSetting("presetFolder", e.target.value)}
-                className="flex-1 h-9 font-mono bg-muted/20"
+                className="flex-1 h-9 font-mono bg-muted/20 text-xs"
               />
-              <Button variant="outline" size="sm" className="h-9 px-3 font-medium">
-                Browse…
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 px-3 font-medium shrink-0"
+                onClick={handleBrowsePresetFolder}
+              >
+                {t("files.browse")}
               </Button>
             </div>
-          </div>
+          </SettingRow>
         </SettingGroup>
       </SettingSection>
 
-      <SettingSection label="File naming">
+      <SettingSection label={t("files.sections.naming")}>
         <SettingGroup>
           <SettingRow
-            name="Default naming pattern"
-            description="Biến: {name} {date} {op} {width} {height}"
+            name={t("files.namingPattern.name")}
+            description={t("files.namingPattern.description")}
           >
-            <Input
-              value={draft.namingPattern}
-              onChange={(e) => onUpdateSetting("namingPattern", e.target.value)}
-              className="w-[180px] h-9"
-            />
+            <div className="flex flex-col items-end gap-1.5">
+              <Input
+                value={draft.namingPattern}
+                onChange={(e) => onUpdateSetting("namingPattern", e.target.value)}
+                className="w-[220px] h-9 font-mono text-xs"
+              />
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                <span className="opacity-70">{t("files.variables", { defaultValue: "Insert:" })}</span>
+                {["{name}", "{counter}", "{date}", "{op}"].map((variable) => (
+                  <button
+                    key={variable}
+                    type="button"
+                    onClick={() => {
+                      if (!draft.namingPattern.includes(variable)) {
+                        onUpdateSetting(
+                          "namingPattern",
+                          draft.namingPattern ? `${draft.namingPattern}_${variable}` : variable
+                        );
+                      }
+                    }}
+                    className="font-mono px-1.5 py-0.5 rounded bg-muted hover:bg-muted/80 border border-border/50 text-foreground transition-colors cursor-pointer"
+                  >
+                    {variable}
+                  </button>
+                ))}
+              </div>
+            </div>
           </SettingRow>
           <SettingRow
-            name="On filename conflict"
-            description="Khi file đầu ra đã tồn tại"
+            name={t("files.conflictPolicy.name")}
+            description={t("files.conflictPolicy.description")}
           >
             <Select
               value={draft.conflictPolicy}
@@ -149,20 +318,20 @@ export function FilesSettingsSection({
                 onUpdateSetting("conflictPolicy", v as ConflictPolicy)
               }
             >
-              <SelectTrigger className="w-[150px] h-9">
+              <SelectTrigger className="w-[160px] h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ask">Ask me</SelectItem>
-                <SelectItem value="overwrite">Overwrite</SelectItem>
-                <SelectItem value="rename">Rename (+1)</SelectItem>
-                <SelectItem value="skip">Skip</SelectItem>
+                <SelectItem value="ask">{t("files.conflictOptions.ask")}</SelectItem>
+                <SelectItem value="overwrite">{t("files.conflictOptions.overwrite")}</SelectItem>
+                <SelectItem value="rename">{t("files.conflictOptions.rename")}</SelectItem>
+                <SelectItem value="skip">{t("files.conflictOptions.skip")}</SelectItem>
               </SelectContent>
             </Select>
           </SettingRow>
           <SettingRow
-            name="Auto-open output folder"
-            description="Tự mở Finder/Explorer sau khi xử lý xong"
+            name={t("files.autoOpenOutput.name")}
+            description={t("files.autoOpenOutput.description")}
           >
             <Switch
               checked={draft.autoOpenOutput}
@@ -172,21 +341,11 @@ export function FilesSettingsSection({
         </SettingGroup>
       </SettingSection>
 
-      <SettingSection label="File Explorer & Context Menu">
+      <SettingSection label={t("files.sections.contextMenu")}>
         <SettingGroup>
           <SettingRow
-            name={
-              dolphinStatus?.platform === "windows"
-                ? "Windows File Explorer Menu"
-                : dolphinStatus?.platform === "linux"
-                ? "Dolphin / File Manager Menu"
-                : "File Manager Menu"
-            }
-            description={
-              dolphinStatus?.platform === "windows"
-                ? "Tích hợp menu chuột phải khi click vào file ảnh trong Windows File Explorer (Registry HKCU)"
-                : "Tích hợp menu chuột phải khi click vào file ảnh trong Dolphin (KDE Linux ServiceMenu)"
-            }
+            name={contextMenuTitle}
+            description={contextMenuDescription}
           >
             <Switch
               checked={draft.contextMenuEnabled}
@@ -196,46 +355,168 @@ export function FilesSettingsSection({
 
           {draft.contextMenuEnabled ? (
             <>
-              <div className="p-4 border-t border-border/60">
-                <div className="font-semibold mb-1 text-sm">Định dạng chuyển đổi nhanh (Quick Convert Formats)</div>
-                <div className="text-muted-foreground text-xs leading-relaxed mb-3">
-                  {dolphinStatus?.platform === "windows"
-                    ? "Chọn các định dạng bạn muốn hiển thị trong menu ngữ cảnh chuột phải của Windows File Explorer."
-                    : "Chọn các định dạng bạn muốn hiển thị trong menu ngữ cảnh chuột phải của Dolphin."}
+              <div className="p-4 border-t border-border/60 space-y-4">
+                <div>
+                  <div className="font-semibold mb-1 text-sm">
+                    {t("files.contextMenu.quickFormatsTitle")}
+                  </div>
+                  <div className="text-muted-foreground text-xs leading-relaxed">
+                    {contextMenuSubtitle}
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {AVAILABLE_FORMATS.map((fmt) => {
-                    const isSelected = (draft.contextMenuFormats || []).includes(fmt);
-                    return (
+
+                {/* Danh sách các định dạng đã chọn */}
+                <div className="space-y-1.5">
+                  <div className="text-xs font-medium text-muted-foreground flex items-center justify-between">
+                    <span>
+                      {t("files.contextMenu.enabledFormats", {
+                        count: selectedFormats.length,
+                      })}
+                    </span>
+                    {selectedFormats.length > 0 && (
                       <button
-                        key={fmt}
                         type="button"
-                        onClick={() => handleToggleFormat(fmt)}
-                        className={`px-3 py-1 rounded text-xs font-mono font-medium uppercase transition-colors border ${
-                          isSelected
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-muted/40 text-muted-foreground hover:bg-muted border-border"
-                        }`}
+                        onClick={() => onUpdateSetting("contextMenuFormats", [])}
+                        className="text-[11px] text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
                       >
-                        {fmt}
+                        {t("files.contextMenu.clearAll")}
                       </button>
-                    );
-                  })}
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 items-center min-h-[36px] p-2 rounded-md bg-muted/20 border border-border/40">
+                    {selectedFormats.length > 0 ? (
+                      selectedFormats.map((fmt) => (
+                        <span
+                          key={fmt}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30 text-xs font-mono font-semibold uppercase tracking-wide"
+                        >
+                          {fmt}
+                          <button
+                            type="button"
+                            onClick={() => handleToggleFormat(fmt)}
+                            className="hover:bg-primary/20 rounded-full p-0.5 transition-colors cursor-pointer"
+                            title={t("files.contextMenu.deselect", {
+                              format: fmt.toUpperCase(),
+                            })}
+                          >
+                            <X className="size-3" />
+                          </button>
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic px-1">
+                        {t("files.contextMenu.noFormatsSelected")}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Định dạng phổ biến */}
+                <div className="space-y-1.5">
+                  <div className="text-xs font-medium text-muted-foreground">
+                    {t("files.contextMenu.quickPresets")}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {AVAILABLE_PRESET_FORMATS.map((fmt) => {
+                      const isSelected = selectedFormats.includes(fmt);
+                      return (
+                        <button
+                          key={fmt}
+                          type="button"
+                          onClick={() => handleToggleFormat(fmt)}
+                          className={cn(
+                            "inline-flex items-center gap-1.5 px-3 py-1 rounded text-xs font-mono font-medium uppercase transition-colors border cursor-pointer",
+                            isSelected
+                              ? "bg-primary text-primary-foreground border-primary shadow-xs"
+                              : "bg-muted/40 text-muted-foreground hover:bg-muted border-border",
+                          )}
+                        >
+                          {isSelected && <Check className="size-3" />}
+                          {fmt}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Combobox query từ ImageMagick format capability */}
+                <div className="space-y-1.5">
+                  <div className="text-xs font-medium text-muted-foreground flex items-center justify-between">
+                    <span>
+                      {t("files.contextMenu.searchFormats", {
+                        count: formatOptions.names.length,
+                      })}
+                    </span>
+                  </div>
+                  <Combobox
+                    items={formatOptions.names}
+                    value=""
+                    onValueChange={(val) => {
+                      if (val) {
+                        handleToggleFormat(val);
+                      }
+                    }}
+                  >
+                    <ComboboxInput
+                      className="w-full"
+                      placeholder={t("files.contextMenu.searchPlaceholder")}
+                    />
+                    <ComboboxContent className="max-h-60 overflow-y-auto">
+                      <ComboboxEmpty>
+                        {t("files.contextMenu.noMatchingFormats")}
+                      </ComboboxEmpty>
+                      <ComboboxList>
+                        {(item) => {
+                          const name = item as string;
+                          const format = formatOptions.catalogByName.get(name);
+                          const isSelected = selectedFormats.includes(
+                            name.toLowerCase(),
+                          );
+                          return (
+                            <ComboboxItem key={name} value={name}>
+                              <div className="flex w-full items-center justify-between gap-3">
+                                <div className="flex flex-col gap-0.5">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium font-mono">
+                                      {name}
+                                    </span>
+                                    <span className="text-[11px] text-muted-foreground font-mono">
+                                      {format?.mode ?? "rw+"}
+                                    </span>
+                                  </div>
+                                  <span className="line-clamp-1 text-xs text-muted-foreground/80">
+                                    {format?.description ||
+                                      format?.module ||
+                                      "Image format"}
+                                  </span>
+                                </div>
+                                {isSelected && (
+                                  <Check className="size-4 text-primary shrink-0" />
+                                )}
+                              </div>
+                            </ComboboxItem>
+                          );
+                        }}
+                      </ComboboxList>
+                    </ComboboxContent>
+                  </Combobox>
                 </div>
               </div>
 
               <div className="p-4 border-t border-border/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div className="text-xs">
                   <div className="font-medium text-foreground">
-                    Trạng thái hệ thống:{" "}
+                    {t("files.contextMenu.systemStatus")}{" "}
                     {dolphinStatus?.isRegistered ? (
                       <span className="text-emerald-500 font-semibold">
                         {dolphinStatus?.platform === "windows"
-                          ? "Đã đăng ký Registry"
-                          : "Đã cài đặt ServiceMenu"}
+                          ? t("files.contextMenu.registeredRegistry")
+                          : t("files.contextMenu.registeredServiceMenu")}
                       </span>
                     ) : (
-                      <span className="text-muted-foreground">Chưa đăng ký</span>
+                      <span className="text-muted-foreground">
+                        {t("files.contextMenu.notRegistered")}
+                      </span>
                     )}
                   </div>
                   {dolphinStatus?.installedPath ? (
@@ -244,7 +525,9 @@ export function FilesSettingsSection({
                     </div>
                   ) : null}
                   {actionFeedback ? (
-                    <div className="text-primary text-xs mt-1 font-medium">{actionFeedback}</div>
+                    <div className="text-primary text-xs mt-1 font-medium">
+                      {actionFeedback}
+                    </div>
                   ) : null}
                 </div>
 
@@ -255,7 +538,9 @@ export function FilesSettingsSection({
                     disabled={isOperating}
                     onClick={handleRegisterDolphin}
                   >
-                    {isOperating ? "Đang xử lý..." : "Cài đặt / Cập nhật"}
+                    {isOperating
+                      ? t("files.contextMenu.processing")
+                      : t("files.contextMenu.installOrUpdate")}
                   </Button>
                   {dolphinStatus?.isRegistered ? (
                     <Button
@@ -265,7 +550,7 @@ export function FilesSettingsSection({
                       disabled={isOperating}
                       onClick={handleUnregisterDolphin}
                     >
-                      Gỡ bỏ
+                      {t("files.contextMenu.uninstall")}
                     </Button>
                   ) : null}
                 </div>

@@ -20,6 +20,8 @@ import {
   normalizeOutputExt,
   normalizeOutputName,
 } from "@/features/single/pathUtils";
+import { useSettingsStore } from "@/features/settings/state/settings.store";
+import { resolvePathConflict } from "@/shared/lib/conflictResolver";
 
 type RunStatus = "idle" | "running" | "success" | "error";
 
@@ -74,14 +76,20 @@ export function useSingleActions({
 
   const defaultOutputPath = useMemo(() => {
     const convertParams = functionParamsByFunction["Convert"] ?? {};
+    const settingOutputFolder = useSettingsStore.getState().outputFolder;
 
-    const inputDir = selectedFile ? getDirectoryPath(selectedFile) : "./output";
+    const inputDir = selectedFile
+      ? getDirectoryPath(selectedFile)
+      : (settingOutputFolder?.trim() || "./output");
     const inputName = selectedFile
       ? getFileNameWithoutExtension(selectedFile)
       : "photo_out";
     const inputExt = selectedFile ? getFileExtension(selectedFile) : "png";
 
-    const outputDir = normalizeOutputDir(convertParams.outputDir, inputDir);
+    const outputDir = normalizeOutputDir(
+      convertParams.outputDir,
+      settingOutputFolder?.trim() || inputDir
+    );
     const outputName = normalizeOutputName(convertParams.outputName, inputName);
     const outputExt = normalizeOutputExt(convertParams.outputFormat, inputExt);
 
@@ -283,17 +291,52 @@ export function useSingleActions({
           : [selectedFunctionName]
         : [selectedFunctionName];
 
+    const {
+      conflictPolicy,
+      autoOpenOutput,
+      memoryLimit,
+      diskCacheLimit,
+      stripMetadata,
+      defaultColorProfile,
+    } = useSettingsStore.getState();
+
     const args: string[] = [];
+    if (memoryLimit && memoryLimit !== "Unlimited") {
+      args.push("-limit", "memory", memoryLimit.replace(/\s+/g, ""));
+    }
+    if (diskCacheLimit && diskCacheLimit !== "Unlimited") {
+      args.push("-limit", "disk", diskCacheLimit.replace(/\s+/g, ""));
+    }
+
     for (const functionName of targetFunctions) {
       const params = functionParamsByFunction[functionName] ?? {};
       args.push(...buildSingleOperationArgs(functionName, params, previewToFullScale));
     }
 
+    const hasConvert = targetFunctions.includes("Convert");
+    if (!hasConvert) {
+      if (stripMetadata) {
+        args.push("-strip");
+      }
+      if (defaultColorProfile && defaultColorProfile !== "None") {
+        const cs =
+          defaultColorProfile === "Adobe RGB" ? "Adobe98" : defaultColorProfile;
+        args.push("-colorspace", cs);
+      }
+    }
+
+    const conflict = await resolvePathConflict(outputPath, conflictPolicy);
+    if (conflict.skip) {
+      setRunStatus("success", t("status.skipped", { defaultValue: "Skipped (file exists)" }));
+      return;
+    }
+    const finalOutputPath = conflict.path;
+
     try {
       setRunStatus("running", t("status.runningMagick"));
       const response = await runSingle({
         inputPath: selectedFile,
-        outputPath,
+        outputPath: finalOutputPath,
         args,
       });
       setLastOutputPath(response.outputPath);
@@ -305,6 +348,15 @@ export function useSingleActions({
           height: response.height,
         }),
       );
+
+      if (autoOpenOutput && response.outputPath) {
+        try {
+          const outDir = getDirectoryPath(response.outputPath);
+          await openPath(outDir);
+        } catch (openErr) {
+          console.warn("Failed to auto-open output directory:", openErr);
+        }
+      }
     } catch (error) {
       console.error("[SingleModePage] runSingle failed:", error);
       const message =

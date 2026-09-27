@@ -6,6 +6,7 @@ import {
   initialSettings,
   useSettingsStore,
 } from "@/features/settings/state/settings.store";
+import { i18n } from "@/i18n";
 import type {
   SettingsState,
   Theme,
@@ -218,6 +219,10 @@ export function useSettingsDraft(activeTab: SettingsTab) {
   const handleSave = React.useCallback(async () => {
     try {
       setSettings(draft);
+
+      if (draft.language && i18n.language !== draft.language) {
+        void i18n.changeLanguage(draft.language);
+      }
 
       if (draft.magickBinaryPath.trim()) {
         await invoke("update_magick_source", {
