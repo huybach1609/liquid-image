@@ -27,6 +27,14 @@ pub struct CliArgs {
     #[arg(long = "open")]
     pub open: bool,
 
+    /// Open in Quick Viewer mode (lightweight, minimal viewer)
+    #[arg(long = "view")]
+    pub view: bool,
+
+    /// Force opening in full Studio / Converter Editor mode
+    #[arg(long = "studio")]
+    pub studio: bool,
+
     /// Run in headless mode without showing the GUI
     #[arg(long = "headless")]
     pub headless: bool,
@@ -41,7 +49,20 @@ impl CliArgs {
     }
 
     pub fn is_headless_convert(&self) -> bool {
-        self.convert_to.is_some() && !self.open && !self.files.is_empty()
+        self.convert_to.is_some() && !self.open && !self.view && !self.studio && !self.files.is_empty()
+    }
+
+    /// Determines if the launch intent is Quick Viewer mode.
+    /// Returns true if --view is explicitly passed, or if exactly 1 file is passed without --studio or --convert-to.
+    pub fn is_viewer_mode(&self) -> bool {
+        if self.studio || self.is_headless_convert() {
+            return false;
+        }
+        if self.view {
+            return true;
+        }
+        // If opened with a single file without explicit studio flag, default to viewer mode
+        self.files.len() == 1
     }
 }
 
@@ -167,6 +188,41 @@ mod tests {
         assert!(parsed.open);
         assert_eq!(parsed.files, vec!["photo.png"]);
         assert!(!parsed.is_headless_convert());
+    }
+
+    #[test]
+    fn test_parse_viewer_and_studio_args() {
+        // Single file without studio flag should default to viewer mode
+        let single_file = vec!["liquid-image".to_string(), "photo.png".to_string()];
+        let parsed_single = CliArgs::parse_from_args(single_file);
+        assert!(parsed_single.is_viewer_mode());
+
+        // Single file with --studio flag should NOT be viewer mode
+        let studio_arg = vec![
+            "liquid-image".to_string(),
+            "--studio".to_string(),
+            "photo.png".to_string(),
+        ];
+        let parsed_studio = CliArgs::parse_from_args(studio_arg);
+        assert!(!parsed_studio.is_viewer_mode());
+
+        // Multiple files without --view flag should NOT be viewer mode
+        let multi_files = vec![
+            "liquid-image".to_string(),
+            "photo1.png".to_string(),
+            "photo2.png".to_string(),
+        ];
+        let parsed_multi = CliArgs::parse_from_args(multi_files);
+        assert!(!parsed_multi.is_viewer_mode());
+
+        // Explicit --view flag should be viewer mode
+        let explicit_view = vec![
+            "liquid-image".to_string(),
+            "--view".to_string(),
+            "photo.png".to_string(),
+        ];
+        let parsed_view = CliArgs::parse_from_args(explicit_view);
+        assert!(parsed_view.is_viewer_mode());
     }
 
     #[test]

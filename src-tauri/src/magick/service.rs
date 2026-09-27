@@ -932,6 +932,138 @@ pub(crate) async fn run_single_internal(
     })
 }
 
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SiblingImagesResult {
+    pub parent_dir: String,
+    pub files: Vec<String>,
+    pub current_index: usize,
+}
+
+const SUPPORTED_IMAGE_EXTENSIONS: &[&str] = &[
+    "jpg", "jpeg", "png", "webp", "avif", "gif", "svg", "bmp", "ico",
+    "tiff", "tif", "heic", "heif", "jxl", "raw", "cr2", "nef", "arw", "dng", "psd"
+];
+
+fn is_supported_image_extension(ext: &str) -> bool {
+    let lower = ext.to_ascii_lowercase();
+    SUPPORTED_IMAGE_EXTENSIONS.contains(&lower.as_str())
+}
+
+#[tauri::command]
+pub async fn get_sibling_images(current_path: String) -> Result<SiblingImagesResult, String> {
+    let target = std::path::Path::new(&current_path);
+    let parent = target
+        .parent()
+        .ok_or_else(|| "Target file does not have a parent directory".to_string())?;
+
+    let parent = if parent.as_os_str().is_empty() {
+        std::path::Path::new(".")
+    } else {
+        parent
+    };
+
+    let parent_dir = parent.to_string_lossy().to_string();
+
+    let mut entries = tokio::fs::read_dir(parent)
+        .await
+        .map_err(|e| format!("Failed to read directory: {e}"))?;
+
+    let mut files = Vec::new();
+
+    while let Ok(Some(entry)) = entries.next_entry().await {
+        let path = entry.path();
+        if path.is_file() {
+            if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+                if is_supported_image_extension(ext) {
+                    files.push(path.to_string_lossy().to_string());
+                }
+            }
+        }
+    }
+
+    // Natural sort: sorts "image2.jpg" before "image10.jpg"
+    files.sort_by(|a, b| alphanumeric_sort(a, b));
+
+    let norm_target = current_path.replace('\\', "/");
+
+    let current_index = files
+        .iter()
+        .position(|f| {
+            if f == &current_path {
+                return true;
+            }
+            let norm_f = f.replace('\\', "/");
+            if norm_f == norm_target || norm_f.eq_ignore_ascii_case(&norm_target) {
+                return true;
+            }
+            if let (Ok(canon_f), Ok(canon_target)) = (
+                std::path::Path::new(f).canonicalize(),
+                target.canonicalize(),
+            ) {
+                if canon_f == canon_target {
+                    return true;
+                }
+            }
+            false
+        })
+        .unwrap_or(0);
+
+    Ok(SiblingImagesResult {
+        parent_dir,
+        files,
+        current_index,
+    })
+}
+
+fn alphanumeric_sort(a: &str, b: &str) -> std::cmp::Ordering {
+    let mut a_chars = a.chars().peekable();
+    let mut b_chars = b.chars().peekable();
+
+    loop {
+        match (a_chars.peek(), b_chars.peek()) {
+            (None, None) => return std::cmp::Ordering::Equal,
+            (None, Some(_)) => return std::cmp::Ordering::Less,
+            (Some(_), None) => return std::cmp::Ordering::Greater,
+            (Some(ca), Some(cb)) => {
+                if ca.is_ascii_digit() && cb.is_ascii_digit() {
+                    let mut num_a: u64 = 0;
+                    while let Some(d) = a_chars.peek() {
+                        if let Some(digit) = d.to_digit(10) {
+                            num_a = num_a.saturating_mul(10).saturating_add(digit as u64);
+                            a_chars.next();
+                        } else {
+                            break;
+                        }
+                    }
+
+                    let mut num_b: u64 = 0;
+                    while let Some(d) = b_chars.peek() {
+                        if let Some(digit) = d.to_digit(10) {
+                            num_b = num_b.saturating_mul(10).saturating_add(digit as u64);
+                            b_chars.next();
+                        } else {
+                            break;
+                        }
+                    }
+
+                    if num_a != num_b {
+                        return num_a.cmp(&num_b);
+                    }
+                } else {
+                    let lower_a = ca.to_ascii_lowercase();
+                    let lower_b = cb.to_ascii_lowercase();
+                    if lower_a != lower_b {
+                        return lower_a.cmp(&lower_b);
+                    }
+                    a_chars.next();
+                    b_chars.next();
+                }
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1233,5 +1365,37 @@ Format  Mode  Description
         let json = serde_json::to_string(&event).unwrap();
         assert!(json.contains("outputPath"));
         assert!(json.contains("success"));
+    }
+
+    #[test]
+    fn alphanumeric_sort_should_order_numeric_filenames_naturally() {
+        let mut list = vec![
+            "photo10.jpg",
+            "photo1.jpg",
+            "photo2.jpg",
+            "photo20.jpg",
+            "photo3.jpg",
+        ];
+        list.sort_by(|a, b| alphanumeric_sort(a, b));
+        assert_eq!(
+            list,
+            vec![
+                "photo1.jpg",
+                "photo2.jpg",
+                "photo3.jpg",
+                "photo10.jpg",
+                "photo20.jpg"
+            ]
+        );
+    }
+
+    #[test]
+    fn is_supported_image_extension_should_check_valid_formats() {
+        assert!(is_supported_image_extension("jpg"));
+        assert!(is_supported_image_extension("PNG"));
+        assert!(is_supported_image_extension("Webp"));
+        assert!(is_supported_image_extension("heic"));
+        assert!(!is_supported_image_extension("txt"));
+        assert!(!is_supported_image_extension("mp4"));
     }
 }
