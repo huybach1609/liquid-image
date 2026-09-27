@@ -21,6 +21,7 @@ import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { useSingleStore } from "@/features/single/state/single.store";
+import { useSettingsStore } from "@/features/settings/state/settings.store";
 import { getNumberParam, getStringParam } from "@/lib/functionParams";
 import { cn } from "@/lib/utils";
 import { Button } from "@/shared/components/ui/button";
@@ -100,15 +101,36 @@ const ConvertFunction = ({
     Math.max(0, getNumberParam(functionParams, "webpMethod", 1)),
   );
   const dither = getStringParam(functionParams, "dither", "None") as DitherMode;
+  const defaultStripMetadata = useSettingsStore((s) => s.stripMetadata);
+  const defaultColorProfile = useSettingsStore((s) => s.defaultColorProfile);
+
   const stripMetadata =
-    functionParams.stripMetadata === true ||
-    functionParams.stripMetadata === "true";
-  const colorProfile = getStringParam(functionParams, "colorProfile", "None");
+    functionParams.stripMetadata !== undefined
+      ? functionParams.stripMetadata === true || functionParams.stripMetadata === "true"
+      : defaultStripMetadata;
+  const colorProfile = getStringParam(
+    functionParams,
+    "colorProfile",
+    defaultColorProfile || "None",
+  );
   const colorDepth = getNumberParam(functionParams, "colorDepth", 0);
   const dpi = getNumberParam(functionParams, "dpi", 0);
   const progressive =
     functionParams.progressive === true ||
     functionParams.progressive === "true";
+
+  useEffect(() => {
+    if (functionParams.stripMetadata === undefined && defaultStripMetadata !== undefined) {
+      updateFunctionParam("stripMetadata", defaultStripMetadata);
+    }
+    if (
+      functionParams.colorProfile === undefined &&
+      defaultColorProfile &&
+      defaultColorProfile !== "None"
+    ) {
+      updateFunctionParam("colorProfile", defaultColorProfile);
+    }
+  }, [defaultStripMetadata, defaultColorProfile, functionParams.stripMetadata, functionParams.colorProfile, updateFunctionParam]);
 
   const isWebp = outputFormat === "WEBP";
   const isGif = outputFormat === "GIF";

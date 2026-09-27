@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { useBatchStore } from "../state/batch.store";
 import { useSettingsStore } from "@/features/settings/state/settings.store";
@@ -10,6 +10,7 @@ import {
   BatchItem
 } from "@/shared/tauri/commands";
 import { buildBatchCliArgs, buildBatchOutputPath } from "../buildBatchCliPipeline";
+import { resolvePathConflict } from "@/shared/lib/conflictResolver";
 
 export function useBatchRunner() {
   const { 
@@ -22,7 +23,23 @@ export function useBatchRunner() {
     outputDirectory
   } = useBatchStore();
   
-  const { workers, onErrorPolicy, notifyBatchComplete, namingPattern } = useSettingsStore();
+  const {
+    workers,
+    onErrorPolicy,
+    notifyBatchComplete,
+    namingPattern,
+    dateFormat,
+    diskCacheLimit,
+    memoryLimit,
+    dryRunBeforeBatch,
+    saveErrorLog,
+    conflictPolicy,
+    autoOpenOutput,
+    stripMetadata,
+    defaultColorProfile,
+  } = useSettingsStore();
+
+  const errorsRef = useRef<string[]>([]);
 
   useEffect(() => {
     let unlistenProgress: (() => void) | undefined;
@@ -36,6 +53,8 @@ export function useBatchRunner() {
           updateItemStatus(index, "done");
           addLog("success", `Finished: ${queue[index]?.fileName || index}`);
         } else {
+          const errMsg = `Item ${index + 1} (${queue[index]?.fileName || "unknown"}): ${message}`;
+          errorsRef.current.push(errMsg);
           updateItemStatus(index, "error", message);
           addLog("error", `Error processing ${queue[index]?.fileName || index}: ${message}`);
         }
@@ -62,22 +81,78 @@ export function useBatchRunner() {
   const runBatch = useCallback(async () => {
     if (isRunning || queue.length === 0) return;
 
+    errorsRef.current = [];
     setRunning(true);
     addLog("info", "Starting batch processing...");
 
-    const args = buildBatchCliArgs(pipeline);
+    const args = buildBatchCliArgs(pipeline, {
+      diskCacheLimit,
+      memoryLimit,
+      stripMetadata,
+      defaultColorProfile,
+    });
     
     // Find output format from the first enabled Convert step if it exists
     const convertStep = pipeline.find(s => s.functionId === "Convert" && s.enabled);
     const outputFormat = convertStep?.params?.outputFormat as string | undefined;
 
-    const items: BatchItem[] = queue.map((item, index) => ({
+    // Optional pre-batch dry-run validation
+    if (dryRunBeforeBatch) {
+      addLog("info", "Running pre-batch dry-run validation...");
+      const dryItems: BatchItem[] = queue.map((item) => ({
+        inputPath: item.path,
+        outputPath: "",
+      }));
+
+      try {
+        await tauriRunBatchDryRun({
+          items: dryItems,
+          args,
+          workers,
+          stopOnError: true,
+        });
+        addLog("info", "Pre-batch dry-run validation passed.");
+      } catch (dryError) {
+        addLog("error", `Pre-batch dry-run validation failed: ${dryError}`);
+        setRunning(false);
+        return;
+      }
+    }
+
+    const rawItems = queue.map((item, index) => ({
       inputPath: item.path,
-      outputPath: buildBatchOutputPath(item.path, outputDirectory, outputFormat, namingPattern, index),
+      outputPath: buildBatchOutputPath(
+        item.path,
+        outputDirectory,
+        outputFormat,
+        namingPattern,
+        index,
+        { dateFormat }
+      ),
+      originalIndex: index,
     }));
 
-    // Reset status of all items in queue before starting
-    queue.forEach((_, index) => updateItemStatus(index, "queued"));
+    // Resolve path conflicts based on conflictPolicy (overwrite / skip / rename)
+    const items: BatchItem[] = [];
+    for (const raw of rawItems) {
+      const conflict = await resolvePathConflict(raw.outputPath, conflictPolicy);
+      if (conflict.skip) {
+        updateItemStatus(raw.originalIndex, "done");
+        addLog("info", `Skipped (already exists): ${queue[raw.originalIndex]?.fileName || raw.originalIndex}`);
+      } else {
+        items.push({
+          inputPath: raw.inputPath,
+          outputPath: conflict.path,
+        });
+        updateItemStatus(raw.originalIndex, "queued");
+      }
+    }
+
+    if (items.length === 0) {
+      addLog("info", "All items skipped per conflict policy.");
+      setRunning(false);
+      return;
+    }
 
     try {
       await tauriRunBatch({
@@ -86,13 +161,89 @@ export function useBatchRunner() {
         workers,
         stopOnError: onErrorPolicy === "stop-all",
       });
+
+      // Handle retry-once policy if items failed
+      if (onErrorPolicy === "retry-once" && errorsRef.current.length > 0) {
+        const failedIndices = queue
+          .map((_, i) => i)
+          .filter((i) => queue[i]?.status === "error");
+
+        if (failedIndices.length > 0) {
+          addLog("info", `Retrying ${failedIndices.length} failed items once...`);
+          const retryItems = failedIndices.map((idx) => items[idx]).filter(Boolean);
+          try {
+            await tauriRunBatch({
+              items: retryItems,
+              args,
+              workers,
+              stopOnError: false,
+            });
+          } catch (retryErr) {
+            addLog("error", `Retry pass encountered errors: ${retryErr}`);
+          }
+        }
+      }
+
       addLog("success", "Batch processing finished.");
+
+      // Auto open output folder if enabled
+      if (autoOpenOutput && outputDirectory) {
+        try {
+          const { openPath } = await import("@tauri-apps/plugin-opener");
+          await openPath(outputDirectory);
+        } catch (openErr) {
+          console.warn("Failed to auto-open output directory:", openErr);
+        }
+      }
     } catch (error) {
       addLog("error", `Batch failed: ${error}`);
+      errorsRef.current.push(`Batch execution error: ${error}`);
     } finally {
+      // Save error log to file if enabled and errors occurred
+      if (saveErrorLog && errorsRef.current.length > 0) {
+        try {
+          const { writeTextFile } = await import("@tauri-apps/plugin-fs");
+          const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+          const logFileName = `batch-error-${timestamp}.log`;
+          const normalizedDir = outputDirectory.trim().replace(/\/$/, "");
+          const logFilePath = `${normalizedDir}/${logFileName}`;
+          const content = [
+            "=== LIQUID IMAGE BATCH ERROR LOG ===",
+            `Timestamp: ${new Date().toLocaleString()}`,
+            `Queue items: ${queue.length}`,
+            `Total errors: ${errorsRef.current.length}`,
+            "",
+            "--- ERROR DETAILS ---",
+            ...errorsRef.current,
+          ].join("\n");
+
+          await writeTextFile(logFilePath, content);
+          addLog("info", `Saved error log to: ${logFilePath}`);
+        } catch (logErr) {
+          console.error("Failed to write error log file", logErr);
+        }
+      }
+
       setRunning(false);
     }
-  }, [isRunning, queue, pipeline, outputDirectory, workers, onErrorPolicy, notifyBatchComplete, namingPattern, setRunning, addLog, updateItemStatus]);
+  }, [
+    isRunning,
+    queue,
+    pipeline,
+    outputDirectory,
+    workers,
+    onErrorPolicy,
+    notifyBatchComplete,
+    namingPattern,
+    dateFormat,
+    diskCacheLimit,
+    memoryLimit,
+    dryRunBeforeBatch,
+    saveErrorLog,
+    setRunning,
+    addLog,
+    updateItemStatus,
+  ]);
 
   const runDryRun = useCallback(async () => {
     if (isRunning || queue.length === 0) return;
@@ -100,7 +251,10 @@ export function useBatchRunner() {
     setRunning(true);
     addLog("info", "Starting dry run validation...");
 
-    const args = buildBatchCliArgs(pipeline);
+    const args = buildBatchCliArgs(pipeline, {
+      diskCacheLimit,
+      memoryLimit,
+    });
     const items: BatchItem[] = queue.map((item) => ({
       inputPath: item.path,
       outputPath: "", // Not used in dry run
@@ -119,7 +273,7 @@ export function useBatchRunner() {
     } finally {
       setRunning(false);
     }
-  }, [isRunning, queue, pipeline, workers, setRunning, addLog]);
+  }, [isRunning, queue, pipeline, workers, diskCacheLimit, memoryLimit, setRunning, addLog]);
 
   const cancelBatch = useCallback(async () => {
     try {

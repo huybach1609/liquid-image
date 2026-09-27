@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { listen } from "@tauri-apps/api/event";
 
 import { LanguageSwitcher } from "@/app/LanguageSwitcher";
 import { WebMenubar } from "@/app/menubar/WebMenubar";
 import { useMenubarBridge } from "@/app/menubar/useMenubarBridge";
 import { useAppStore } from "@/app/store/app.store";
+import { useSingleStore } from "@/features/single/state/single.store";
+import { useBatchStore } from "@/features/batch/state/batch.store";
 import { BatchModePage } from "@/pages/BatchModePage";
 import { SingleModePage } from "@/pages/SingleModePage";
 import { SettingPage } from "@/pages/SettingPage";
@@ -37,6 +40,29 @@ export function AppShell() {
     void preloadImageFormatInfo().catch((error) => {
       console.error("[magick] failed to preload format catalog", error);
     });
+  }, []);
+
+  useEffect(() => {
+    const unlistenPromise = listen<string[]>("app:open-files", (event) => {
+      const files = event.payload;
+      if (!files || files.length === 0) return;
+
+      if (files.length === 1) {
+        useAppStore.getState().setMode("single");
+        useSingleStore.getState().setSelectedFile(files[0]);
+      } else {
+        useAppStore.getState().setMode("batch");
+        const items = files.map((f) => ({
+          path: f,
+          name: f.split("/").pop() || f,
+        }));
+        useBatchStore.getState().addFiles(items);
+      }
+    });
+
+    return () => {
+      void unlistenPromise.then((unlisten) => unlisten());
+    };
   }, []);
 
   useEffect(() => {

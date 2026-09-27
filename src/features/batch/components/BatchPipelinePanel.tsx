@@ -17,10 +17,41 @@ import { SortablePipelineStep } from "./SortablePipelineStep";
 import { FUNCTION_CATALOG } from "@/shared/constants/functionCatalog";
 import { Plus, Save, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { usePresetActions } from "@/features/presets/hooks/usePresetActions";
+import { useSettingsStore } from "@/features/settings/state/settings.store";
 
 export function BatchPipelinePanel() {
   const { t } = useTranslation("batch");
   const { pipeline, reorderSteps, addStep } = useBatchStore();
+  const { savePreset, loadPreset } = usePresetActions();
+
+  const handleSavePreset = async () => {
+    if (pipeline.length === 0) return;
+    const name = window.prompt(t("pipeline.enterPresetName", { defaultValue: "Enter preset name:" }));
+    if (name && name.trim()) {
+      const savedPath = await savePreset(name.trim());
+      if (savedPath) {
+        alert(t("pipeline.presetSaved", { defaultValue: "Preset saved successfully!" }));
+      }
+    }
+  };
+
+  const handleLoadPreset = async () => {
+    const presetFolder = useSettingsStore.getState().presetFolder;
+    try {
+      const selected = await openDialog({
+        multiple: false,
+        defaultPath: presetFolder || undefined,
+        filters: [{ name: "Liquid Image Preset", extensions: ["json"] }],
+      });
+      if (selected && typeof selected === "string") {
+        await loadPreset(selected);
+      }
+    } catch (e) {
+      console.error("Failed to open preset picker:", e);
+    }
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -48,13 +79,16 @@ export function BatchPipelinePanel() {
         <div className="ml-auto flex items-center gap-2">
           <button
             type="button"
-            className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted/50 transition-colors"
+            onClick={handleSavePreset}
+            disabled={pipeline.length === 0}
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted/50 disabled:opacity-50 transition-colors"
           >
             <Save className="size-3" />
             {t("pipeline.savePreset", "Save preset")}
           </button>
           <button
             type="button"
+            onClick={handleLoadPreset}
             className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted/50 transition-colors"
           >
             <Upload className="size-3" />

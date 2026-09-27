@@ -23,7 +23,7 @@ export function NotificationsSettingsSection({
       <SettingGroup>
         <SettingRow
           name="Batch completed"
-          description="Thông báo khi toàn bộ batch xử lý xong"
+          description="notifications.notifyBatchComplete.description"
         >
           <Switch
             checked={draft.notifyBatchComplete}
@@ -32,14 +32,17 @@ export function NotificationsSettingsSection({
         </SettingRow>
         <SettingRow
           name="Error occurred"
-          description="Thông báo khi có file bị lỗi trong batch"
+          description="notifications.notifyError.description"
         >
           <Switch
             checked={draft.notifyError}
             onCheckedChange={(v) => onUpdateSetting("notifyError", v)}
           />
         </SettingRow>
-        <SettingRow name="Play sound" description="Phát âm thanh kèm thông báo">
+        <SettingRow
+          name="Play sound"
+          description="notifications.playSound.description"
+        >
           <Switch
             checked={draft.playSound}
             onCheckedChange={(v) => onUpdateSetting("playSound", v)}

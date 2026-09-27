@@ -30,6 +30,14 @@ type BuildSingleCliPreviewArgs = {
   selectedFunction: string;
   functionParams: Record<string, unknown>;
   previewToFullScale?: PreviewToFullImageScale | null;
+  limits?: {
+    memoryLimit?: string;
+    diskCacheLimit?: string;
+  };
+  defaultFlags?: {
+    stripMetadata?: boolean;
+    defaultColorProfile?: string;
+  };
 };
 
 type BuildSingleCliPipelineArgs = {
@@ -41,6 +49,14 @@ type BuildSingleCliPipelineArgs = {
   outputParams?: Record<string, unknown>;
   /** When set, Crop args in the string match full-res `run_single` (same as preview→full scaling). */
   previewToFullScale?: PreviewToFullImageScale | null;
+  limits?: {
+    memoryLimit?: string;
+    diskCacheLimit?: string;
+  };
+  defaultFlags?: {
+    stripMetadata?: boolean;
+    defaultColorProfile?: string;
+  };
 };
 
 function getBaseName(filePath: string): string {
@@ -119,6 +135,8 @@ export function buildSingleCliPipeline({
   operations,
   outputParams,
   previewToFullScale,
+  limits,
+  defaultFlags,
 }: BuildSingleCliPipelineArgs): string {
   const inputBaseName = selectedFile ? getBaseName(selectedFile) : "photo.jpg";
   const lastOperation =
@@ -126,7 +144,15 @@ export function buildSingleCliPipeline({
   const effectiveOutputParams = outputParams ?? lastOperation?.functionParams ?? {};
   const outputPath = buildOutputPath(effectiveOutputParams);
 
-  const parts: string[] = ["magick", quoteCliToken(inputBaseName)];
+  const parts: string[] = ["magick"];
+  if (limits?.memoryLimit && limits.memoryLimit !== "Unlimited") {
+    parts.push("-limit", "memory", limits.memoryLimit.replace(/\s+/g, ""));
+  }
+  if (limits?.diskCacheLimit && limits.diskCacheLimit !== "Unlimited") {
+    parts.push("-limit", "disk", limits.diskCacheLimit.replace(/\s+/g, ""));
+  }
+  parts.push(quoteCliToken(inputBaseName));
+
   for (const operation of operations) {
     parts.push(
       ...buildSingleOperationArgs(
@@ -136,6 +162,21 @@ export function buildSingleCliPipeline({
       ),
     );
   }
+
+  const hasConvert = operations.some((o) => o.selectedFunction === "Convert");
+  if (!hasConvert) {
+    if (defaultFlags?.stripMetadata) {
+      parts.push("-strip");
+    }
+    if (defaultFlags?.defaultColorProfile && defaultFlags.defaultColorProfile !== "None") {
+      const cs =
+        defaultFlags.defaultColorProfile === "Adobe RGB"
+          ? "Adobe98"
+          : defaultFlags.defaultColorProfile;
+      parts.push("-colorspace", cs);
+    }
+  }
+
   parts.push(quoteCliToken(outputPath));
   return parts.join(" ");
 }
@@ -145,12 +186,16 @@ export function buildSingleCliPreview({
   selectedFunction,
   functionParams,
   previewToFullScale,
+  limits,
+  defaultFlags,
 }: BuildSingleCliPreviewArgs): string {
   return buildSingleCliPipeline({
     selectedFile,
     operations: [{ selectedFunction, functionParams }],
     outputParams: functionParams,
     previewToFullScale,
+    limits,
+    defaultFlags,
   });
 }
 

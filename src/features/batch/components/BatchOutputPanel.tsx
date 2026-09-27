@@ -1,5 +1,6 @@
 import { useBatchStore } from "../state/batch.store";
-import { FolderOpen, Settings2 } from "lucide-react";
+import { useSettingsStore } from "@/features/settings/state/settings.store";
+import { FolderOpen, RotateCcw, Settings2 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useTranslation } from "react-i18next";
 
@@ -31,6 +32,15 @@ export function BatchOutputPanel() {
             onChange={(e) => setOutputDirectory(e.target.value)}
           />
           <button
+            type="button"
+            title={t("output.useDefault", "Reset to default output folder")}
+            onClick={() => setOutputDirectory(useSettingsStore.getState().outputFolder || "./out/")}
+            className="flex size-9 items-center justify-center rounded-lg border border-border bg-muted/30 hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+          >
+            <RotateCcw className="size-4" />
+          </button>
+          <button
+            type="button"
             onClick={handleSelectDirectory}
             className="flex size-9 items-center justify-center rounded-lg border border-border bg-muted/30 hover:bg-muted transition-colors"
           >

@@ -195,14 +195,22 @@ export function SingleModePage() {
   ]);
   const previewOperationLabel =
     cliPreviewMode === "all" ? "all-edited-functions" : selectedFunctionName;
-  const previewMaxResolution = useSettingsStore(s => s.previewMaxResolution);
-  const showCliPreview = useSettingsStore(s => s.showCliPreview);
-  const showMetadata = useSettingsStore(s => s.showMetadata);
+  const previewMaxResolution = useSettingsStore((s) => s.previewMaxResolution);
+  const showCliPreview = useSettingsStore((s) => s.showCliPreview);
+  const showMetadata = useSettingsStore((s) => s.showMetadata);
+  const livePreview = useSettingsStore((s) => s.livePreview);
+  const memoryLimit = useSettingsStore((s) => s.memoryLimit);
+  const diskCacheLimit = useSettingsStore((s) => s.diskCacheLimit);
+  const stripMetadata = useSettingsStore((s) => s.stripMetadata);
+  const defaultColorProfile = useSettingsStore((s) => s.defaultColorProfile);
+
+  const effectiveIsManualPreview = !livePreview || isManualPreview;
+
   const previewState = usePreviewPipeline({
     previewInputPath: proxyPath,
     operations: previewOperations,
     operationLabel: previewOperationLabel,
-    isManualPreview,
+    isManualPreview: effectiveIsManualPreview,
     previewRequestId,
     fullImageDimensions:
       fileMetadata && fileMetadata.width > 0 && fileMetadata.height > 0
@@ -319,6 +327,16 @@ export function SingleModePage() {
     ],
   );
 
+  const resourceLimits = useMemo(
+    () => ({ memoryLimit, diskCacheLimit }),
+    [memoryLimit, diskCacheLimit],
+  );
+
+  const defaultFlags = useMemo(
+    () => ({ stripMetadata, defaultColorProfile }),
+    [stripMetadata, defaultColorProfile],
+  );
+
   const commandPreviews = useMemo(() => {
     if (cliPreviewMode === "all") {
       const targetFunctions =
@@ -339,6 +357,8 @@ export function SingleModePage() {
             targetFunctions[targetFunctions.length - 1]
           ] ?? functionParams,
         previewToFullScale,
+        limits: resourceLimits,
+        defaultFlags,
       });
 
       return [
@@ -357,6 +377,8 @@ export function SingleModePage() {
           selectedFunction: selectedFunctionName,
           functionParams,
           previewToFullScale,
+          limits: resourceLimits,
+          defaultFlags,
         }),
       },
     ];
@@ -365,6 +387,8 @@ export function SingleModePage() {
     editedFunctionNames,
     functionParams,
     functionParamsByFunction,
+    resourceLimits,
+    defaultFlags,
     selectedFile,
     selectedFunctionName,
     t,
@@ -413,7 +437,7 @@ export function SingleModePage() {
 
       <ResizablePanel defaultSize={40} minSize={20}>
         <PreviewPane
-          isManualPreview={isManualPreview}
+          isManualPreview={effectiveIsManualPreview}
           setIsManualPreview={setIsManualPreview}
           selectedFile={selectedFile}
           proxyPath={proxyPath}

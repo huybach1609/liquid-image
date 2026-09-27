@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {
   Select,
   SelectContent,
@@ -31,34 +32,49 @@ export function GeneralSettingsSection({
   draft,
   onUpdateSetting,
 }: GeneralSettingsSectionProps) {
+  const { t, i18n } = useTranslation("settings");
+
   return (
     <>
-      <SettingSection label="Language & region">
+      <SettingSection label={t("general.sections.languageRegion")}>
         <SettingGroup>
           <SettingRow
-            name="Language"
-            description="Ngôn ngữ hiển thị giao diện"
+            name={t("general.language.name")}
+            description="general.language.description"
+            descriptionVariant="tooltip"
           >
             <Select
               value={draft.language}
-              onValueChange={(v) =>
-                onUpdateSetting("language", v as Language)
-              }
+              onValueChange={(v) => {
+                const lng = v as Language;
+                onUpdateSetting("language", lng);
+                void i18n.changeLanguage(lng);
+              }}
             >
-              <SelectTrigger className="w-[160px] h-9">
+              <SelectTrigger className="w-[180px] h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="en">English</SelectItem>
-                <SelectItem value="vi">Tiếng Việt</SelectItem>
-                <SelectItem value="zh">中文 (简体)</SelectItem>
-                <SelectItem value="ja">日本語</SelectItem>
+                <SelectItem value="en">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">English</span>
+                    <span className="text-xs text-muted-foreground font-mono">US</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="vi">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Tiếng Việt</span>
+                    <span className="text-xs text-muted-foreground font-mono">VN</span>
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
           </SettingRow>
+
           <SettingRow
-            name="Date format"
-            description="Dùng trong tên file output khi có {date}"
+            name={t("general.dateFormat.name")}
+            description="general.dateFormat.description"
+            descriptionVariant="tooltip"
           >
             <Select
               value={draft.dateFormat}
@@ -66,19 +82,34 @@ export function GeneralSettingsSection({
                 onUpdateSetting("dateFormat", v as DateFormat)
               }
             >
-              <SelectTrigger className="w-[160px] h-9">
+              <SelectTrigger className="w-[200px] h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
-                <SelectItem value="DD-MM-YYYY">DD-MM-YYYY</SelectItem>
-                <SelectItem value="MM-DD-YYYY">MM-DD-YYYY</SelectItem>
+                <SelectItem value="YYYY-MM-DD">
+                  <span className="font-mono text-xs">YYYY-MM-DD</span>
+                  <span className="text-xs text-muted-foreground ml-2">(2026-09-26)</span>
+                </SelectItem>
+                <SelectItem value="DD-MM-YYYY">
+                  <span className="font-mono text-xs">DD-MM-YYYY</span>
+                  <span className="text-xs text-muted-foreground ml-2">(26-09-2026)</span>
+                </SelectItem>
+                <SelectItem value="MM-DD-YYYY">
+                  <span className="font-mono text-xs">MM-DD-YYYY</span>
+                  <span className="text-xs text-muted-foreground ml-2">(09-26-2026)</span>
+                </SelectItem>
+                <SelectItem value="YYYYMMDD">
+                  <span className="font-mono text-xs">YYYYMMDD</span>
+                  <span className="text-xs text-muted-foreground ml-2">(20260926)</span>
+                </SelectItem>
               </SelectContent>
             </Select>
           </SettingRow>
+
           <SettingRow
-            name="File size unit"
-            description="Cách hiển thị kích thước file trong queue"
+            name={t("general.fileSizeUnit.name")}
+            description="general.fileSizeUnit.description"
+            descriptionVariant="tooltip"
           >
             <Select
               value={draft.fileSizeUnit}
@@ -86,30 +117,40 @@ export function GeneralSettingsSection({
                 onUpdateSetting("fileSizeUnit", v as FileSizeUnit)
               }
             >
-              <SelectTrigger className="w-[120px] h-9">
+              <SelectTrigger className="w-[190px] h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="MB_GB">MB / GB</SelectItem>
-                <SelectItem value="MiB_GiB">MiB / GiB</SelectItem>
-                <SelectItem value="KB">KB</SelectItem>
+                <SelectItem value="MB_GB">
+                  <span>MB / GB</span>
+                  <span className="text-xs text-muted-foreground ml-1.5">(1024)</span>
+                </SelectItem>
+                <SelectItem value="MiB_GiB">
+                  <span>MiB / GiB</span>
+                  <span className="text-xs text-muted-foreground ml-1.5">(IEC)</span>
+                </SelectItem>
+                <SelectItem value="KB">
+                  <span>KB</span>
+                  <span className="text-xs text-muted-foreground ml-1.5">(Kilobytes)</span>
+                </SelectItem>
               </SelectContent>
             </Select>
           </SettingRow>
         </SettingGroup>
       </SettingSection>
 
-      <SettingSection label="Batch options">
+      <SettingSection label={t("general.sections.batchOptions")}>
         <SettingGroup>
           <SettingRow
-            name="Disk cache limit"
-            description="Giới hạn bộ nhớ đệm trên đĩa cho ImageMagick"
+            name={t("general.diskCacheLimit.name")}
+            description="general.diskCacheLimit.description"
+            descriptionVariant="tooltip"
           >
             <Select
               value={draft.diskCacheLimit}
               onValueChange={(v) => onUpdateSetting("diskCacheLimit", v)}
             >
-              <SelectTrigger className="w-[140px] h-9">
+              <SelectTrigger className="w-[160px] h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -120,18 +161,22 @@ export function GeneralSettingsSection({
               </SelectContent>
             </Select>
           </SettingRow>
+
           <SettingRow
-            name="Dry run before batch"
-            description="Kiểm tra trước khi chạy batch thật"
+            name={t("general.dryRunBeforeBatch.name")}
+            description="general.dryRunBeforeBatch.description"
+            descriptionVariant="tooltip"
           >
             <Switch
               checked={draft.dryRunBeforeBatch}
               onCheckedChange={(v) => onUpdateSetting("dryRunBeforeBatch", v)}
             />
           </SettingRow>
+
           <SettingRow
-            name="On error policy"
-            description="Cách xử lý khi có lỗi trong batch"
+            name={t("general.onErrorPolicy.name")}
+            description="general.onErrorPolicy.description"
+            descriptionVariant="tooltip"
           >
             <Select
               value={draft.onErrorPolicy}
@@ -139,19 +184,27 @@ export function GeneralSettingsSection({
                 onUpdateSetting("onErrorPolicy", v as OnErrorPolicy)
               }
             >
-              <SelectTrigger className="w-[200px] h-9">
+              <SelectTrigger className="w-[220px] h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="skip-and-continue">Skip & continue</SelectItem>
-                <SelectItem value="stop-all">Stop all</SelectItem>
-                <SelectItem value="retry-once">Retry once</SelectItem>
+                <SelectItem value="skip-and-continue">
+                  {t("general.onErrorPolicies.skip-and-continue")}
+                </SelectItem>
+                <SelectItem value="stop-all">
+                  {t("general.onErrorPolicies.stop-all")}
+                </SelectItem>
+                <SelectItem value="retry-once">
+                  {t("general.onErrorPolicies.retry-once")}
+                </SelectItem>
               </SelectContent>
             </Select>
           </SettingRow>
+
           <SettingRow
-            name="Save error log"
-            description="Ghi log lỗi vào file khi batch thất bại"
+            name={t("general.saveErrorLog.name")}
+            description="general.saveErrorLog.description"
+            descriptionVariant="tooltip"
           >
             <Switch
               checked={draft.saveErrorLog}

@@ -60,4 +60,8 @@ export type SettingsState = {
   playSound: boolean;
   showDockProgress: boolean;
   showTrayBadge: boolean;
+
+  // Context Menu Integration
+  contextMenuEnabled: boolean;
+  contextMenuFormats: string[];
 };

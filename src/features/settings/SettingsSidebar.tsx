@@ -4,9 +4,7 @@ import {
   Palette,
   Files,
   Cpu,
-  Keyboard,
   Terminal,
-  Bell,
   Info,
   ChevronLeft,
 } from "lucide-react";
@@ -23,18 +21,16 @@ import type { SettingsTab } from "./hooks/useSettingsDraft";
 
 const NAV_ITEMS = {
   general: [
-    { id: "general", label: "General", icon: Settings },
-    { id: "appearance", label: "Appearance", icon: Palette },
-    { id: "files", label: "Files & output", icon: Files },
-    { id: "processing", label: "Processing", icon: Cpu },
-    { id: "shortcuts", label: "Shortcuts", icon: Keyboard },
+    { id: "general" as const, label: "General", icon: Settings },
+    { id: "appearance" as const, label: "Appearance", icon: Palette },
+    { id: "files" as const, label: "Files & output", icon: Files },
+    { id: "processing" as const, label: "Processing", icon: Cpu },
   ],
   advanced: [
-    { id: "imagick", label: "ImageMagick", icon: Terminal },
-    { id: "notifications", label: "Notifications", icon: Bell },
-    { id: "about", label: "About", icon: Info },
+    { id: "imagick" as const, label: "ImageMagick", icon: Terminal },
+    { id: "about" as const, label: "About", icon: Info },
   ],
-} as const;
+};
 
 const NavButton = React.memo(
   ({
@@ -52,13 +48,13 @@ const NavButton = React.memo(
     isCompact: boolean;
     onClick: (id: SettingsTab) => void;
   }) => (
-    <Tooltip delayDuration={400}>
+    <Tooltip delayDuration={300}>
       <TooltipTrigger asChild>
         <button
           type="button"
           aria-pressed={isActive}
           className={cn(
-            "flex h-11 w-full items-center border-r-2 py-2 transition-all outline-none gap-3",
+            "flex h-11 w-full items-center border-r-2 py-2 transition-all outline-none gap-3 select-none",
             isCompact ? "justify-center px-2" : "px-5",
             isActive
               ? "border-primary bg-primary/5 font-semibold text-primary"
@@ -72,10 +68,14 @@ const NavButton = React.memo(
               isActive ? "opacity-100" : "opacity-70",
             )}
           />
-          {!isCompact && <span className="text-sm">{label}</span>}
+          {!isCompact && (
+            <div className="flex flex-1 items-center justify-between min-w-0">
+              <span className="text-sm truncate">{label}</span>
+            </div>
+          )}
         </button>
       </TooltipTrigger>
-      {isCompact && <TooltipContent side="right">{label}</TooltipContent>}
+      <TooltipContent side="right">{label}</TooltipContent>
     </Tooltip>
   ),
 );

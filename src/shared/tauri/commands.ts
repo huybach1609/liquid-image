@@ -142,3 +142,37 @@ export async function runBatchDryRun(request: RunBatchRequest): Promise<void> {
 export async function cancelBatch(): Promise<void> {
   return invoke<void>("cancel_batch");
 }
+
+export type ContextMenuStatus = {
+  platform: "linux" | "windows" | "macos" | "other";
+  isSupported: boolean;
+  isRegistered: boolean;
+  installedPath?: string;
+  configuredFormats: string[];
+};
+
+export type DolphinIntegrationStatus = ContextMenuStatus;
+
+export async function checkContextMenuStatus(): Promise<ContextMenuStatus> {
+  return invoke<ContextMenuStatus>("check_context_menu_status");
+}
+
+export async function registerContextMenu(formats: string[]): Promise<string> {
+  return invoke<string>("register_context_menu", { formats });
+}
+
+export async function unregisterContextMenu(): Promise<void> {
+  return invoke<void>("unregister_context_menu");
+}
+
+export async function checkDolphinIntegrationStatus(): Promise<DolphinIntegrationStatus> {
+  return checkContextMenuStatus();
+}
+
+export async function registerDolphinServiceMenu(formats: string[]): Promise<string> {
+  return registerContextMenu(formats);
+}
+
+export async function unregisterDolphinServiceMenu(): Promise<void> {
+  return unregisterContextMenu();
+}

@@ -1,0 +1,311 @@
+{
+  "general": {
+    "sections": {
+      "languageRegion": "Language & Region",
+      "batchOptions": "Batch Options & Safety"
+    },
+    "language": {
+      "name": "Language",
+      "description": "Select display language for the entire application interface"
+    },
+    "languages": {
+      "en": "English",
+      "vi": "Tiếng Việt"
+    },
+    "dateFormat": {
+      "name": "Date format",
+      "description": "Format used when replacing the {date} variable in output filenames"
+    },
+    "dateFormats": {
+      "YYYY-MM-DD": "YYYY-MM-DD",
+      "DD-MM-YYYY": "DD-MM-YYYY",
+      "MM-DD-YYYY": "MM-DD-YYYY",
+      "YYYYMMDD": "YYYYMMDD"
+    },
+    "fileSizeUnit": {
+      "name": "File size unit",
+      "description": "Unit standard used to display image file sizes in queues and preview"
+    },
+    "fileSizeUnits": {
+      "MB_GB": "MB / GB (Standard 1024)",
+      "MiB_GiB": "MiB / GiB (Binary IEC)",
+      "KB": "KB (Kilobytes only)"
+    },
+    "diskCacheLimit": {
+      "name": "Disk cache limit",
+      "description": "ImageMagick disk cache limit flag (-limit disk) for handling heavy operations"
+    },
+    "dryRunBeforeBatch": {
+      "name": "Dry run before batch",
+      "description": "Automatically validates operation parameters with a fast test pass before starting execution"
+    },
+    "onErrorPolicy": {
+      "name": "On error policy",
+      "description": "Strategy for queue execution when an image operation encounters an error"
+    },
+    "onErrorPolicies": {
+      "skip-and-continue": "Skip & continue",
+      "stop-all": "Stop immediately",
+      "retry-once": "Retry once then continue"
+    },
+    "saveErrorLog": {
+      "name": "Save error log",
+      "description": "Automatically write detailed error logs into a file in the output folder when a batch fails"
+    }
+  },
+  "appearance": {
+    "sections": {
+      "theme": "Theme & Aesthetics",
+      "typography": "Typography & Scaling",
+      "layout": "Interface Layout"
+    },
+    "theme": {
+      "title": "Design Theme",
+      "subtitle": "Choose an aesthetic interface style for the whole application",
+      "modes": {
+        "all": "All Themes",
+        "light": "Light",
+        "dark": "Dark"
+      },
+      "items": {
+        "light": {
+          "name": "Light",
+          "desc": "Crisp default neutral"
+        },
+        "dark": {
+          "name": "Dark",
+          "desc": "Deep midnight contrast"
+        },
+        "claude": {
+          "name": "Claude",
+          "desc": "Warm cream & terracotta"
+        },
+        "claude-dark": {
+          "name": "Claude Dark",
+          "desc": "Obsidian & terracotta"
+        },
+        "notion": {
+          "name": "Notion",
+          "desc": "Clean white & electric blue"
+        },
+        "notion-dark": {
+          "name": "Notion Dark",
+          "desc": "Minimal graphite & cobalt"
+        },
+        "starbucks": {
+          "name": "Starbucks",
+          "desc": "Warm ecru & forest green"
+        },
+        "starbucks-dark": {
+          "name": "Starbucks Dark",
+          "desc": "Deep pine & rich emerald"
+        }
+      }
+    },
+    "fontSize": {
+      "name": "Base Font Size",
+      "description": "Adjust global UI font scale. Changes apply in real-time across all panels.",
+      "preview": "The quick brown fox jumps over the lazy dog",
+      "presets": {
+        "compact": "Compact",
+        "default": "Default",
+        "comfortable": "Comfortable",
+        "large": "Large"
+      }
+    },
+    "showCliPreview": {
+      "name": "Show CLI preview",
+      "description": "Display ImageMagick command bar below the options panel"
+    },
+    "showMetadata": {
+      "name": "Show image metadata",
+      "description": "Display dimensions and file size on the bottom bar beneath the canvas"
+    }
+  },
+  "files": {
+    "sections": {
+      "locations": "Default locations",
+      "naming": "File naming",
+      "contextMenu": "File Explorer & Context Menu"
+    },
+    "outputFolder": {
+      "name": "Default output folder",
+      "description": "Default folder for saving processed images",
+      "placeholder": "Select default output folder..."
+    },
+    "presetFolder": {
+      "name": "Default preset folder",
+      "description": "Location to save and load pipeline presets",
+      "placeholder": "Select preset folder..."
+    },
+    "browse": "Browse…",
+    "namingPattern": {
+      "name": "Default naming pattern",
+      "description": "Variables: {name} {date} {op} {width} {height}"
+    },
+    "conflictPolicy": {
+      "name": "On filename conflict",
+      "description": "Action when output file already exists"
+    },
+    "conflictOptions": {
+      "ask": "Ask me",
+      "overwrite": "Overwrite",
+      "rename": "Rename (+1)",
+      "skip": "Skip"
+    },
+    "autoOpenOutput": {
+      "name": "Auto-open output folder",
+      "description": "Automatically open Finder/Explorer after processing finishes"
+    },
+    "contextMenu": {
+      "windowsTitle": "Windows File Explorer Menu",
+      "linuxTitle": "Dolphin / File Manager Menu",
+      "genericTitle": "File Manager Menu",
+      "windowsDescription": "Integrate right-click context menu for images in Windows File Explorer (Registry HKCU)",
+      "linuxDescription": "Integrate right-click context menu for images in Dolphin (KDE Linux ServiceMenu)",
+      "genericDescription": "Integrate right-click context menu for image files",
+      "quickFormatsTitle": "Quick Convert Formats",
+      "windowsSubtitle": "Select formats to show in the Windows File Explorer right-click context menu.",
+      "linuxSubtitle": "Select formats to show in the Dolphin right-click context menu.",
+      "genericSubtitle": "Select formats to show in the right-click context menu.",
+      "enabledFormats": "Enabled formats ({{count}})",
+      "clearAll": "Clear all",
+      "deselect": "Deselect {{format}}",
+      "noFormatsSelected": "No formats selected for context menu. Choose formats below.",
+      "quickPresets": "Quick presets",
+      "searchFormats": "Search ImageMagick formats ({{count}} writable formats)",
+      "searchPlaceholder": "Search supported ImageMagick formats (e.g. JXL, HEIC, ICO, PDF, TGA...)",
+      "noMatchingFormats": "No matching format found.",
+      "systemStatus": "System status:",
+      "registeredRegistry": "Registry Registered",
+      "registeredServiceMenu": "ServiceMenu Installed",
+      "notRegistered": "Not registered",
+      "processing": "Processing...",
+      "installOrUpdate": "Install / Update",
+      "uninstall": "Uninstall",
+      "installSuccess": "Successfully installed ({{path}})",
+      "installError": "Installation error: {{error}}",
+      "uninstallSuccess": "Successfully uninstalled.",
+      "uninstallError": "Uninstall error: {{error}}"
+    }
+  },
+  "notifications": {
+    "notifyBatchComplete": {
+      "name": "Batch completed",
+      "description": "Notify when entire batch processing is done"
+    },
+    "notifyError": {
+      "name": "Error occurred",
+      "description": "Notify when a file fails during batch processing"
+    },
+    "playSound": {
+      "name": "Play sound",
+      "description": "Play audio alert with notification"
+    }
+  },
+  "processing": {
+    "sections": {
+      "performance": "Performance & Resources",
+      "preview": "Real-time & Preview Canvas",
+      "batchSafety": "Batch Execution & Safety"
+    },
+    "workers": {
+      "name": "Batch workers",
+      "description": "Number of parallel workers for queue processing (recommended ≤ CPU core count)"
+    },
+    "workersOptions": {
+      "1": "1 (Safe mode)",
+      "2": "2 (Dual workers)",
+      "4": "4 (Recommended)",
+      "8": "8 (High throughput)"
+    },
+    "memoryLimit": {
+      "name": "Memory limit per job",
+      "description": "RAM limit flag (-limit memory) for each ImageMagick worker process"
+    },
+    "diskCacheLimit": {
+      "name": "Disk cache limit",
+      "description": "Disk cache limit flag (-limit disk) for handling heavy operations"
+    },
+    "livePreview": {
+      "name": "Live preview",
+      "description": "Automatically re-render preview canvas in real-time when sliders or parameters change"
+    },
+    "previewMaxResolution": {
+      "name": "Preview max resolution",
+      "description": "Maximum canvas resolution for preview proxy (800px fast, 1200px balanced, full size)"
+    },
+    "previewResolutionOptions": {
+      "800px": "800px (Fast / Low RAM)",
+      "1200px": "1200px (Balanced default)",
+      "full": "Full size (Native resolution)"
+    },
+    "dryRunBeforeBatch": {
+      "name": "Dry run before batch",
+      "description": "Automatically validates operation parameters with a fast test pass before starting execution"
+    },
+    "onErrorPolicy": {
+      "name": "On error policy",
+      "description": "Strategy for queue execution when an image operation encounters an error"
+    },
+    "saveErrorLog": {
+      "name": "Save error log",
+      "description": "Automatically write detailed error logs into a file in the output folder when a batch fails"
+    }
+  },
+  "imagick": {
+    "sections": {
+      "binary": "Engine & Binary",
+      "defaultFlags": "Default Flags"
+    },
+    "binary": {
+      "title": "ImageMagick Binary",
+      "subtitle": "ImageMagick executable used for graphics manipulation",
+      "sidecarBadge": "Bundled (Sidecar)",
+      "customBadge": "Custom Binary",
+      "sidecarDesc": "Using built-in ImageMagick. Set a custom path below to override.",
+      "customDesc": "Using external binary configured at this path.",
+      "detected": "Detected: {{version}}",
+      "placeholder": "Auto (using bundled sidecar)",
+      "useBundled": "Use Bundled",
+      "browse": "Browse…",
+      "test": "Test Path",
+      "testing": "Testing...",
+      "testSuccess": "Binary verified: {{version}}",
+      "testError": "Failed to execute binary at path"
+    },
+    "stripMetadata": {
+      "name": "Strip metadata by default",
+      "description": "Add -strip to all commands to remove EXIF, comments, and color profiles for smaller file size"
+    },
+    "colorProfile": {
+      "name": "Color profile",
+      "description": "Default target color profile applied during output conversion"
+    }
+  },
+  "about": {
+    "badge": "Open Source",
+    "subtitle": "Professional Image Processing & Optimization Utility",
+    "stack": "Built with Tauri v{{tauri}} + React 19 + Rust",
+    "checkForUpdates": "Check for updates",
+    "checkingUpdates": "Checking...",
+    "latestVersion": "You are on the latest version",
+    "sections": {
+      "systemInfo": "System & Runtime Environment",
+      "maintenance": "Storage & Reset"
+    },
+    "info": {
+      "appVersion": "Application version",
+      "tauriVersion": "Tauri runtime",
+      "engineVersion": "ImageMagick engine",
+      "configPath": "Configuration directory"
+    },
+    "actions": {
+      "openConfig": "Open config folder",
+      "copyPath": "Copy path",
+      "copied": "Copied!",
+      "resetAll": "Reset all settings",
+      "resetConfirm": "Are you sure you want to reset all settings to defaults? This action cannot be undone."
+    }
+  }
+}
