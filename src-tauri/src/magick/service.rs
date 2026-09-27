@@ -309,8 +309,10 @@ pub async fn create_image_proxy(
         .arg("-depth")
         .arg("8")
         .arg("-strip")
+        .arg("-define")
+        .arg("webp:method=2")
         .arg("-quality")
-        .arg("90")
+        .arg("80")
         .arg(&proxy_path);
 
     let output = command.output().await.map_err(|e| e.to_string())?;

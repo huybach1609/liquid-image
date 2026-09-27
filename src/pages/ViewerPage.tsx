@@ -10,6 +10,7 @@ const AUTO_HIDE_DELAY_MS = 2500;
 
 export function ViewerPage() {
   const currentImagePath = useViewerStore((s) => s.currentImagePath);
+  const bgMode = useViewerStore((s) => s.bgMode);
 
   // Enable global keyboard navigation and preloading
   useViewerShortcuts();
@@ -59,9 +60,16 @@ export function ViewerPage() {
     resetHideTimer();
   }, [resetHideTimer]);
 
+  const bgClass =
+    bgMode === "dark"
+      ? "bg-[#0c0c0e]"
+      : bgMode === "checker"
+        ? "viewer-checkerboard"
+        : "bg-background";
+
   return (
     <div
-      className="relative size-full overflow-hidden bg-black/95 text-foreground select-none"
+      className={`relative size-full overflow-hidden ${bgClass} text-foreground select-none transition-colors duration-200`}
       onPointerMove={handlePointerMove}
     >
       {currentImagePath ? (

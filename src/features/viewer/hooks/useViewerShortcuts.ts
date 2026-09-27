@@ -45,6 +45,12 @@ export function useViewerShortcuts() {
           store.rotateCCW();
           break;
         }
+        case "b":
+        case "B": {
+          e.preventDefault();
+          store.cycleBgMode();
+          break;
+        }
         case "+":
         case "=": {
           e.preventDefault();

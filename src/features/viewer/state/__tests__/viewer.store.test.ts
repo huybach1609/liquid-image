@@ -116,5 +116,22 @@ describe("useViewerStore", () => {
 
     useViewerStore.getState().resetView();
   });
+
+  it("should handle bgMode and cycleBgMode correctly", () => {
+    useViewerStore.setState({ bgMode: "theme" });
+    expect(useViewerStore.getState().bgMode).toBe("theme");
+
+    useViewerStore.getState().cycleBgMode();
+    expect(useViewerStore.getState().bgMode).toBe("dark");
+
+    useViewerStore.getState().cycleBgMode();
+    expect(useViewerStore.getState().bgMode).toBe("checker");
+
+    useViewerStore.getState().cycleBgMode();
+    expect(useViewerStore.getState().bgMode).toBe("theme");
+
+    useViewerStore.getState().setBgMode("dark");
+    expect(useViewerStore.getState().bgMode).toBe("dark");
+  });
 });
 

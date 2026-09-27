@@ -15,6 +15,7 @@ import {
   Minimize,
   Edit3,
   Ratio,
+  SunMoon,
 } from "lucide-react";
 import {
   Tooltip,
@@ -44,6 +45,8 @@ export function ViewerHud({ isHudVisible, onMouseEnterHud, onMouseLeaveHud }: Vi
   const setActualSize = useViewerStore((s) => s.setActualSize);
   const rotateCW = useViewerStore((s) => s.rotateCW);
   const rotateCCW = useViewerStore((s) => s.rotateCCW);
+  const bgMode = useViewerStore((s) => s.bgMode);
+  const cycleBgMode = useViewerStore((s) => s.cycleBgMode);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -234,6 +237,27 @@ export function ViewerHud({ isHudVisible, onMouseEnterHud, onMouseLeaveHud }: Vi
               </button>
             </TooltipTrigger>
             <TooltipContent side="top">Rotate Right 90° (R)</TooltipContent>
+          </Tooltip>
+
+          {/* Background Mode Toggle */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={cycleBgMode}
+                className="size-8 rounded-xl flex items-center justify-center text-foreground/80 hover:text-foreground hover:bg-muted/80 transition-colors"
+                aria-label="Toggle background mode"
+              >
+                <SunMoon className="size-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              {bgMode === "theme"
+                ? "Nền: Theo Theme (B)"
+                : bgMode === "dark"
+                  ? "Nền: Tối (B)"
+                  : "Nền: Ca-rô (B)"}
+            </TooltipContent>
           </Tooltip>
 
           <div className="h-4 w-px bg-border/60 mx-1" />

@@ -13,6 +13,7 @@ export type ViewerStoreState = {
 
   imageDimensions: { width: number; height: number } | null;
   proxyUrl: string | null;
+  bgMode: "theme" | "dark" | "checker";
 
   // Actions
   openImage: (path: string) => Promise<void>;
@@ -32,6 +33,8 @@ export type ViewerStoreState = {
   setHudVisible: (visible: boolean) => void;
   setImageDimensions: (dims: { width: number; height: number } | null) => void;
   setProxyUrl: (url: string | null) => void;
+  setBgMode: (mode: "theme" | "dark" | "checker") => void;
+  cycleBgMode: () => void;
 };
 
 const ZOOM_STEP = 0.25;
@@ -50,6 +53,7 @@ export const useViewerStore = create<ViewerStoreState>((set, get) => ({
 
   imageDimensions: null,
   proxyUrl: null,
+  bgMode: "theme",
 
   openImage: async (path: string) => {
     // Immediate UI feedback with current target file
@@ -242,5 +246,16 @@ export const useViewerStore = create<ViewerStoreState>((set, get) => ({
 
   setProxyUrl: (proxyUrl) => {
     set({ proxyUrl });
+  },
+
+  setBgMode: (bgMode) => {
+    set({ bgMode });
+  },
+
+  cycleBgMode: () => {
+    const modes: Array<"theme" | "dark" | "checker"> = ["theme", "dark", "checker"];
+    const current = get().bgMode;
+    const nextIdx = (modes.indexOf(current) + 1) % modes.length;
+    set({ bgMode: modes[nextIdx] });
   },
 }));
