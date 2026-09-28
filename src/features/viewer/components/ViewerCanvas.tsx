@@ -233,7 +233,7 @@ export function ViewerCanvas() {
               src={imageSrc}
               alt="Viewer Display"
               draggable={false}
-              className={`max-h-[85vh] max-w-[90vw] object-contain pointer-events-none select-none shadow-2xl shadow-black/20 dark:shadow-black/60 rounded-sm transition-opacity duration-200 ease-out ${
+              className={`max-h-[85vh] max-w-[90vw] object-contain pointer-events-none select-none shadow-2xl shadow-black/20 dark:shadow-black/60 transition-opacity duration-200 ease-out ${
                 isImageLoading || isLoadingProxy ? "opacity-0" : "opacity-100"
               }`}
               onLoad={(e) => {

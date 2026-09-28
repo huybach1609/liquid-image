@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { getSiblingImages, type SiblingImagesResult } from "@/shared/tauri/commands";
+import { useRecentFilesStore } from "@/app/store/recentFiles.store";
 
 export type ViewerStoreState = {
   currentImagePath: string | null;
@@ -56,6 +57,8 @@ export const useViewerStore = create<ViewerStoreState>((set, get) => ({
   bgMode: "theme",
 
   openImage: async (path: string) => {
+    useRecentFilesStore.getState().addRecentFile(path);
+
     // Immediate UI feedback with current target file
     set({
       currentImagePath: path,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, lazy, Suspense } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
 
@@ -13,6 +13,8 @@ import { BatchModePage } from "@/pages/BatchModePage";
 import { SingleModePage } from "@/pages/SingleModePage";
 import { SettingPage } from "@/pages/SettingPage";
 import { ViewerPage } from "@/pages/ViewerPage";
+
+const SettingsDialog = lazy(() => import("@/features/settings/SettingsDialog"));
 import {
   menubarUsesNative,
   preloadImageFormatInfo,
@@ -24,14 +26,22 @@ import { useTranslation } from "react-i18next";
 export function AppShell() {
   const { t } = useTranslation("common");
   const mode = useAppStore((s) => s.mode);
+  const isSettingsOpen = useAppStore((s) => s.isSettingsOpen);
   const [nativeMenubar, setNativeMenubar] = useState<boolean | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const isFullFrameMode =
     mode === "single" || mode === "batch" || mode === "settings" || mode === "viewer";
-  const appWindow = getCurrentWindow();
+  const appWindow = useMemo(() => getCurrentWindow(), []);
 
   useThemeSync();
   useMenubarBridge();
+
+  useEffect(() => {
+    if (mode === "settings") {
+      useAppStore.getState().setMode("single");
+      useAppStore.getState().openSettings();
+    }
+  }, [mode]);
 
   useEffect(() => {
     void menubarUsesNative()
@@ -185,6 +195,11 @@ export function AppShell() {
             <section className="app-shell-content" />
           )}
         </div>
+        {isSettingsOpen && (
+          <Suspense fallback={null}>
+            <SettingsDialog />
+          </Suspense>
+        )}
       </TooltipProvider>
     </main>
   );

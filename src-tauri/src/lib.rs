@@ -147,12 +147,11 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .on_menu_event(|app, event| {
-            if event.id() == "file.open_image" {
-                let _ = app.emit(
-                    "app:menu-action",
-                    serde_json::json!({ "id": "file.open_image" }),
-                );
-            }
+            let id = event.id().as_ref();
+            let _ = app.emit(
+                "app:menu-action",
+                serde_json::json!({ "id": id }),
+            );
         })
         .invoke_handler(tauri::generate_handler![
             greet,

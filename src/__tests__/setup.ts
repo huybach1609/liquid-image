@@ -11,7 +11,17 @@ if (typeof window === "undefined") {
 
 // Mock Tauri modules
 mock.module("@tauri-apps/api/core", () => ({
-  invoke: async () => ({})
+  invoke: async () => ({}),
+  transformCallback: () => 0,
+  Resource: class {},
+  Channel: class {},
+  convertFileSrc: (path: string) => path,
+  isTauri: () => false,
+}));
+
+mock.module("@tauri-apps/api/event", () => ({
+  listen: async () => () => {},
+  emit: async () => {},
 }));
 
 mock.module("@tauri-apps/plugin-store", () => ({
