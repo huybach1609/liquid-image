@@ -29,6 +29,16 @@ export async function getImageMetadata(path: string): Promise<ImageMetadata> {
   return invoke<ImageMetadata>("get_image_metadata", { path });
 }
 
+export type SiblingImagesResult = {
+  parentDir: string;
+  files: string[];
+  currentIndex: number;
+};
+
+export async function getSiblingImages(currentPath: string): Promise<SiblingImagesResult> {
+  return invoke<SiblingImagesResult>("get_sibling_images", { currentPath });
+}
+
 export async function getImageFormatInfo(): Promise<MagickFormatInfo[]> {
   if (magickFormatCatalogCache) {
     return magickFormatCatalogCache;

@@ -47,7 +47,14 @@ pub fn run() {
                     let _ = window.show();
                     let _ = window.set_focus();
                     if !cli_args.files.is_empty() {
-                        let _ = window.emit("app:open-files", cli_args.files);
+                        let is_viewer = cli_args.is_viewer_mode();
+                        let _ = window.emit(
+                            "app:open-files",
+                            serde_json::json!({
+                                "files": cli_args.files,
+                                "mode": if is_viewer { "viewer" } else { "studio" }
+                            }),
+                        );
                     }
                 }
             }
@@ -115,10 +122,17 @@ pub fn run() {
 
             if !initial_cli.files.is_empty() {
                 let files = initial_cli.files.clone();
+                let is_viewer = initial_cli.is_viewer_mode();
                 let handle_clone = app.handle().clone();
                 tauri::async_runtime::spawn(async move {
                     tokio::time::sleep(std::time::Duration::from_millis(800)).await;
-                    let _ = handle_clone.emit("app:open-files", files);
+                    let _ = handle_clone.emit(
+                        "app:open-files",
+                        serde_json::json!({
+                            "files": files,
+                            "mode": if is_viewer { "viewer" } else { "studio" }
+                        }),
+                    );
                 });
             }
 
@@ -133,12 +147,11 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .on_menu_event(|app, event| {
-            if event.id() == "file.open_image" {
-                let _ = app.emit(
-                    "app:menu-action",
-                    serde_json::json!({ "id": "file.open_image" }),
-                );
-            }
+            let id = event.id().as_ref();
+            let _ = app.emit(
+                "app:menu-action",
+                serde_json::json!({ "id": id }),
+            );
         })
         .invoke_handler(tauri::generate_handler![
             greet,
@@ -152,6 +165,7 @@ pub fn run() {
             magick::service::convert_image,
             magick::service::check_version,
             magick::service::get_image_metadata,
+            magick::service::get_sibling_images,
             magick::service::create_image_proxy,
             magick::service::remove_proxy_file,
             magick::service::generate_preview,

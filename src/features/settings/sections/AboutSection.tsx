@@ -8,10 +8,8 @@ import {
   Copy,
   Cpu,
   FolderOpen,
-  Layers,
   Loader2,
   RotateCcw,
-  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -129,11 +127,12 @@ export function AboutSection({
       <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-br from-card via-card to-muted/20 p-6 sm:p-8 shadow-sm">
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
-            <div className="relative size-16 sm:size-20 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/25 border border-primary/30 shrink-0">
-              <Layers className="size-9 sm:size-10" />
-              <div className="absolute -bottom-1 -right-1 size-5 rounded-full bg-emerald-500 border-2 border-background flex items-center justify-center">
-                <Sparkles className="size-2.5 text-white" />
-              </div>
+            <div className="relative size-16 sm:size-20 rounded-2xl bg-card/80 backdrop-blur-md flex items-center justify-center shadow-md border border-border/80 p-2.5 shrink-0">
+              <img
+                src="/app-icon.svg"
+                alt={appName}
+                className="size-full object-contain drop-shadow-sm select-none pointer-events-none"
+              />
             </div>
 
             <div className="space-y-1">
@@ -144,16 +143,7 @@ export function AboutSection({
                 <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
                   v{appVersion}
                 </span>
-                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
-                  {t("about.badge")}
-                </span>
               </div>
-              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                {t("about.subtitle")}
-              </p>
-              <p className="text-xs text-muted-foreground/80 font-mono pt-0.5">
-                {t("about.stack", { tauri: tauriVersion })}
-              </p>
             </div>
           </div>
 
@@ -161,14 +151,12 @@ export function AboutSection({
             <Button
               variant="outline"
               size="sm"
-              className="h-9 px-4 text-xs font-medium gap-2 shadow-2xs cursor-pointer"
+              className="h-8 px-3 text-xs font-normal cursor-pointer gap-2"
               disabled={isCheckingUpdates}
               onClick={handleCheckUpdates}
             >
-              {isCheckingUpdates ? (
+              {isCheckingUpdates && (
                 <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Sparkles className="size-3.5 text-primary" />
               )}
               <span>
                 {isCheckingUpdates
@@ -178,13 +166,12 @@ export function AboutSection({
             </Button>
             {updateFeedback && (
               <span
-                className={`text-[11px] font-medium animate-in fade-in slide-in-from-top-1 duration-200 flex items-center gap-1.5 ${
-                  updateFeedback.variant === "success"
+                className={`text-[11px] font-medium animate-in fade-in slide-in-from-top-1 duration-200 flex items-center gap-1.5 ${updateFeedback.variant === "success"
                     ? "text-emerald-600 dark:text-emerald-400"
                     : updateFeedback.variant === "warning"
-                    ? "text-amber-600 dark:text-amber-400"
-                    : "text-destructive"
-                }`}
+                      ? "text-amber-600 dark:text-amber-400"
+                      : "text-destructive"
+                  }`}
               >
                 {updateFeedback.variant !== "success" && (
                   <AlertCircle className="size-3 shrink-0" />

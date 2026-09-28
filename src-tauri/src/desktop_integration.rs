@@ -52,6 +52,18 @@ pub fn generate_servicemenu_desktop(formats: &[String]) -> String {
     let mut actions = Vec::new();
     let mut action_blocks = Vec::new();
 
+    // 1. Studio Editor Action
+    actions.push("OpenInStudio".to_string());
+    action_blocks.push(format!(
+r#"[Desktop Action OpenInStudio]
+Name=Open in Studio Editor
+Icon=liquid-image
+Exec={exec_cmd} --studio %F
+"#,
+        exec_cmd = exec_cmd
+    ));
+
+    // 2. Format conversion presets
     for fmt in formats {
         let clean_fmt = fmt.trim().trim_start_matches('.').to_lowercase();
         if clean_fmt.is_empty() {
@@ -73,17 +85,6 @@ Exec={exec_cmd} --headless --convert-to {clean_fmt} %F
         ));
     }
 
-    // Always include Open in Liquid Image action
-    actions.push("OpenInApp".to_string());
-    action_blocks.push(format!(
-r#"[Desktop Action OpenInApp]
-Name=Open with Liquid Image
-Icon=liquid-image
-Exec={exec_cmd} --open %F
-"#,
-        exec_cmd = exec_cmd
-    ));
-
     let actions_str = actions.join(";");
 
     format!(
@@ -99,6 +100,25 @@ X-KDE-Priority=TopLevel
 "#,
         actions_str = actions_str,
         action_blocks = action_blocks.join("\n")
+    )
+}
+
+/// Generates top-level Quick Viewer ServiceMenu file for Dolphin
+pub fn generate_open_viewer_servicemenu_desktop() -> String {
+    let exec_cmd = get_executable_command();
+    format!(
+r#"[Desktop Entry]
+Type=Service
+ServiceTypes=KonqPopupMenu/Plugin
+MimeType=image/jpeg;image/png;image/webp;image/avif;image/gif;image/tiff;image/bmp;image/svg+xml;image/x-icon;image/heic;image/heif;
+Actions=OpenWithViewer;
+X-KDE-Priority=TopLevel
+
+[Desktop Action OpenWithViewer]
+Name=Open with Liquid Image
+Icon=liquid-image
+Exec={exec_cmd} --view %F
+"#
     )
 }
 
@@ -143,7 +163,7 @@ mod windows_impl {
         ".webp", ".avif", ".heic", ".heif", ".jxl", ".svg", ".ico", ".tiff", ".tif"
     ];
 
-    fn populate_liquid_menu(
+    fn populate_liquid_convert_menu(
         liquid_key: &RegKey,
         exe_quoted: &str,
         formats: &[String],
@@ -162,6 +182,20 @@ mod windows_impl {
             .create_subkey("shell")
             .map_err(|e| e.to_string())?;
 
+        // 1. Open in Studio Editor
+        let (studio_key, _) = sub_shell
+            .create_subkey("OpenInStudio")
+            .map_err(|e| e.to_string())?;
+        studio_key
+            .set_value("", &"Open in Studio Editor")
+            .map_err(|e| e.to_string())?;
+        let (studio_cmd_key, _) = studio_key
+            .create_subkey("command")
+            .map_err(|e| e.to_string())?;
+        let studio_cmd_str = format!("{} --studio \"%1\"", exe_quoted);
+        studio_cmd_key.set_value("", &studio_cmd_str).map_err(|e| e.to_string())?;
+
+        // 2. Format conversion presets
         for fmt in formats {
             let clean = fmt.trim().trim_start_matches('.').to_lowercase();
             if clean.is_empty() {
@@ -185,17 +219,28 @@ mod windows_impl {
             cmd_key.set_value("", &cmd_str).map_err(|e| e.to_string())?;
         }
 
-        // OpenInApp action
-        let (open_key, _) = sub_shell
-            .create_subkey("OpenInApp")
+        Ok(())
+    }
+
+    /// Register top-level "Open with Liquid Image" (Quick Viewer) action
+    fn populate_open_viewer_menu(
+        parent_shell_key: &RegKey,
+        exe_quoted: &str,
+    ) -> Result<(), String> {
+        let (viewer_key, _) = parent_shell_key
+            .create_subkey("OpenWithLiquidImage")
             .map_err(|e| e.to_string())?;
-        open_key
+        viewer_key
             .set_value("", &"Open with Liquid Image")
             .map_err(|e| e.to_string())?;
-        let (cmd_key, _) = open_key
+        viewer_key
+            .set_value("Icon", &exe_quoted)
+            .map_err(|e| e.to_string())?;
+
+        let (cmd_key, _) = viewer_key
             .create_subkey("command")
             .map_err(|e| e.to_string())?;
-        let cmd_str = format!("{} --open \"%1\"", exe_quoted);
+        let cmd_str = format!("{} --view \"%1\"", exe_quoted);
         cmd_key.set_value("", &cmd_str).map_err(|e| e.to_string())?;
 
         Ok(())
@@ -223,10 +268,15 @@ mod windows_impl {
         let (image_shell_key, _) = hkcu
             .create_subkey(HKCU_IMAGE_SHELL)
             .map_err(|e| format!("Failed to create/open shell registry key: {e}"))?;
+
+        // 1.1 Top-level "Open with Liquid Image"
+        populate_open_viewer_menu(&image_shell_key, &exe_quoted)?;
+
+        // 1.2 Cascading submenu "Convert with Liquid Image"
         let (image_liquid_key, _) = image_shell_key
             .create_subkey("LiquidImage")
             .map_err(|e| format!("Failed to create LiquidImage key: {e}"))?;
-        populate_liquid_menu(&image_liquid_key, &exe_quoted, formats)?;
+        populate_liquid_convert_menu(&image_liquid_key, &exe_quoted, formats)?;
 
         // 2. Register for specific modern extensions (webp, avif, heic, etc.)
         // which Windows does not categorize under SystemFileAssociations\image by default
@@ -236,11 +286,15 @@ mod windows_impl {
                 let _ = ext_key.set_value("PerceivedType", &"image");
             }
 
-            // Register SystemFileAssociations\<ext>\shell\LiquidImage
+            // Register SystemFileAssociations\<ext>\shell
             let ext_shell_path = format!(r"Software\Classes\SystemFileAssociations\{}\shell", ext);
             if let Ok((ext_shell_key, _)) = hkcu.create_subkey(&ext_shell_path) {
+                // Top-level Open
+                let _ = populate_open_viewer_menu(&ext_shell_key, &exe_quoted);
+
+                // Convert Submenu
                 if let Ok((ext_liquid_key, _)) = ext_shell_key.create_subkey("LiquidImage") {
-                    let _ = populate_liquid_menu(&ext_liquid_key, &exe_quoted, formats);
+                    let _ = populate_liquid_convert_menu(&ext_liquid_key, &exe_quoted, formats);
                 }
             }
         }
@@ -252,12 +306,14 @@ mod windows_impl {
         let hkcu = RegKey::predef(HKEY_CURRENT_USER);
         if let Ok(shell_key) = hkcu.open_subkey_with_flags(HKCU_IMAGE_SHELL, KEY_ALL_ACCESS) {
             let _ = shell_key.delete_subkey_all("LiquidImage");
+            let _ = shell_key.delete_subkey_all("OpenWithLiquidImage");
         }
 
         for ext in EXTRA_EXTENSIONS {
             let ext_shell_path = format!(r"Software\Classes\SystemFileAssociations\{}\shell", ext);
             if let Ok(ext_shell_key) = hkcu.open_subkey_with_flags(&ext_shell_path, KEY_ALL_ACCESS) {
                 let _ = ext_shell_key.delete_subkey_all("LiquidImage");
+                let _ = ext_shell_key.delete_subkey_all("OpenWithLiquidImage");
             }
         }
 
@@ -380,6 +436,7 @@ pub fn register_dolphin_servicemenu(formats: Vec<String>) -> Result<String, Stri
     };
 
     let content = generate_servicemenu_desktop(&effective_formats);
+    let viewer_content = generate_open_viewer_servicemenu_desktop();
     let servicemenu_dirs = get_dolphin_servicemenu_dirs();
     let mut installed_locations = Vec::new();
 
@@ -388,9 +445,18 @@ pub fn register_dolphin_servicemenu(formats: Vec<String>) -> Result<String, Stri
             eprintln!("[servicemenu] Failed to create dir {:?}: {e}", dir);
             continue;
         }
+
+        // 1. Actions Submenu (.desktop)
         let file_path = dir.join("liquid-image-actions.desktop");
         if let Err(e) = fs::write(&file_path, &content) {
             eprintln!("[servicemenu] Failed to write {:?}: {e}", file_path);
+            continue;
+        }
+
+        // 2. Top-level Open with Liquid Image (.desktop)
+        let viewer_file_path = dir.join("liquid-image-open.desktop");
+        if let Err(e) = fs::write(&viewer_file_path, &viewer_content) {
+            eprintln!("[servicemenu] Failed to write {:?}: {e}", viewer_file_path);
             continue;
         }
 
@@ -398,6 +464,7 @@ pub fn register_dolphin_servicemenu(formats: Vec<String>) -> Result<String, Stri
         {
             use std::os::unix::fs::PermissionsExt;
             let _ = fs::set_permissions(&file_path, fs::Permissions::from_mode(0o755));
+            let _ = fs::set_permissions(&viewer_file_path, fs::Permissions::from_mode(0o755));
         }
 
         installed_locations.push(file_path.to_string_lossy().to_string());
@@ -418,6 +485,10 @@ pub fn unregister_dolphin_servicemenu() -> Result<(), String> {
         if file_path.exists() {
             let _ = fs::remove_file(file_path);
         }
+        let viewer_file_path = dir.join("liquid-image-open.desktop");
+        if viewer_file_path.exists() {
+            let _ = fs::remove_file(viewer_file_path);
+        }
     }
     Ok(())
 }
@@ -431,13 +502,18 @@ mod tests {
         let formats = vec!["webp".to_string(), "png".to_string()];
         let content = generate_servicemenu_desktop(&formats);
         assert!(content.contains("[Desktop Entry]"));
-        assert!(content.contains("Actions=ConvertWebp;ConvertPng;OpenInApp;"));
+        assert!(content.contains("Actions=OpenInStudio;ConvertWebp;ConvertPng;"));
+        assert!(content.contains("[Desktop Action OpenInStudio]"));
+        assert!(content.contains("Name=Open in Studio Editor"));
         assert!(content.contains("[Desktop Action ConvertWebp]"));
         assert!(content.contains("Name=Convert to WEBP"));
         assert!(content.contains("[Desktop Action ConvertPng]"));
         assert!(content.contains("Name=Convert to PNG"));
-        assert!(content.contains("[Desktop Action OpenInApp]"));
         assert!(content.contains("X-KDE-Submenu=Convert with Liquid Image"));
+
+        let viewer_content = generate_open_viewer_servicemenu_desktop();
+        assert!(viewer_content.contains("Name=Open with Liquid Image"));
+        assert!(viewer_content.contains("--view %F"));
     }
 
     #[test]

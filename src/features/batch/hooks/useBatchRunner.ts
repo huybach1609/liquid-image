@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { useBatchStore } from "../state/batch.store";
+import { useAppStore } from "@/app/store/app.store";
 import { useSettingsStore } from "@/features/settings/state/settings.store";
+import { openPath } from "@tauri-apps/plugin-opener";
 import { 
   runBatch as tauriRunBatch, 
   runBatchDryRun as tauriRunBatchDryRun,
@@ -40,6 +42,16 @@ export function useBatchRunner() {
   } = useSettingsStore();
 
   const errorsRef = useRef<string[]>([]);
+
+  const runRequestId = useAppStore((state) => state.runRequestId);
+  const dryRunRequestId = useAppStore((state) => state.dryRunRequestId);
+  const stopRequestId = useAppStore((state) => state.stopRequestId);
+  const openOutputFolderRequestId = useAppStore((state) => state.openOutputFolderRequestId);
+
+  const lastProcessedRunRequestId = useRef(0);
+  const lastProcessedDryRunRequestId = useRef(0);
+  const lastProcessedStopRequestId = useRef(0);
+  const lastProcessedOpenOutputFolderRequestId = useRef(0);
 
   useEffect(() => {
     let unlistenProgress: (() => void) | undefined;
@@ -285,6 +297,49 @@ export function useBatchRunner() {
       setRunning(false);
     }
   }, [addLog, setRunning]);
+
+  useEffect(() => {
+    if (runRequestId === 0 || runRequestId === lastProcessedRunRequestId.current) return;
+    lastProcessedRunRequestId.current = runRequestId;
+    if (!isRunning && queue.length > 0 && pipeline.length > 0) {
+      void runBatch();
+    }
+  }, [runRequestId, isRunning, queue.length, pipeline.length, runBatch]);
+
+  useEffect(() => {
+    if (dryRunRequestId === 0 || dryRunRequestId === lastProcessedDryRunRequestId.current) return;
+    lastProcessedDryRunRequestId.current = dryRunRequestId;
+    if (!isRunning && queue.length > 0 && pipeline.length > 0) {
+      void runDryRun();
+    }
+  }, [dryRunRequestId, isRunning, queue.length, pipeline.length, runDryRun]);
+
+  useEffect(() => {
+    if (stopRequestId === 0 || stopRequestId === lastProcessedStopRequestId.current) return;
+    lastProcessedStopRequestId.current = stopRequestId;
+    if (isRunning) {
+      void cancelBatch();
+    }
+  }, [stopRequestId, isRunning, cancelBatch]);
+
+  useEffect(() => {
+    if (
+      openOutputFolderRequestId === 0 ||
+      openOutputFolderRequestId === lastProcessedOpenOutputFolderRequestId.current
+    ) {
+      return;
+    }
+    lastProcessedOpenOutputFolderRequestId.current = openOutputFolderRequestId;
+    const openOut = async () => {
+      try {
+        const dir = outputDirectory?.trim() || "./out/";
+        await openPath(dir);
+      } catch (e) {
+        console.error("Failed to open output directory:", e);
+      }
+    };
+    void openOut();
+  }, [openOutputFolderRequestId, outputDirectory]);
 
   return {
     isRunning,

@@ -6,10 +6,8 @@ import {
   Cpu,
   Terminal,
   Info,
-  ChevronLeft,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -82,44 +80,21 @@ const NavButton = React.memo(
 
 interface SettingsSidebarProps {
   activeTab: SettingsTab;
-  isCompact: boolean;
-  appName: string;
-  appVersion: string;
+  isCompact?: boolean;
+  appName?: string;
+  appVersion?: string;
   onTabChange: (tab: SettingsTab) => void;
-  onBack: () => void;
+  onBack?: () => void;
+  backLabel?: string;
 }
 
 export function SettingsSidebar({
   activeTab,
-  isCompact,
-  appName,
-  appVersion,
+  isCompact = false,
   onTabChange,
-  onBack,
 }: SettingsSidebarProps) {
   return (
     <aside className="h-full flex flex-col">
-      <div
-        className={cn(
-          "p-6 border-b border-border/40 bg-muted/20 transition-all",
-          isCompact && "px-2 py-4 flex flex-col items-center",
-        )}
-      >
-        <div
-          className={cn(
-            "font-bold leading-none mb-1.5 tracking-tight",
-            isCompact ? "text-xs" : "text-base",
-          )}
-        >
-          {isCompact ? "Set" : "Settings"}
-        </div>
-        {!isCompact && (
-          <div className="text-sm text-muted-foreground/80 font-medium">
-            {appName} v{appVersion}
-          </div>
-        )}
-      </div>
-
       <ScrollArea className="flex-1">
         <div className="py-3 flex flex-col">
           {!isCompact && (
@@ -165,26 +140,6 @@ export function SettingsSidebar({
           </nav>
         </div>
       </ScrollArea>
-
-      <div className="p-3 border-t border-border/40 bg-muted/5">
-        <Tooltip delayDuration={400}>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn(
-                "w-full justify-start h-10 font-medium transition-all",
-                isCompact ? "justify-center px-0" : "px-4",
-              )}
-              onClick={onBack}
-            >
-              <ChevronLeft className={cn("size-4", !isCompact && "mr-3")} />
-              {!isCompact && "Back"}
-            </Button>
-          </TooltipTrigger>
-          {isCompact && <TooltipContent side="right">Back</TooltipContent>}
-        </Tooltip>
-      </div>
     </aside>
   );
 }

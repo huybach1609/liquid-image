@@ -1,4 +1,4 @@
-export type AppMode = "single" | "batch" | "settings";
+export type AppMode = "single" | "batch" | "settings" | "viewer";
 
 export type MagickVersionInfo = {
   versionName: string;

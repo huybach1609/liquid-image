@@ -21,6 +21,8 @@ import {
   normalizeOutputName,
 } from "@/features/single/pathUtils";
 import { useSettingsStore } from "@/features/settings/state/settings.store";
+import { useAppStore } from "@/app/store/app.store";
+import { useRecentFilesStore } from "@/app/store/recentFiles.store";
 import { resolvePathConflict } from "@/shared/lib/conflictResolver";
 
 type RunStatus = "idle" | "running" | "success" | "error";
@@ -71,8 +73,14 @@ export function useSingleActions({
   const [lastOutputPath, setLastOutputPath] = useState<string | null>(null);
   const [isPreparingProxy, setIsPreparingProxy] = useState(false);
   const lastProcessedOpenImageMenuRequestId = useRef(0);
+  const lastProcessedRunRequestId = useRef(0);
+  const lastProcessedOpenOutputFolderRequestId = useRef(0);
   const previousProxyPathRef = useRef<string | null>(null);
   const proxyResolutionRef = useRef<string | null>(null);
+  const lastIngestedFileRef = useRef<string | null>(null);
+
+  const runRequestId = useAppStore((state) => state.runRequestId);
+  const openOutputFolderRequestId = useAppStore((state) => state.openOutputFolderRequestId);
 
   const defaultOutputPath = useMemo(() => {
     const convertParams = functionParamsByFunction["Convert"] ?? {};
@@ -142,6 +150,8 @@ export function useSingleActions({
 
   const ingestSelectedImagePath = useCallback(
     async (selectedPath: string) => {
+      lastIngestedFileRef.current = selectedPath;
+      useRecentFilesStore.getState().addRecentFile(selectedPath);
       setSelectedFile(selectedPath);
       setProxyPath(null);
       setFileMetadata(null);
@@ -182,6 +192,16 @@ export function useSingleActions({
     [setFileMetadata, setProxyPath, setRunStatus, setSelectedFile, t, previewMaxResolution],
   );
 
+  useEffect(() => {
+    if (!selectedFile) {
+      lastIngestedFileRef.current = null;
+      return;
+    }
+    if (lastIngestedFileRef.current !== selectedFile) {
+      void ingestSelectedImagePath(selectedFile);
+    }
+  }, [selectedFile, ingestSelectedImagePath]);
+
   const pickAndOpenSingleImage = useCallback(async () => {
     const picked = await openDialog({
       filters: [
@@ -216,21 +236,25 @@ export function useSingleActions({
   }, [openImageMenuRequestId, pickAndOpenSingleImage]);
 
   const handleOpenOutputFolder = useCallback(async () => {
-    if (!lastOutputPath) {
+    const settingOutputFolder = useSettingsStore.getState().outputFolder;
+    const targetDir = lastOutputPath
+      ? getDirectoryPath(lastOutputPath)
+      : (settingOutputFolder?.trim() || (selectedFile ? getDirectoryPath(selectedFile) : null));
+
+    if (!targetDir) {
       return;
     }
 
     try {
-      await openPath(getDirectoryPath(lastOutputPath));
+      await openPath(targetDir);
     } catch (error) {
       console.error("[SingleModePage] Failed to open output folder", {
-        lastOutputPath,
-        outputDir: getDirectoryPath(lastOutputPath),
+        targetDir,
         error,
       });
       setRunStatus("error", t("errors.openOutputFolder"));
     }
-  }, [lastOutputPath, setRunStatus, t]);
+  }, [lastOutputPath, selectedFile, setRunStatus, t]);
 
   const handleRunSingle = useCallback(async () => {
     if (!selectedFile || isRunning) {
@@ -380,6 +404,25 @@ export function useSingleActions({
     setRunStatus,
     t,
   ]);
+
+  useEffect(() => {
+    if (runRequestId === 0 || runRequestId === lastProcessedRunRequestId.current) {
+      return;
+    }
+    lastProcessedRunRequestId.current = runRequestId;
+    void handleRunSingle();
+  }, [runRequestId, handleRunSingle]);
+
+  useEffect(() => {
+    if (
+      openOutputFolderRequestId === 0 ||
+      openOutputFolderRequestId === lastProcessedOpenOutputFolderRequestId.current
+    ) {
+      return;
+    }
+    lastProcessedOpenOutputFolderRequestId.current = openOutputFolderRequestId;
+    void handleOpenOutputFolder();
+  }, [openOutputFolderRequestId, handleOpenOutputFolder]);
 
   return {
     isPreparingProxy,
