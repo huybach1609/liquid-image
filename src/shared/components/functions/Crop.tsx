@@ -72,7 +72,15 @@ export const CropFunction = ({
   const cropTrimFuzz = getNumberParam(functionParams, "cropTrimFuzz", 10);
   const cropShaveH = getNumberParam(functionParams, "cropShaveH", 30);
   const cropShaveV = getNumberParam(functionParams, "cropShaveV", 40);
+  // Custom aspect ratio numerator/denominator (e.g. 5:3)
+  const cropCustomW = getNumberParam(functionParams, "cropCustomAspectW", 5);
+  const cropCustomH = getNumberParam(functionParams, "cropCustomAspectH", 4);
 
+  // Derive crop area percentage only when both image and crop size are known
+  const hasValidCrop = cropW > 0 && cropH > 0;
+
+  // Reset clears coordinates to 0 (= full image) and restores defaults.
+  // Do NOT hardcode pixel values that may not match the loaded image.
   const resetCrop = useCallback(() => {
     setCropFreeApplyReview(false);
     setFunctionParams((prev) => ({
@@ -80,10 +88,12 @@ export const CropFunction = ({
       cropMethod: "free",
       cropAspectRatio: "Free",
       cropGravity: "NW",
-      cropX: 120,
-      cropY: 80,
-      cropW: 1200,
-      cropH: 900,
+      cropX: 0,
+      cropY: 0,
+      cropW: 0,
+      cropH: 0,
+      cropCustomAspectW: 5,
+      cropCustomAspectH: 4,
       cropTrimFuzz: 10,
       cropShaveH: 30,
       cropShaveV: 40,
@@ -210,6 +220,32 @@ export const CropFunction = ({
                   </SelectItem>
                 </SelectContent>
               </Select>
+
+              {/* Custom aspect ratio W:H inputs */}
+              {cropAspectRatio === "Custom" ? (
+                <div className="flex items-center gap-1.5">
+                  <div className="relative flex-1">
+                    <Input
+                      inputMode="numeric"
+                      className="h-8 pr-4 text-xs tabular-nums"
+                      value={String(cropCustomW)}
+                      placeholder="5"
+                      onChange={(e) => setNumberParam("cropCustomAspectW", e.target.value)}
+                    />
+                  </div>
+                  <span className="shrink-0 text-xs font-medium text-muted-foreground">:</span>
+                  <div className="relative flex-1">
+                    <Input
+                      inputMode="numeric"
+                      className="h-8 pr-4 text-xs tabular-nums"
+                      value={String(cropCustomH)}
+                      placeholder="4"
+                      onChange={(e) => setNumberParam("cropCustomAspectH", e.target.value)}
+                    />
+                  </div>
+                  <span className="shrink-0 text-xs text-muted-foreground">ratio</span>
+                </div>
+              ) : null}
             </div>
 
             <div className="flex flex-col gap-2">
@@ -304,11 +340,21 @@ export const CropFunction = ({
                   </div>
                 </div>
               </div>
-              <p className="text-xs leading-snug text-muted-foreground">
-                {t("cropForm.freeHint")}
-              </p>
+
+              {/* Realtime crop size info row */}
+              <div className="flex items-center justify-between">
+                <p className="text-xs leading-snug text-muted-foreground">
+                  {t("cropForm.freeHint")}
+                </p>
+                {hasValidCrop ? (
+                  <span className="shrink-0 rounded bg-muted/60 px-1.5 py-0.5 font-mono text-xs tabular-nums text-foreground">
+                    {cropW} × {cropH}
+                  </span>
+                ) : null}
+              </div>
             </div>
 
+            {/* Gravity — only shown when using manual coordinate input (canvas drag fixes gravity to NW) */}
             <div className="flex flex-col gap-1.5">
               <span className="text-xs font-medium text-muted-foreground">
                 {t("cropForm.gravity.label")}
@@ -339,6 +385,9 @@ export const CropFunction = ({
                   );
                 })}
               </div>
+              <p className="text-xs leading-snug text-muted-foreground">
+                {t("cropForm.gravityHint")}
+              </p>
             </div>
           </div>
         )

@@ -84,11 +84,11 @@
       "NW": "NW",
       "Center": "Center",
       "SE": "SE",
-      "NW_tooltip": "NorthWest",
-      "Center_tooltip": "Center",
-      "SE_tooltip": "SouthEast"
-      
+      "NW_tooltip": "NorthWest — crop from top-left",
+      "Center_tooltip": "Center — crop from center",
+      "SE_tooltip": "SouthEast — crop from bottom-right"
     },
+    "gravityHint": "Used when entering coordinates manually. Canvas drag always uses NW (top-left) origin.",
     "fuzzTolerance": "Fuzz tolerance",
     "trimPctMin": "0%",
     "trimHint": "Color tolerance — higher values trim more border that is close to the corner color.",

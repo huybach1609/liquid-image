@@ -264,7 +264,19 @@ export function SingleModePage() {
       : "Free";
 
   const freeCropAspect = useMemo(() => {
-    if (cropAspectRatioStr === "Free" || cropAspectRatioStr === "Custom") {
+    if (cropAspectRatioStr === "Free") {
+      return undefined;
+    }
+    // Custom ratio: read W:H from the dedicated input fields
+    if (cropAspectRatioStr === "Custom") {
+      const cw = Number(functionParams.cropCustomAspectW);
+      const ch = Number(functionParams.cropCustomAspectH);
+      if (
+        Number.isFinite(cw) && Number.isFinite(ch) &&
+        cw > 0 && ch > 0
+      ) {
+        return cw / ch;
+      }
       return undefined;
     }
     const m = cropAspectRatioStr.match(/^(\d+)\s*:\s*(\d+)$/);
@@ -277,7 +289,7 @@ export function SingleModePage() {
       return undefined;
     }
     return a / b;
-  }, [cropAspectRatioStr]);
+  }, [cropAspectRatioStr, functionParams.cropCustomAspectW, functionParams.cropCustomAspectH]);
 
   const freeCropNatural = useMemo(
     (): NaturalCropRect => ({

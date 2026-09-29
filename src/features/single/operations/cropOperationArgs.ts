@@ -60,16 +60,9 @@ export function buildCropOperationArgs(
     return parts;
   }
 
-  const ratio = getStringParam(effectiveParams, "cropAspectRatio", "Free");
-  if (ratio === "1:1") {
-    parts.push("-gravity", "Center", "-crop", "800x800+0+0", "+repage");
-    return parts;
-  }
-  if (ratio === "16:9") {
-    parts.push("-gravity", "Center", "-crop", "1280x720+0+0", "+repage");
-    return parts;
-  }
-
+  // All aspect ratios (Free, 1:1, 4:3, 16:9, 3:2, 9:16, Custom) use the
+  // cropX/Y/W/H that the canvas overlay already computed with the correct
+  // locked aspect ratio. No hardcoded pixel sizes.
   const g = getStringParam(effectiveParams, "cropGravity", "NW");
   const imGravity =
     g === "SE" ? "SouthEast" : g === "Center" ? "Center" : "NorthWest";

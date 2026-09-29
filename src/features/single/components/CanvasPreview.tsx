@@ -163,13 +163,18 @@ export function CanvasPreview({
   const hasSource = Boolean(originUrl);
   const hasPreview = Boolean(previewUrl);
   const canCompare = hasSource && hasPreview;
-  const canPan = zoomPercent > 100;
+  // When free crop is active, lock zoom to 100% so that react-image-crop's
+  // pixel positions (measured in visual/CSS pixels) match our conversion math
+  // which uses img.clientWidth / img.clientHeight (layout pixels, not scaled).
+  // Without this lock, zooming to e.g. 200% makes crop coordinates 2× wrong.
+  const effectiveZoom = freeCrop?.enabled ? 100 : zoomPercent;
+  const canPan = effectiveZoom > 100;
 
   const splitClip = useMemo(
     () => `inset(0 ${100 - splitPercent}% 0 0)`,
     [splitPercent],
   );
-  const zoomScale = zoomPercent / 100;
+  const zoomScale = effectiveZoom / 100;
   const cursorClass = canPan
     ? isDragging
       ? "cursor-grabbing"
@@ -266,6 +271,10 @@ export function CanvasPreview({
       if (target?.closest("[data-preview-control='true']")) {
         return;
       }
+      // Zoom is locked at 100% during free crop mode — ignore wheel events.
+      if (freeCrop?.enabled) {
+        return;
+      }
       event.preventDefault();
       const direction = event.deltaY < 0 ? 1 : -1;
       const nextZoom = Math.min(
@@ -288,7 +297,7 @@ export function CanvasPreview({
       }));
       onZoomChange(nextZoom);
     },
-    [onZoomChange, zoomPercent],
+    [freeCrop?.enabled, onZoomChange, zoomPercent],
   );
 
   const handlePointerDown = useCallback(
@@ -532,15 +541,22 @@ export function CanvasPreview({
         className="absolute right-3 bottom-3 z-20 flex gap-2"
         data-preview-control="true"
       >
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="px-3 text-xs backdrop-blur-2xl"
-          disabled
-        >
-          {zoomPercent}%
-        </Button>
+        {freeCrop?.enabled ? (
+          <span className="flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-xs font-medium text-primary backdrop-blur-2xl">
+            <span className="size-1.5 rounded-full bg-primary" />
+            Crop mode · 100%
+          </span>
+        ) : (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="px-3 text-xs backdrop-blur-2xl"
+            disabled
+          >
+            {zoomPercent}%
+          </Button>
+        )}
         <Button
           type="button"
           size="sm"
