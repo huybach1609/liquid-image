@@ -49,6 +49,13 @@ type CanvasPreviewProps = {
     aspect?: number;
     natural: NaturalCropRect;
     onComplete: (rect: NaturalCropRect) => void;
+    /**
+     * Called when the proxy image loads (or when originUrl changes).
+     * Provides the proxy's natural pixel dimensions so the parent can compute
+     * the correct preview→full-res scale factor for crop geometry.
+     * (Do NOT use previewState.width/height for this — those are AFTER crop, not proxy input size.)
+     */
+    onProxyLoad?: (proxyWidth: number, proxyHeight: number) => void;
   };
 };
 
@@ -427,7 +434,13 @@ export function CanvasPreview({
                 alt="Original"
                 className="max-h-full max-w-full object-contain"
                 draggable={false}
-                onLoad={applyNaturalToFreeCropPixel}
+                onLoad={(e) => {
+                  applyNaturalToFreeCropPixel();
+                  const img = e.currentTarget;
+                  if (freeCrop?.onProxyLoad && img.naturalWidth > 0) {
+                    freeCrop.onProxyLoad(img.naturalWidth, img.naturalHeight);
+                  }
+                }}
               />
               </ReactCrop>
             </div>

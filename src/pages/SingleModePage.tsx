@@ -46,6 +46,13 @@ export function SingleModePage() {
   );
   const [isOperationsPanelCompact, setIsOperationsPanelCompact] = useState(false);
   const operationsPanelRef = useRef<HTMLElement | null>(null);
+  /**
+   * Natural pixel dimensions of the proxy image used by the free-crop canvas.
+   * Set via onProxyLoad when the crop img element fires onLoad.
+   * MUST be the proxy INPUT dimensions — NOT previewState.width/height which
+   * are the OUTPUT (post-crop) dimensions and cause wrong scale calculations.
+   */
+  const [proxyNaturalSize, setProxyNaturalSize] = useState<{ w: number; h: number } | null>(null);
   const {
     selectedFile,
     proxyPath,
@@ -124,6 +131,12 @@ export function SingleModePage() {
     observer.observe(panelEl);
     return () => observer.disconnect();
   }, []);
+
+  // Reset proxy natural size whenever a new proxy is prepared so stale
+  // dimensions from the previous image don't corrupt the scale calculation.
+  useEffect(() => {
+    setProxyNaturalSize(null);
+  }, [proxyPath]);
 
   const selectedCatalogEntry = useMemo(
     () =>
@@ -225,24 +238,30 @@ export function SingleModePage() {
     if (!fileMetadata) {
       return undefined;
     }
-    let previewW = previewState.width ?? 0;
-    let previewH = previewState.height ?? 0;
-    if (previewW <= 0 || previewH <= 0) {
+    // IMPORTANT: use proxy INPUT dimensions (natural size of the proxy image),
+    // not previewState.width/height which are the OUTPUT after crop is applied.
+    // e.g. proxy is 1200×800, after cropping to 515×345 previewState reflects
+    // the cropped output — using it gives a scale of ~11.65× instead of 5×.
+    let proxyW = proxyNaturalSize?.w ?? 0;
+    let proxyH = proxyNaturalSize?.h ?? 0;
+    if (proxyW <= 0 || proxyH <= 0) {
+      // Fall back to estimated proxy dimensions when the canvas hasn't loaded yet
+      // (non-crop operations or initial load before onProxyLoad fires).
       const est = estimateProxyDimensions(
         fileMetadata.width,
         fileMetadata.height,
         previewMaxResolution,
       );
-      previewW = est.width;
-      previewH = est.height;
+      proxyW = est.width;
+      proxyH = est.height;
     }
     return {
       fullWidth: fileMetadata.width,
       fullHeight: fileMetadata.height,
-      previewWidth: previewW,
-      previewHeight: previewH,
+      previewWidth: proxyW,
+      previewHeight: proxyH,
     };
-  }, [fileMetadata, previewState.width, previewState.height, previewMaxResolution]);
+  }, [fileMetadata, proxyNaturalSize, previewMaxResolution]);
 
   const cropMethodRaw = functionParams.cropMethod;
   const cropMethod =
@@ -320,6 +339,13 @@ export function SingleModePage() {
     [setFunctionParams],
   );
 
+  const handleProxyLoad = useCallback(
+    (proxyWidth: number, proxyHeight: number) => {
+      setProxyNaturalSize({ w: proxyWidth, h: proxyHeight });
+    },
+    [],
+  );
+
   const canvasFreeCrop = useMemo(
     () =>
       freeCropInteractive && !cropFreeApplyReview
@@ -328,6 +354,7 @@ export function SingleModePage() {
             aspect: freeCropAspect,
             natural: freeCropNatural,
             onComplete: handleFreeCropComplete,
+            onProxyLoad: handleProxyLoad,
           }
         : undefined,
     [
@@ -336,6 +363,7 @@ export function SingleModePage() {
       freeCropAspect,
       freeCropNatural,
       handleFreeCropComplete,
+      handleProxyLoad,
     ],
   );
 

@@ -41,6 +41,7 @@ type PreviewPaneProps = {
         aspect?: number;
         natural: NaturalCropRect;
         onComplete: (rect: NaturalCropRect) => void;
+        onProxyLoad?: (proxyWidth: number, proxyHeight: number) => void;
       }
     | undefined;
   fileMetadata: ImageMetadata | null;
