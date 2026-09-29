@@ -131,7 +131,7 @@ export function SettingPage() {
               </div>
             </header>
 
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 min-h-0">
               <div className="mx-auto max-w-[800px] p-10">
                 <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                   {activeTab === "general" && (

@@ -94,8 +94,8 @@ export function SettingsSidebar({
   onTabChange,
 }: SettingsSidebarProps) {
   return (
-    <aside className="h-full flex flex-col">
-      <ScrollArea className="flex-1">
+    <aside className="h-full flex flex-col min-h-0">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="py-3 flex flex-col">
           {!isCompact && (
             <div className="px-5 py-3 text-xs font-bold text-muted-foreground/60 uppercase tracking-widest">

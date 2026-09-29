@@ -141,6 +141,31 @@ pub fn run() {
                 let _ = app_menu::setup_native_menubar(&app.handle());
             }
 
+            // Auto-heal / sync context menu executable path if outdated
+            let handle_sync = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                let formats: Vec<String> = if let Ok(store) = handle_sync.store("settings.json") {
+                    if let Some(val) = store.get("settings-storage") {
+                        val.get("state")
+                            .and_then(|s| s.get("contextMenuFormats"))
+                            .and_then(|f| serde_json::from_value::<Vec<String>>(f.clone()).ok())
+                            .unwrap_or_default()
+                    } else {
+                        Vec::new()
+                    }
+                } else {
+                    Vec::new()
+                };
+
+                let effective_formats = if formats.is_empty() {
+                    vec!["webp".into(), "png".into(), "jpeg".into(), "avif".into()]
+                } else {
+                    formats
+                };
+
+                let _ = desktop_integration::sync_context_menu_if_outdated(&effective_formats);
+            });
+
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())

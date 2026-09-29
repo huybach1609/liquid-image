@@ -105,7 +105,7 @@ export function SettingsDialog() {
         {/* Dialog Body */}
         <div className="flex flex-1 min-h-0 w-full overflow-hidden">
           {/* Left Sidebar */}
-          <div className="w-56 sm:w-60 md:w-64 shrink-0 border-r border-border/40 bg-muted/10 flex flex-col">
+          <div className="w-56 sm:w-60 md:w-64 shrink-0 border-r border-border/40 bg-muted/10 flex flex-col min-h-0">
             <SettingsSidebar
               activeTab={activeTab}
               onTabChange={handleTabChange}
@@ -148,7 +148,7 @@ export function SettingsDialog() {
               </div>
             </header>
 
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 min-h-0">
               <div className="mx-auto max-w-[780px] p-6 sm:p-8">
                 <div className="animate-in fade-in slide-in-from-bottom-1 duration-200">
                   {activeTab === "general" && (

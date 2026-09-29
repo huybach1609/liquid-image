@@ -141,6 +141,36 @@ fn is_executable_in_path(cmd: &str) -> bool {
     false
 }
 
+fn extract_exe_from_command(cmd: &str) -> Option<PathBuf> {
+    let trimmed = cmd.trim();
+    if trimmed.starts_with('"') {
+        let after_first_quote = &trimmed[1..];
+        if let Some(end_quote) = after_first_quote.find('"') {
+            return Some(PathBuf::from(&after_first_quote[..end_quote]));
+        }
+    }
+    let first_part = trimmed.split_whitespace().next()?;
+    Some(PathBuf::from(first_part))
+}
+
+fn get_registered_linux_exec_path() -> Option<PathBuf> {
+    let servicemenu_dirs = get_dolphin_servicemenu_dirs();
+    for dir in &servicemenu_dirs {
+        let file_path = dir.join("liquid-image-open.desktop");
+        if file_path.exists() {
+            if let Ok(content) = fs::read_to_string(&file_path) {
+                for line in content.lines() {
+                    let trimmed = line.trim();
+                    if let Some(exec_line) = trimmed.strip_prefix("Exec=") {
+                        return extract_exe_from_command(exec_line);
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
 fn check_linux_servicemenu_status() -> (bool, Option<String>) {
     let servicemenu_dirs = get_dolphin_servicemenu_dirs();
     for dir in &servicemenu_dirs {
@@ -246,14 +276,64 @@ mod windows_impl {
         Ok(())
     }
 
+    pub fn get_registered_exe_path() -> Option<PathBuf> {
+        let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+        let cmd_path = format!(r"{}\OpenWithLiquidImage\command", HKCU_IMAGE_SHELL);
+        if let Ok(key) = hkcu.open_subkey(&cmd_path) {
+            if let Ok(raw_cmd) = key.get_value::<String, _>("") {
+                return extract_exe_from_command(&raw_cmd);
+            }
+        }
+        None
+    }
+
     pub fn check_status() -> Result<(bool, Option<String>), String> {
         let hkcu = RegKey::predef(HKEY_CURRENT_USER);
         let path = format!(r"{}\LiquidImage", HKCU_IMAGE_SHELL);
         if hkcu.open_subkey(&path).is_ok() {
-            Ok((true, Some(format!(r"HKEY_CURRENT_USER\{}", path))))
+            if let Some(registered_exe) = get_registered_exe_path() {
+                let current_exe = std::env::current_exe().unwrap_or_default();
+                let is_matched = registered_exe == current_exe;
+                let exists = registered_exe.exists();
+                let desc = if !exists {
+                    format!("{} (File not found)", registered_exe.display())
+                } else if !is_matched {
+                    format!("{} (Old path, needs update)", registered_exe.display())
+                } else {
+                    format!("{}", registered_exe.display())
+                };
+                Ok((true, Some(desc)))
+            } else {
+                Ok((true, Some(format!(r"HKEY_CURRENT_USER\{}", path))))
+            }
         } else {
             Ok((false, None))
         }
+    }
+
+    pub fn sync_if_outdated(formats: &[String]) -> Result<bool, String> {
+        let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+        let path = format!(r"{}\LiquidImage", HKCU_IMAGE_SHELL);
+        if hkcu.open_subkey(&path).is_err() {
+            return Ok(false);
+        }
+
+        let current_exe = match std::env::current_exe() {
+            Ok(exe) => exe,
+            Err(_) => return Ok(false),
+        };
+
+        if let Some(registered_exe) = get_registered_exe_path() {
+            if registered_exe != current_exe || !registered_exe.exists() {
+                println!(
+                    "[context-menu] Detected outdated registry exe path: {:?} -> updating to current: {:?}",
+                    registered_exe, current_exe
+                );
+                register(formats)?;
+                return Ok(true);
+            }
+        }
+        Ok(false)
     }
 
     pub fn register(formats: &[String]) -> Result<String, String> {
@@ -415,6 +495,39 @@ pub fn unregister_context_menu() -> Result<(), String> {
         }
     } else {
         Ok(())
+    }
+}
+
+/// Automatically synchronizes/heals the context menu command path if the executable was moved or updated
+pub fn sync_context_menu_if_outdated(formats: &[String]) -> Result<bool, String> {
+    #[cfg(target_os = "windows")]
+    {
+        windows_impl::sync_if_outdated(formats)
+    }
+    #[cfg(target_os = "linux")]
+    {
+        let (is_registered, _) = check_linux_servicemenu_status();
+        if !is_registered {
+            return Ok(false);
+        }
+        if let Some(registered_exe) = get_registered_linux_exec_path() {
+            if let Ok(current_exe) = std::env::current_exe() {
+                if registered_exe != current_exe && registered_exe.to_string_lossy() != "liquid-image" {
+                    println!(
+                        "[context-menu] Outdated Linux service menu exec detected: {:?} -> updating to current: {:?}",
+                        registered_exe, current_exe
+                    );
+                    register_dolphin_servicemenu(formats.to_vec())?;
+                    return Ok(true);
+                }
+            }
+        }
+        Ok(false)
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+    {
+        let _ = formats;
+        Ok(false)
     }
 }
 
