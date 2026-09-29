@@ -31,6 +31,7 @@ export interface BatchState {
   setRunning: (running: boolean) => void;
   setOutputDirectory: (path: string) => void;
   addLog: (level: BatchLogLine["level"], message: string) => void;
+  clearLogs: () => void;
   updateItemStatus: (
     index: number,
     status: BatchQueueItem["status"],
@@ -178,6 +179,8 @@ export const useBatchStore = create<BatchState>()(
               },
             ],
           })),
+
+        clearLogs: () => set({ logs: [] }),
 
         updateItemStatus: (index, status, message) =>
           set((state) => {

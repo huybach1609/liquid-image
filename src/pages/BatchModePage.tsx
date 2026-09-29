@@ -38,7 +38,7 @@ export function BatchModePage() {
       <ResizablePanel defaultSize={25} minSize={20}>
         <aside className="grid h-full min-h-0 grid-rows-[auto_1fr_auto] border-l border-border/70">
           {/* Tabs Header */}
-          <div className="flex h-12 items-center border-b border-border/70 bg-muted/10 px-1">
+          <div className="flex h-12 shrink-0 items-center border-b border-border/70 bg-muted/10">
             {[
               { id: "output", label: t("tabs.output", "Output") },
               { id: "log", label: t("tabs.log", "Log") },
@@ -50,7 +50,7 @@ export function BatchModePage() {
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`flex-1 h-full flex items-center justify-center text-xs font-semibold tracking-wider uppercase transition-all ${
                   activeTab === tab.id
-                    ? "bg-background border-x border-border/70 text-primary"
+                    ? "bg-background text-primary"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
                 }`}
               >
@@ -60,10 +60,10 @@ export function BatchModePage() {
           </div>
 
           {/* Tab Content */}
-          <div className="overflow-auto p-4 bg-background">
-            {activeTab === "output" && <BatchOutputPanel />}
-            {activeTab === "log" && <BatchLogPanel />}
-            {activeTab === "settings" && <BatchSettingsPanel />}
+          <div className="min-h-0 h-full overflow-y-auto p-4 bg-background">
+            {activeTab === "output" ? <BatchOutputPanel /> : null}
+            {activeTab === "log" ? <BatchLogPanel /> : null}
+            {activeTab === "settings" ? <BatchSettingsPanel /> : null}
           </div>
 
           {/* Actions Footer */}

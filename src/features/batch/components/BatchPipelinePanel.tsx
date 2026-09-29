@@ -72,7 +72,7 @@ export function BatchPipelinePanel() {
 
   return (
     <div className="grid h-full min-h-0 grid-rows-[auto_1fr_auto]">
-      <header className="flex items-center gap-2 border-b border-border/70 px-4 py-3">
+      <header className="flex h-12 shrink-0 items-center justify-between border-b border-border/70 px-4">
         <p className="text-xs font-medium tracking-[0.08em] text-muted-foreground uppercase">
           {t("pipeline.title", "Pipeline")}
         </p>
@@ -159,11 +159,11 @@ export function BatchPipelinePanel() {
         </div>
       </div>
 
-      <footer className="border-t border-border/70 px-4 py-3 bg-muted/10">
-        <p className="mb-1 text-xs font-medium tracking-[0.08em] text-muted-foreground uppercase">
+      <footer className="flex h-14 shrink-0 flex-col justify-center border-t border-border/70 px-4 bg-muted/10">
+        <p className="mb-0.5 text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase leading-none">
           {t("pipeline.preview", "Mogrify Preview (per file)")}
         </p>
-        <code className="text-sm text-primary/80 font-mono break-all line-clamp-2">
+        <code className="text-xs text-primary/80 font-mono truncate leading-normal">
           mogrify -path {useBatchStore.getState().outputDirectory} {pipeline.map(s => `-${s.functionId.toLowerCase().replace(/ /g, '_')}`).join(' ')} *.jpg
         </code>
       </footer>

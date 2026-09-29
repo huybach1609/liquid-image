@@ -26,7 +26,7 @@ export function BatchQueuePanel() {
 
   return (
     <aside className="grid h-full min-h-0 grid-rows-[auto_1fr_auto] border-r border-border/70">
-      <header className="flex items-center justify-between border-b border-border/70 px-4 py-3">
+      <header className="flex h-12 shrink-0 items-center justify-between border-b border-border/70 px-4">
         <p className="text-xs font-medium tracking-[0.08em] text-muted-foreground uppercase">
           {t("queue.title", "Input Queue")}
         </p>
@@ -94,8 +94,8 @@ export function BatchQueuePanel() {
         )}
       </div>
 
-      <footer className="border-t border-border/70 px-4 py-3 bg-muted/10">
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
+      <footer className="flex h-14 shrink-0 items-center border-t border-border/70 px-4 bg-muted/10">
+        <div className="flex w-full items-center justify-between text-xs text-muted-foreground">
           <p>
             {stats.total} {t("queue.total", "total")}
           </p>
