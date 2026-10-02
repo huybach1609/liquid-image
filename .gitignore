@@ -33,3 +33,17 @@ src-tauri/.cargo/
 
 
 .gitnexus
+
+# Arch Linux / makepkg artifacts
+pkg/
+*.pkg.tar.*
+*.tar.gz
+*.tar.xz
+*.tar.zst
+*.deb
+.SRCINFO
+src/liquid-image-*/
+src/*.tar.*
+packaging/**/src/
+packaging/**/pkg/
+

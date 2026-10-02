@@ -52,13 +52,51 @@ brew install ghostscript
 
 ### Linux
 
-#### Step 1: Install ImageMagick
+#### Arch Linux / Arch-based distributions (CachyOS, Manjaro, EndeavourOS)
+
+You can install `liquid-image` using `makepkg` without needing the AUR. Choose one of the two options below:
+
+##### Option 1: Fast installation from pre-compiled binary (`liquid-image-bin`, Recommended)
+Installs in seconds. No need to install `rust`, `cargo`, or `bun`.
+
+```bash
+git clone https://github.com/huybach1609/liquid-image.git
+cd liquid-image/packaging/liquid-image-bin
+makepkg -si
+```
+
+##### Option 2: Compile from source (`liquid-image`)
+Builds and compiles the source code locally on your machine. Requires `rust`, `cargo`, and `bun` installed.
+
+```bash
+git clone https://github.com/huybach1609/liquid-image.git
+cd liquid-image/packaging/liquid-image
+makepkg -si
+```
+
+##### Updating
+To update to a newer release in the future:
+
+```bash
+git pull
+# Run makepkg -sif in your preferred directory (packaging/liquid-image-bin or packaging/liquid-image)
+makepkg -sif
+```
+
+##### Uninstalling
+Since both packages register with `pacman`, remove them anytime with:
+
+```bash
+sudo pacman -R liquid-image
+```
+
+---
+
+#### Other Linux Distributions
+
+##### Step 1: Install ImageMagick
 Liquid Image includes a Linux sidecar binary, but you can also use your system package manager for optimal performance and format support:
 
-- **Arch Linux / Manjaro:**
-  ```bash
-  sudo pacman -S imagemagick
-  ```
 - **Ubuntu / Debian:**
   ```bash
   sudo apt update && sudo apt install -y imagemagick
@@ -68,8 +106,9 @@ Liquid Image includes a Linux sidecar binary, but you can also use your system p
   sudo dnf install -y ImageMagick
   ```
 
-#### Step 2: Install Liquid Image
+##### Step 2: Install Liquid Image
 Download the `.deb`, `.AppImage`, or package from [Releases](https://github.com/huybach1609/liquid-image/releases).
+
 
 ---
 

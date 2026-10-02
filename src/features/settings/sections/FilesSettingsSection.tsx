@@ -5,11 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
   ComboboxContent,
   ComboboxEmpty,
-  ComboboxInput,
   ComboboxItem,
   ComboboxList,
+  ComboboxValue,
+  useComboboxAnchor,
 } from "@/components/ui/combobox";
 import {
   Select,
@@ -123,9 +127,15 @@ export function FilesSettingsSection({
     };
   }, [formatCatalog]);
 
+  const comboboxAnchor = useComboboxAnchor();
+
   const selectedFormats = useMemo(() => {
     return (draft.contextMenuFormats || []).map((f) => f.toLowerCase());
   }, [draft.contextMenuFormats]);
+
+  const selectedFormatsUpper = useMemo(() => {
+    return selectedFormats.map((f) => f.toUpperCase());
+  }, [selectedFormats]);
 
   const handleToggleFormat = (fmt: string) => {
     const clean = fmt.trim().toLowerCase();
@@ -449,19 +459,38 @@ export function FilesSettingsSection({
                     </span>
                   </div>
                   <Combobox
+                    multiple
                     items={formatOptions.names}
-                    value=""
+                    value={selectedFormatsUpper}
                     onValueChange={(val) => {
-                      if (val) {
-                        handleToggleFormat(val);
-                      }
+                      const next = ((val as string[]) || []).map((v) =>
+                        v.trim().toLowerCase(),
+                      );
+                      onUpdateSetting("contextMenuFormats", next);
                     }}
                   >
-                    <ComboboxInput
-                      className="w-full"
-                      placeholder={t("files.contextMenu.searchPlaceholder")}
-                    />
-                    <ComboboxContent className="max-h-60 overflow-y-auto">
+                    <ComboboxChips ref={comboboxAnchor} className="w-full min-h-9">
+                      <ComboboxValue>
+                        {(values: string[]) =>
+                          (values || []).map((val) => (
+                            <ComboboxChip key={val}>
+                              {val}
+                            </ComboboxChip>
+                          ))
+                        }
+                      </ComboboxValue>
+                      <ComboboxChipsInput
+                        placeholder={
+                          selectedFormats.length === 0
+                            ? t("files.contextMenu.searchPlaceholder")
+                            : ""
+                        }
+                      />
+                    </ComboboxChips>
+                    <ComboboxContent
+                      anchor={comboboxAnchor}
+                      className="max-h-60 overflow-y-auto"
+                    >
                       <ComboboxEmpty>
                         {t("files.contextMenu.noMatchingFormats")}
                       </ComboboxEmpty>
@@ -469,30 +498,22 @@ export function FilesSettingsSection({
                         {(item) => {
                           const name = item as string;
                           const format = formatOptions.catalogByName.get(name);
-                          const isSelected = selectedFormats.includes(
-                            name.toLowerCase(),
-                          );
                           return (
                             <ComboboxItem key={name} value={name}>
-                              <div className="flex w-full items-center justify-between gap-3">
-                                <div className="flex flex-col gap-0.5">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-medium font-mono">
-                                      {name}
-                                    </span>
-                                    <span className="text-[11px] text-muted-foreground font-mono">
-                                      {format?.mode ?? "rw+"}
-                                    </span>
-                                  </div>
-                                  <span className="line-clamp-1 text-xs text-muted-foreground/80">
-                                    {format?.description ||
-                                      format?.module ||
-                                      "Image format"}
+                              <div className="flex flex-col gap-0.5 min-w-0 pr-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium font-mono">
+                                    {name}
+                                  </span>
+                                  <span className="text-[11px] text-muted-foreground font-mono">
+                                    {format?.mode ?? "rw+"}
                                   </span>
                                 </div>
-                                {isSelected && (
-                                  <Check className="size-4 text-primary shrink-0" />
-                                )}
+                                <span className="line-clamp-1 text-xs text-muted-foreground/80">
+                                  {format?.description ||
+                                    format?.module ||
+                                    "Image format"}
+                                </span>
                               </div>
                             </ComboboxItem>
                           );

@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 type BumpType = "patch" | "minor" | "major";
@@ -76,11 +76,28 @@ function main() {
   cargoContent = cargoContent.replace(cargoPackageRegex, `$1"${newVersion}"`);
   writeFileSync(cargoPath, cargoContent, "utf-8");
 
+  // 4. Update PKGBUILD files
+  const pkgbuildPaths = [
+    resolve(rootDir, "PKGBUILD"),
+    resolve(rootDir, "packaging/liquid-image/PKGBUILD"),
+    resolve(rootDir, "packaging/liquid-image-bin/PKGBUILD"),
+  ];
+
+  for (const path of pkgbuildPaths) {
+    if (existsSync(path)) {
+      let content = readFileSync(path, "utf-8");
+      content = content.replace(/^pkgver=.*$/m, `pkgver=${newVersion}`);
+      content = content.replace(/^pkgrel=.*$/m, `pkgrel=1`);
+      writeFileSync(path, content, "utf-8");
+    }
+  }
+
   console.log(`\n🎉 Successfully bumped version: \x1b[33mv${currentVersion}\x1b[0m → \x1b[32mv${newVersion}\x1b[0m\n`);
   console.log("Updated files:");
   console.log("  ✓ package.json");
   console.log("  ✓ src-tauri/Cargo.toml");
-  console.log("  ✓ src-tauri/tauri.conf.json (auto-synced via \"../package.json\")\n");
+  console.log("  ✓ src-tauri/tauri.conf.json (auto-synced via \"../package.json\")");
+  console.log("  ✓ PKGBUILD & packaging/*/PKGBUILD\n");
   console.log("Next recommended Git commands:");
   console.log(`  git commit -am "chore: release v${newVersion}"`);
   console.log(`  git tag v${newVersion}`);
@@ -88,3 +105,4 @@ function main() {
 }
 
 main();
+

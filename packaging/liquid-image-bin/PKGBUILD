@@ -1,0 +1,29 @@
+# Maintainer: huybach1609 <huybach1609@gmail.com>
+pkgname=liquid-image-bin
+pkgver=0.1.3
+pkgrel=1
+pkgdesc="A modern desktop batch image processor and converter built with Tauri v2 (precompiled binary)"
+arch=('x86_64')
+url="https://github.com/huybach1609/liquid-image"
+license=('MIT')
+
+provides=('liquid-image')
+conflicts=('liquid-image')
+
+depends=(
+  'webkit2gtk-4.1'
+  'gtk3'
+  'libsoup3'
+  'openssl'
+  'hicolor-icon-theme'
+  'imagemagick'
+)
+
+source_x86_64=("$pkgname-$pkgver.deb::$url/releases/download/v$pkgver/liquid-image_${pkgver}_amd64.deb")
+sha256sums_x86_64=('cd95877443254b26fea81b1eed464e121750464a8ba0f960ad46ef4fd5848e9b')
+
+package() {
+  bsdtar -xf data.tar.gz -C "$pkgdir/"
+  # Remove bundled magick binary to prevent file conflict with Arch's official imagemagick package
+  rm -f "$pkgdir/usr/bin/magick"
+}
