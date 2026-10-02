@@ -379,6 +379,20 @@ mod windows_impl {
             }
         }
 
+        // 3. Register as an Application handler in HKCU\Software\Classes\Applications\liquid-image.exe
+        if let Ok((app_key, _)) = hkcu.create_subkey(r"Software\Classes\Applications\liquid-image.exe") {
+            let _ = app_key.set_value("FriendlyAppName", &"Liquid Image");
+            let _ = app_key.set_value("ApplicationCompany", &"Liquid Image");
+            if let Ok((supported_key, _)) = app_key.create_subkey("SupportedTypes") {
+                for ext in &[".jpg", ".jpeg", ".png", ".webp", ".avif", ".gif", ".bmp", ".heic"] {
+                    let _ = supported_key.set_value(*ext, &"");
+                }
+            }
+            if let Ok((cmd_key, _)) = app_key.create_subkey(r"shell\open\command") {
+                let _ = cmd_key.set_value("", &format!("{} \"%1\"", exe_quoted));
+            }
+        }
+
         Ok(format!(r"HKEY_CURRENT_USER\{}\LiquidImage", HKCU_IMAGE_SHELL))
     }
 
@@ -397,7 +411,41 @@ mod windows_impl {
             }
         }
 
+        let _ = hkcu.delete_subkey_all(r"Software\Classes\Applications\liquid-image.exe");
+
         Ok(())
+    }
+}
+
+#[command]
+pub fn open_default_apps_settings() -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("cmd")
+            .args(["/C", "start", "ms-settings:defaultapps"])
+            .spawn()
+            .map_err(|e| format!("Failed to open Windows Settings: {e}"))?;
+        Ok(())
+    }
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg("x-apple.systempreferences:")
+            .spawn()
+            .map_err(|e| format!("Failed to open System Settings: {e}"))?;
+        Ok(())
+    }
+    #[cfg(target_os = "linux")]
+    {
+        let _ = std::process::Command::new("xdg-open")
+            .arg("settings://")
+            .spawn()
+            .or_else(|_| std::process::Command::new("gnome-control-center").arg("default-apps").spawn());
+        Ok(())
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    {
+        Err("Default apps settings not supported on this platform".into())
     }
 }
 

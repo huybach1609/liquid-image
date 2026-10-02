@@ -64,4 +64,5 @@ export type SettingsState = {
   // Context Menu Integration
   contextMenuEnabled: boolean;
   contextMenuFormats: string[];
+  defaultViewerEnabled: boolean;
 };

@@ -186,3 +186,17 @@ export async function registerDolphinServiceMenu(formats: string[]): Promise<str
 export async function unregisterDolphinServiceMenu(): Promise<void> {
   return unregisterContextMenu();
 }
+
+export async function openDefaultAppsSettings(): Promise<void> {
+  return invoke<void>("open_default_apps_settings");
+}
+
+export type OpenFilesPayload = {
+  files: string[];
+  mode?: "viewer" | "studio";
+};
+
+export async function getInitialOpenFiles(): Promise<OpenFilesPayload | null> {
+  return invoke<OpenFilesPayload | null>("get_initial_open_files");
+}
+

@@ -56,6 +56,9 @@ const SECTION_RESET_KEYS: Record<
     "namingPattern",
     "conflictPolicy",
     "autoOpenOutput",
+    "contextMenuEnabled",
+    "contextMenuFormats",
+    "defaultViewerEnabled",
   ],
   processing: [
     "workers",

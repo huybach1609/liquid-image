@@ -18,6 +18,7 @@ const SettingsDialog = lazy(() => import("@/features/settings/SettingsDialog"));
 import {
   menubarUsesNative,
   preloadImageFormatInfo,
+  getInitialOpenFiles,
 } from "@/shared/tauri/commands";
 import { TooltipProvider } from "@/shared/components/ui/tooltip";
 import { useThemeSync } from "@/shared/hooks/useThemeSync";
@@ -63,24 +64,19 @@ export function AppShell() {
           mode?: "viewer" | "studio";
         };
 
-    const unlistenPromise = listen<OpenFilesPayload>("app:open-files", (event) => {
-      const payload = event.payload;
-      if (!payload) return;
-
+    const handleOpenFilesPayload = (payload: OpenFilesPayload) => {
       const files = Array.isArray(payload) ? payload : payload.files;
       const targetMode = Array.isArray(payload) ? undefined : payload.mode;
 
       if (!files || files.length === 0) return;
 
-      if (files.length === 1) {
-        if (targetMode === "studio") {
-          useAppStore.getState().setMode("single");
-          useSingleStore.getState().setSelectedFile(files[0]);
-        } else {
-          // Default to Quick Viewer for single image
-          useAppStore.getState().setMode("viewer");
-          void useViewerStore.getState().openImage(files[0]);
-        }
+      if (targetMode === "viewer" || (files.length === 1 && targetMode !== "studio")) {
+        // Quick Viewer mode for single image or explicit viewer mode
+        useAppStore.getState().setMode("viewer");
+        void useViewerStore.getState().openImage(files[0]);
+      } else if (targetMode === "studio" && files.length === 1) {
+        useAppStore.getState().setMode("single");
+        useSingleStore.getState().setSelectedFile(files[0]);
       } else {
         useAppStore.getState().setMode("batch");
         const items = files.map((f) => ({
@@ -88,6 +84,24 @@ export function AppShell() {
           name: f.split("/").pop() || f,
         }));
         useBatchStore.getState().addFiles(items);
+      }
+    };
+
+    // 1. Fetch initial files from backend (solves cold start race condition)
+    void getInitialOpenFiles()
+      .then((initialPayload) => {
+        if (initialPayload && initialPayload.files && initialPayload.files.length > 0) {
+          handleOpenFilesPayload(initialPayload);
+        }
+      })
+      .catch((error) => {
+        console.error("[AppShell] Failed to get initial open files", error);
+      });
+
+    // 2. Listen for open-files events while running (single-instance hot launches)
+    const unlistenPromise = listen<OpenFilesPayload>("app:open-files", (event) => {
+      if (event.payload) {
+        handleOpenFilesPayload(event.payload);
       }
     });
 

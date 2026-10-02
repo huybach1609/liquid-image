@@ -40,12 +40,81 @@ pub struct CliArgs {
     pub headless: bool,
 }
 
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct OpenFilesPayload {
+    pub files: Vec<String>,
+    pub mode: String, // "viewer" | "studio"
+}
+
+/// Decodes percent-encoded UTF-8 strings (e.g. "%20" -> " ")
+pub fn percent_decode(s: &str) -> String {
+    let mut bytes = Vec::new();
+    let mut chars = s.as_bytes().iter().copied();
+    while let Some(b) = chars.next() {
+        if b == b'%' {
+            if let (Some(h1), Some(h2)) = (chars.next(), chars.next()) {
+                if let Ok(val) = u8::from_str_radix(std::str::from_utf8(&[h1, h2]).unwrap_or(""), 16) {
+                    bytes.push(val);
+                    continue;
+                } else {
+                    bytes.push(b'%');
+                    bytes.push(h1);
+                    bytes.push(h2);
+                    continue;
+                }
+            } else {
+                bytes.push(b'%');
+                continue;
+            }
+        }
+        bytes.push(b);
+    }
+    String::from_utf8_lossy(&bytes).to_string()
+}
+
+/// Sanitizes file path strings from CLI or desktop file managers (Dolphin/KDE, Nautilus, Windows Explorer)
+/// Strips quotes, decodes file:// URIs, and handles percent-encoded spaces.
+pub fn sanitize_file_path(path: &str) -> String {
+    let mut s = path.trim().trim_matches('"').trim_matches('\'').to_string();
+    if s.is_empty() {
+        return s;
+    }
+
+    if s.starts_with("file://") {
+        s = s.trim_start_matches("file://").to_string();
+        // On Windows file:///C:/path -> /C:/path -> C:/path
+        #[cfg(target_os = "windows")]
+        if s.starts_with('/') && s.len() > 2 && s.as_bytes()[2] == b':' {
+            s = s[1..].to_string();
+        }
+        s = percent_decode(&s);
+    } else if s.contains('%') {
+        let decoded = percent_decode(&s);
+        if Path::new(&decoded).exists() || decoded.contains(' ') {
+            s = decoded;
+        }
+    }
+
+    s
+}
+
 impl CliArgs {
     pub fn parse_from_args(args: impl IntoIterator<Item = String>) -> Self {
-        match Self::try_parse_from(args) {
+        let mut cli = match Self::try_parse_from(args) {
             Ok(cli) => cli,
             Err(_) => Self::default(),
-        }
+        };
+
+        // Sanitize and normalize file paths (e.g. from Dolphin file:// or percent-encoded paths)
+        cli.files = cli
+            .files
+            .into_iter()
+            .map(|f| sanitize_file_path(&f))
+            .filter(|f| !f.is_empty())
+            .collect();
+
+        cli
     }
 
     pub fn is_headless_convert(&self) -> bool {
@@ -232,5 +301,28 @@ mod tests {
 
         let path_custom = compute_output_path("/home/user/images/photo.png", "jpg", Some("/tmp/output"));
         assert_eq!(path_custom, PathBuf::from("/tmp/output/photo.jpg"));
+    }
+
+    #[test]
+    fn test_percent_decode() {
+        assert_eq!(percent_decode("hello%20world"), "hello world");
+        assert_eq!(percent_decode("_%20(1).jpeg"), "_ (1).jpeg");
+        assert_eq!(percent_decode("no_percent.png"), "no_percent.png");
+    }
+
+    #[test]
+    fn test_sanitize_file_path() {
+        assert_eq!(
+            sanitize_file_path("\"/home/user/Pictures/image.png\""),
+            "/home/user/Pictures/image.png"
+        );
+        assert_eq!(
+            sanitize_file_path("file:///home/user/Pictures/_%20(1).jpeg"),
+            "/home/user/Pictures/_ (1).jpeg"
+        );
+        assert_eq!(
+            sanitize_file_path("file:///home/user/Pictures/photo.png"),
+            "/home/user/Pictures/photo.png"
+        );
     }
 }

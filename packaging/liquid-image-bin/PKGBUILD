@@ -1,6 +1,6 @@
 # Maintainer: huybach1609 <huybach1609@gmail.com>
 pkgname=liquid-image-bin
-pkgver=0.1.3
+pkgver=0.1.4
 pkgrel=1
 pkgdesc="A modern desktop batch image processor and converter built with Tauri v2 (precompiled binary)"
 arch=('x86_64')

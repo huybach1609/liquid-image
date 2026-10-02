@@ -126,7 +126,8 @@
     "sections": {
       "locations": "Thư mục mặc định",
       "naming": "Đặt tên tệp",
-      "contextMenu": "Trình quản lý tệp & Menu ngữ cảnh"
+      "contextMenu": "Trình quản lý tệp & Menu ngữ cảnh",
+      "defaultViewer": "Ứng dụng xem ảnh mặc định"
     },
     "outputFolder": {
       "name": "Thư mục xuất mặc định",
@@ -187,6 +188,16 @@
       "installError": "Lỗi cài đặt: {{error}}",
       "uninstallSuccess": "Đã gỡ bỏ thành công.",
       "uninstallError": "Lỗi gỡ bỏ: {{error}}"
+    },
+    "defaultViewer": {
+      "title": "Đặt làm trình xem ảnh mặc định trên Windows",
+      "description": "Mở ảnh trực tiếp bằng Quick Viewer của Liquid Image khi nhấp đúp vào file ảnh trên máy tính",
+      "openSettings": "Mở Cài đặt Windows",
+      "instructionTitle": "Hướng dẫn thiết lập ứng dụng mặc định:",
+      "step1": "Nhấp nút \"Mở Cài đặt Windows\" bên dưới (hoặc vào Windows Settings → Default apps).",
+      "step2": "Tìm Liquid Image hoặc chọn Photo viewer cho các định dạng ảnh (.jpg, .png, .webp, .avif, .heic...).",
+      "step3": "Hoặc nhấp chuột phải vào file ảnh bất kỳ → Open with → Choose another app → Tích chọn \"Always use this app\".",
+      "associatedFormats": "Định dạng liên kết:"
     }
   },
   "notifications": {

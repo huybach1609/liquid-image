@@ -68,6 +68,7 @@ export const initialSettings: SettingsState = {
   // Context Menu Integration
   contextMenuEnabled: true,
   contextMenuFormats: ["webp", "png", "jpeg", "avif"],
+  defaultViewerEnabled: false,
 };
 
 export const useSettingsStore = create<SettingsStoreState>()(

@@ -64,6 +64,14 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "externalBin": ["binaries/magick"]
+    "externalBin": ["binaries/magick"],
+    "fileAssociations": [
+      {
+        "ext": ["jpg", "jpeg", "png", "webp", "avif", "gif", "bmp", "heic"],
+        "name": "Image",
+        "description": "Image file",
+        "role": "Viewer"
+      }
+    ]
   }
 }

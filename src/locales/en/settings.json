@@ -126,7 +126,8 @@
     "sections": {
       "locations": "Default locations",
       "naming": "File naming",
-      "contextMenu": "File Explorer & Context Menu"
+      "contextMenu": "File Explorer & Context Menu",
+      "defaultViewer": "Default Image Viewer"
     },
     "outputFolder": {
       "name": "Default output folder",
@@ -187,6 +188,16 @@
       "installError": "Installation error: {{error}}",
       "uninstallSuccess": "Successfully uninstalled.",
       "uninstallError": "Uninstall error: {{error}}"
+    },
+    "defaultViewer": {
+      "title": "Set as Default Image Viewer on Windows",
+      "description": "Open images directly in Liquid Image Quick Viewer when double-clicking image files",
+      "openSettings": "Open Windows Settings",
+      "instructionTitle": "How to set as default app:",
+      "step1": "Click \"Open Windows Settings\" below (or go to Windows Settings → Default apps).",
+      "step2": "Find Liquid Image or select Photo viewer for image formats (.jpg, .png, .webp, .avif, .heic...).",
+      "step3": "Or right-click any image file → Open with → Choose another app → Check \"Always use this app\".",
+      "associatedFormats": "Associated formats:"
     }
   },
   "notifications": {

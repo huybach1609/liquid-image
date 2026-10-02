@@ -34,12 +34,13 @@ import {
   checkDolphinIntegrationStatus,
   registerDolphinServiceMenu,
   unregisterDolphinServiceMenu,
+  openDefaultAppsSettings,
   getImageFormatInfo,
   getCachedImageFormatInfo,
   type DolphinIntegrationStatus,
 } from "@/shared/tauri/commands";
 import type { MagickFormatInfo } from "@/shared/types/magick";
-import { Check, X } from "lucide-react";
+import { Check, ExternalLink, X } from "lucide-react";
 
 const AVAILABLE_PRESET_FORMATS = ["webp", "png", "jpeg", "avif", "gif", "tiff", "bmp"];
 
@@ -213,6 +214,14 @@ export function FilesSettingsSection({
     }
   };
 
+  const handleOpenDefaultAppsSettings = async () => {
+    try {
+      await openDefaultAppsSettings();
+    } catch (e) {
+      console.error("Failed to open default apps settings", e);
+    }
+  };
+
   const contextMenuTitle =
     dolphinStatus?.platform === "windows"
       ? t("files.contextMenu.windowsTitle")
@@ -348,6 +357,62 @@ export function FilesSettingsSection({
               onCheckedChange={(v) => onUpdateSetting("autoOpenOutput", v)}
             />
           </SettingRow>
+        </SettingGroup>
+      </SettingSection>
+
+      <SettingSection label={t("files.sections.defaultViewer")}>
+        <SettingGroup>
+          <SettingRow
+            name={t("files.defaultViewer.title")}
+            description={t("files.defaultViewer.description")}
+          >
+            <Switch
+              checked={draft.defaultViewerEnabled}
+              onCheckedChange={(v) => onUpdateSetting("defaultViewerEnabled", v)}
+            />
+          </SettingRow>
+
+          {draft.defaultViewerEnabled && (
+            <div className="p-4 border-t border-border/60 space-y-3 bg-muted/10 text-xs">
+              <div className="space-y-1.5 text-muted-foreground leading-relaxed">
+                <div className="font-semibold text-foreground text-xs">
+                  {t("files.defaultViewer.instructionTitle")}
+                </div>
+                <div className="space-y-1 pl-1">
+                  <div>{t("files.defaultViewer.step1")}</div>
+                  <div>{t("files.defaultViewer.step2")}</div>
+                  <div>{t("files.defaultViewer.step3")}</div>
+                </div>
+              </div>
+
+              {/* Supported file formats badges */}
+              <div className="flex flex-wrap gap-1.5 items-center pt-1">
+                <span className="text-[11px] font-medium text-muted-foreground mr-1">
+                  {t("files.defaultViewer.associatedFormats")}
+                </span>
+                {[".jpg", ".jpeg", ".png", ".webp", ".avif", ".gif", ".bmp", ".heic"].map((ext) => (
+                  <span
+                    key={ext}
+                    className="px-2 py-0.5 rounded bg-muted text-[11px] font-mono font-medium text-foreground border border-border/60"
+                  >
+                    {ext}
+                  </span>
+                ))}
+              </div>
+
+              <div className="pt-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleOpenDefaultAppsSettings}
+                  className="gap-2 text-xs h-8 cursor-pointer"
+                >
+                  <ExternalLink className="size-3.5" />
+                  {t("files.defaultViewer.openSettings")}
+                </Button>
+              </div>
+            </div>
+          )}
         </SettingGroup>
       </SettingSection>
 

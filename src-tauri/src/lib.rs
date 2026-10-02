@@ -14,6 +14,7 @@ mod magick;
 
 pub struct AppState {
     pub batch_cancel_token: Mutex<Option<CancellationToken>>,
+    pub pending_open_files: Mutex<Option<cli::OpenFilesPayload>>,
 }
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -28,11 +29,22 @@ fn menubar_uses_native() -> bool {
     cfg!(target_os = "macos")
 }
 
+/// Retrieve and consume any initial open files passed via CLI or file manager on startup
+#[tauri::command]
+fn get_initial_open_files(state: tauri::State<AppState>) -> Option<cli::OpenFilesPayload> {
+    if let Ok(mut pending) = state.pending_open_files.lock() {
+        pending.take()
+    } else {
+        None
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(AppState {
             batch_cancel_token: Mutex::new(None),
+            pending_open_files: Mutex::new(None),
         })
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             println!("[single-instance] launched with args: {:?}", args);
@@ -44,17 +56,17 @@ pub fn run() {
                 });
             } else {
                 if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.unminimize();
                     let _ = window.show();
                     let _ = window.set_focus();
                     if !cli_args.files.is_empty() {
                         let is_viewer = cli_args.is_viewer_mode();
-                        let _ = window.emit(
-                            "app:open-files",
-                            serde_json::json!({
-                                "files": cli_args.files,
-                                "mode": if is_viewer { "viewer" } else { "studio" }
-                            }),
-                        );
+                        let payload = cli::OpenFilesPayload {
+                            files: cli_args.files,
+                            mode: if is_viewer { "viewer".into() } else { "studio".into() },
+                        };
+                        let _ = app.emit("app:open-files", &payload);
+                        let _ = window.emit("app:open-files", &payload);
                     }
                 }
             }
@@ -121,18 +133,21 @@ pub fn run() {
             }
 
             if !initial_cli.files.is_empty() {
-                let files = initial_cli.files.clone();
                 let is_viewer = initial_cli.is_viewer_mode();
+                let payload = cli::OpenFilesPayload {
+                    files: initial_cli.files.clone(),
+                    mode: if is_viewer { "viewer".to_string() } else { "studio".to_string() },
+                };
+
+                let state = app.state::<AppState>();
+                if let Ok(mut pending) = state.pending_open_files.lock() {
+                    *pending = Some(payload.clone());
+                }
+
                 let handle_clone = app.handle().clone();
                 tauri::async_runtime::spawn(async move {
-                    tokio::time::sleep(std::time::Duration::from_millis(800)).await;
-                    let _ = handle_clone.emit(
-                        "app:open-files",
-                        serde_json::json!({
-                            "files": files,
-                            "mode": if is_viewer { "viewer" } else { "studio" }
-                        }),
-                    );
+                    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+                    let _ = handle_clone.emit("app:open-files", &payload);
                 });
             }
 
@@ -181,12 +196,14 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             menubar_uses_native,
+            get_initial_open_files,
             desktop_integration::check_context_menu_status,
             desktop_integration::register_context_menu,
             desktop_integration::unregister_context_menu,
             desktop_integration::check_dolphin_integration_status,
             desktop_integration::register_dolphin_servicemenu,
             desktop_integration::unregister_dolphin_servicemenu,
+            desktop_integration::open_default_apps_settings,
             magick::service::convert_image,
             magick::service::check_version,
             magick::service::get_image_metadata,
@@ -242,15 +259,19 @@ mod tests {
     fn app_state_should_initialize_with_none_token() {
         let state = AppState {
             batch_cancel_token: Mutex::new(None),
+            pending_open_files: Mutex::new(None),
         };
         let token = state.batch_cancel_token.lock().unwrap();
         assert!(token.is_none());
+        let pending = state.pending_open_files.lock().unwrap();
+        assert!(pending.is_none());
     }
 
     #[test]
     fn app_state_should_store_and_retrieve_cancel_token() {
         let state = AppState {
             batch_cancel_token: Mutex::new(None),
+            pending_open_files: Mutex::new(None),
         };
         let token = CancellationToken::new();
         {
