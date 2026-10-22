@@ -1,6 +1,6 @@
 [package]
 name = "liquid-image"
-version = "0.1.4"
+version = "0.1.5"
 description = "A modern desktop batch image processor and converter powered by ImageMagick"
 authors = ["huybach1609 <huybach1609@gmail.com>"]
 license = "MIT"
