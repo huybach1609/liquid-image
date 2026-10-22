@@ -5,7 +5,15 @@ import { open } from "@tauri-apps/plugin-dialog";
 
 export function BatchQueuePanel() {
   const { t } = useTranslation("batch");
-  const { queue, stats, addFiles, removeFile, clearQueue } = useBatchStore();
+  const {
+    queue,
+    stats,
+    addFiles,
+    removeFile,
+    clearQueue,
+    selectedFileId,
+    setSelectedFileId,
+  } = useBatchStore();
 
   const handleAddFiles = async () => {
     const selected = await open({
@@ -58,39 +66,48 @@ export function BatchQueuePanel() {
             </p>
           </div>
         ) : (
-          queue.map((item) => (
-            <div
-              key={item.id}
-              className={`group relative rounded-lg border px-3 py-2 transition-colors ${
-                item.status === "running"
-                  ? "border-primary/50 bg-primary/5"
-                  : item.status === "error"
-                    ? "border-destructive/50 bg-destructive/5"
-                    : item.status === "done"
-                      ? "border-success/50 bg-success/5"
-                      : "border-border/70 bg-background hover:border-border"
-              }`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{item.fileName}</p>
-                  <p className="truncate text-xs text-muted-foreground">{item.path}</p>
+          queue.map((item) => {
+            const isSelected = selectedFileId === item.id;
+            return (
+              <div
+                key={item.id}
+                onClick={() => setSelectedFileId(item.id)}
+                className={`group relative rounded-lg border px-3 py-2 transition-colors cursor-pointer ${
+                  isSelected
+                    ? "ring-1 ring-primary border-primary bg-primary/5"
+                    : item.status === "running"
+                      ? "border-primary/50 bg-primary/5"
+                      : item.status === "error"
+                        ? "border-destructive/50 bg-destructive/5"
+                        : item.status === "done"
+                          ? "border-success/50 bg-success/5"
+                          : "border-border/70 bg-background hover:border-border"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{item.fileName}</p>
+                    <p className="truncate text-xs text-muted-foreground">{item.path}</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 pt-0.5">
+                    {item.status === "running" && <Loader2 className="size-3.5 animate-spin text-primary" />}
+                    {item.status === "done" && <CheckCircle2 className="size-3.5 text-success" />}
+                    {item.status === "error" && <FileWarning className="size-3.5 text-destructive" />}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeFile(item.id);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-muted rounded transition-opacity"
+                    >
+                      <X className="size-3" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5 pt-0.5">
-                  {item.status === "running" && <Loader2 className="size-3.5 animate-spin text-primary" />}
-                  {item.status === "done" && <CheckCircle2 className="size-3.5 text-success" />}
-                  {item.status === "error" && <FileWarning className="size-3.5 text-destructive" />}
-                  <button
-                    onClick={() => removeFile(item.id)}
-                    className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-muted rounded transition-opacity"
-                  >
-                    <X className="size-3" />
-                  </button>
-                </div>
+                {item.errorMessage && <p className="mt-1 truncate text-xs text-destructive">{item.errorMessage}</p>}
               </div>
-              {item.errorMessage && <p className="mt-1 truncate text-xs text-destructive">{item.errorMessage}</p>}
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 

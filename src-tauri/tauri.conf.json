@@ -65,6 +65,11 @@
       "icons/icon.ico"
     ],
     "externalBin": ["binaries/magick"],
+    "resources": {
+      "../LICENSE": "licenses/LICENSE.txt",
+      "../THIRD_PARTY_NOTICES.md": "licenses/THIRD_PARTY_NOTICES.md",
+      "../licenses/ImageMagick-LICENSE.txt": "licenses/ImageMagick-LICENSE.txt"
+    },
     "fileAssociations": [
       {
         "ext": ["jpg", "jpeg", "png", "webp", "avif", "gif", "bmp", "heic"],

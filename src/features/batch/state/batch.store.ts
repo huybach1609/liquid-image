@@ -15,8 +15,10 @@ export interface BatchState {
   isRunning: boolean;
   stats: BatchRunStats;
   outputDirectory: string;
+  selectedFileId: string | null;
 
   // Actions
+  setSelectedFileId: (id: string | null) => void;
   addFiles: (files: { path: string; name: string }[]) => void;
   removeFile: (id: string) => void;
   clearQueue: () => void;
@@ -61,6 +63,9 @@ export const useBatchStore = create<BatchState>()(
         isRunning: false,
         outputDirectory: getDefaultBatchOutputDirectory(),
         stats: { total: 0, queued: 0, running: 0, done: 0, error: 0 },
+        selectedFileId: null,
+
+        setSelectedFileId: (id) => set({ selectedFileId: id }),
 
         addFiles: (files) =>
           set((state) => {
@@ -73,6 +78,7 @@ export const useBatchStore = create<BatchState>()(
             const combined = [...state.queue, ...newItems];
             return {
               queue: combined,
+              selectedFileId: state.selectedFileId ?? (newItems[0]?.id ?? null),
               stats: {
                 ...state.stats,
                 total: combined.length,
@@ -86,6 +92,10 @@ export const useBatchStore = create<BatchState>()(
             const filtered = state.queue.filter((i) => i.id !== id);
             return {
               queue: filtered,
+              selectedFileId:
+                state.selectedFileId === id
+                  ? (filtered[0]?.id ?? null)
+                  : state.selectedFileId,
               stats: {
                 ...state.stats,
                 total: filtered.length,
@@ -97,6 +107,7 @@ export const useBatchStore = create<BatchState>()(
         clearQueue: () =>
           set({
             queue: [],
+            selectedFileId: null,
             stats: { total: 0, queued: 0, running: 0, done: 0, error: 0 },
           }),
 

@@ -44,6 +44,9 @@ package() {
   install -Dm644 "src-tauri/icons/icon.png" "$pkgdir/usr/share/icons/hicolor/512x512/apps/liquid-image.png"
   install -Dm644 "public/app-icon.svg" "$pkgdir/usr/share/icons/hicolor/scalable/apps/liquid-image.svg"
 
+  # Install License
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+
   # Install Desktop Entry launcher
   install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/liquid-image.desktop" << END
 [Desktop Entry]

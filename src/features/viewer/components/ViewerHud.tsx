@@ -67,9 +67,6 @@ export function ViewerHud({ isHudVisible, onMouseEnterHud, onMouseLeaveHud }: Vi
   };
 
   const handleEditInStudio = () => {
-    if (currentImagePath) {
-      useSingleStore.getState().setSelectedFile(currentImagePath);
-    }
     useAppStore.getState().setMode("single");
   };
 

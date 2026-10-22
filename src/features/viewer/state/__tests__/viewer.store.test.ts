@@ -1,7 +1,22 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, beforeEach } from "bun:test";
 import { useViewerStore } from "../viewer.store";
 
 describe("useViewerStore", () => {
+  beforeEach(() => {
+    useViewerStore.setState({
+      currentImagePath: null,
+      siblingImages: [],
+      currentIndex: 0,
+      zoomLevel: 1.0,
+      rotation: 0,
+      isHudVisible: true,
+      panOffset: { x: 0, y: 0 },
+      imageDimensions: null,
+      proxyUrl: null,
+      bgMode: "theme",
+    });
+  });
+
   it("should have correct initial state", () => {
     const state = useViewerStore.getState();
     expect(state.currentImagePath).toBeNull();

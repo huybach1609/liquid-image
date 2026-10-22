@@ -102,10 +102,6 @@ export function useViewerShortcuts() {
         case "e":
         case "E": {
           e.preventDefault();
-          const current = store.currentImagePath;
-          if (current) {
-            useSingleStore.getState().setSelectedFile(current);
-          }
           useAppStore.getState().setMode("single");
           break;
         }
