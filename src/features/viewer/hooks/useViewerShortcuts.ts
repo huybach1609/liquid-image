@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useViewerStore } from "@/features/viewer/state/viewer.store";
 import { useAppStore } from "@/app/store/app.store";
-import { useSingleStore } from "@/features/single/state/single.store";
 
 export function useViewerShortcuts() {
   useEffect(() => {

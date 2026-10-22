@@ -1,6 +1,5 @@
 import { useViewerStore } from "@/features/viewer/state/viewer.store";
 import { useAppStore } from "@/app/store/app.store";
-import { useSingleStore } from "@/features/single/state/single.store";
 import { getFileNameFromPath } from "@/features/single/pathUtils";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useState, useEffect } from "react";
