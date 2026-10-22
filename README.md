@@ -71,29 +71,26 @@
 
 <table>
   <tr>
-    <td colspan="2" valign="top">
-      <table>
-        <tr>
-          <td width="55%" valign="middle">
-            <img src="assest/screen_menu_context.png" alt="Right-click menu in KDE Dolphin on a PNG file, showing a Convert with Liquid Image submenu with Convert to AVIF, JPEG, PNG, WEBP and Open in Studio Editor, plus an Open with Liquid Image entry" width="100%">
-            <br>
-            <sub>Right-click any image in Dolphin to convert it without opening the app.</sub>
-          </td>
-          <td width="45%" valign="middle">
-            <h3>⚡ Convert straight from your file manager</h3>
-            Right-click one or more images and choose <b>Convert with Liquid Image › Convert to AVIF / JPEG / PNG / WEBP</b>. No window, no pipeline to set up, just a converted file next to the original.
-            <br><br>
-            Need more control? <b>Open in Studio Editor</b> sends the image straight into Edit mode, and <b>Open with Liquid Image</b> opens it in the built-in viewer.
-            <br><br>
-            Works in <b>Windows File Explorer</b> and <b>KDE Dolphin</b>. Turn it on and choose which formats to show in <b>Settings › Files &amp; output › File Explorer &amp; Context Menu</b>.
-          </td>
-        </tr>
-      </table>
+    <td width="55%" valign="middle">
+      <img src="assest/screen_menu_context.png" alt="Right-click menu in KDE Dolphin on a PNG file, showing a Convert with Liquid Image submenu with Convert to AVIF, JPEG, PNG, WEBP and Open in Studio Editor, plus an Open with Liquid Image entry" width="480">
+      <br>
+      <sub>Right-click any image in Dolphin to convert it without opening the app.</sub>
+    </td>
+    <td width="45%" valign="middle">
+      <h3>⚡ Convert straight from your file manager</h3>
+      Right-click one or more images and choose <b>Convert with Liquid Image › Convert to AVIF / JPEG / PNG / WEBP</b>. No window, no pipeline to set up, just a converted file next to the original.
+      <br><br>
+      Need more control? <b>Open in Studio Editor</b> sends the image straight into Edit mode, and <b>Open with Liquid Image</b> opens it in the built-in viewer.
+      <br><br>
+      Works in <b>Windows File Explorer</b> and <b>KDE Dolphin</b>. Turn it on and choose which formats to show in <b>Settings › Files &amp; output › File Explorer &amp; Context Menu</b>.
     </td>
   </tr>
+</table>
+
+<table>
   <tr>
     <td width="50%" valign="top">
-      <img src="assest/screen_edit_mode.png" alt="Edit mode in the dark theme: a free crop frame with a rule-of-thirds grid drawn over a flower photo, with crop options on the right" width="100%">
+      <img src="assest/screen_edit_mode.png" alt="Edit mode in the dark theme: a free crop frame with a rule-of-thirds grid drawn over a flower photo, with crop options on the right" width="420">
       <br>
       <sub>Free crop with a rule-of-thirds grid, aspect ratio and gravity controls.</sub>
       <h3>Edit with a live preview</h3>
@@ -102,7 +99,7 @@
       Crop methods include <b>Free crop</b>, <b>Auto trim</b> (removes borders that match the corner colours) and <b>Shave edges</b>.
     </td>
     <td width="50%" valign="top">
-      <img src="assest/screen_edit_mode_2.png" alt="Edit mode in the light Starbucks theme: Scale / resize options with width, height, keep aspect ratio, size presets and Resize / Thumbnail / Sample methods" width="100%">
+      <img src="assest/screen_edit_mode_2.png" alt="Edit mode in the light Starbucks theme: Scale / resize options with width, height, keep aspect ratio, size presets and Resize / Thumbnail / Sample methods" width="420">
       <br>
       <sub>Scale / resize with size presets and a choice of resampling method.</sub>
       <h3>Precise, predictable resizing</h3>
@@ -113,14 +110,14 @@
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <img src="assest/screen_preview.png" alt="The built-in image viewer showing example.png at 100% with a floating toolbar for navigation, zoom, rotate and a Studio button" width="100%">
+      <img src="assest/screen_preview.png" alt="The built-in image viewer showing example.png at 100% with a floating toolbar for navigation, zoom, rotate and a Studio button" width="420">
       <br>
       <sub>The built-in viewer, with zoom, rotate, fullscreen and a one-click jump to Studio.</sub>
       <h3>A viewer built in</h3>
       Open any image to browse through the folder, zoom, fit, rotate and go fullscreen. When something needs fixing, press <b>Studio</b> to open it straight into the editor.
     </td>
     <td width="50%" valign="top">
-      <img src="assest/screen_theme.png" alt="The Settings › Appearance panel with eight design themes (Light, Dark, Claude, Claude Dark, Notion, Notion Dark, Starbucks, Starbucks Dark) and typography controls" width="100%">
+      <img src="assest/screen_theme.png" alt="The Settings › Appearance panel with eight design themes (Light, Dark, Claude, Claude Dark, Notion, Notion Dark, Starbucks, Starbucks Dark) and typography controls" width="420">
       <br>
       <sub>Settings › Appearance: themes, base font size and layout options.</sub>
       <h3>Make it yours</h3>
