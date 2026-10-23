@@ -20,7 +20,7 @@ depends=(
 )
 
 source_x86_64=("$pkgname-$pkgver.deb::$url/releases/download/v$pkgver/liquid-image_${pkgver}_amd64.deb")
-sha256sums_x86_64=('86cabdeed1c52be6edcee8fb0a5b654d2f418ff6202a9739d6f6bcf4d535fd54')
+sha256sums_x86_64=('a0229ef730962c1ee3c4c8e887e2387511e5a9bca7c5932ce938056b861e268f')
 
 package() {
   bsdtar -xf data.tar.gz -C "$pkgdir/"
