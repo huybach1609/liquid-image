@@ -3,8 +3,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/shared/components/ui/button";
-import { Input } from "../../components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { getNumberParam, getStringParam } from "@/lib/functionParams";
 import { cn } from "@/lib/utils";
 

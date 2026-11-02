@@ -9,18 +9,24 @@ import { useAppStore } from "@/app/store/app.store";
 import { useSingleStore } from "@/features/single/state/single.store";
 import { useBatchStore } from "@/features/batch/state/batch.store";
 import { useViewerStore } from "@/features/viewer/state/viewer.store";
-import { BatchModePage } from "@/pages/BatchModePage";
-import { SingleModePage } from "@/pages/SingleModePage";
-import { SettingPage } from "@/pages/SettingPage";
-import { ViewerPage } from "@/pages/ViewerPage";
 
+const BatchModePage = lazy(() =>
+  import("@/pages/BatchModePage").then((m) => ({ default: m.BatchModePage }))
+);
+const SingleModePage = lazy(() =>
+  import("@/pages/SingleModePage").then((m) => ({ default: m.SingleModePage }))
+);
+const ViewerPage = lazy(() =>
+  import("@/pages/ViewerPage").then((m) => ({ default: m.ViewerPage }))
+);
 const SettingsDialog = lazy(() => import("@/features/settings/SettingsDialog"));
+
 import {
   menubarUsesNative,
   preloadImageFormatInfo,
   getInitialOpenFiles,
 } from "@/shared/tauri/commands";
-import { TooltipProvider } from "@/shared/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { useThemeSync } from "@/shared/hooks/useThemeSync";
 import { useTranslation } from "react-i18next";
 
@@ -31,18 +37,11 @@ export function AppShell() {
   const [nativeMenubar, setNativeMenubar] = useState<boolean | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const isFullFrameMode =
-    mode === "single" || mode === "batch" || mode === "settings" || mode === "viewer";
+    mode === "single" || mode === "batch" || mode === "viewer";
   const appWindow = useMemo(() => getCurrentWindow(), []);
 
   useThemeSync();
   useMenubarBridge();
-
-  useEffect(() => {
-    if (mode === "settings") {
-      useAppStore.getState().setMode("single");
-      useAppStore.getState().openSettings();
-    }
-  }, [mode]);
 
   useEffect(() => {
     void menubarUsesNative()
@@ -161,7 +160,6 @@ export function AppShell() {
               data-tauri-drag-region={false}
               onMouseDown={(e) => e.stopPropagation()}
             >
-              {/* <ModeSwitch /> */}
               <LanguageSwitcher />
             </div>
             <button
@@ -197,17 +195,17 @@ export function AppShell() {
               : "app-shell-grid mx-auto w-full max-w-[1200px]"
           }
         >
-          {mode === "single" ? (
-            <SingleModePage />
-          ) : mode === "batch" ? (
-            <BatchModePage />
-          ) : mode === "settings" ? (
-            <SettingPage />
-          ) : mode === "viewer" ? (
-            <ViewerPage />
-          ) : (
-            <section className="app-shell-content" />
-          )}
+          <Suspense fallback={null}>
+            {mode === "single" ? (
+              <SingleModePage />
+            ) : mode === "batch" ? (
+              <BatchModePage />
+            ) : mode === "viewer" ? (
+              <ViewerPage />
+            ) : (
+              <section className="app-shell-content" />
+            )}
+          </Suspense>
         </div>
         {isSettingsOpen && (
           <Suspense fallback={null}>

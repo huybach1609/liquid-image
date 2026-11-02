@@ -13,7 +13,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/shared/components/ui/tooltip";
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { SettingsTab } from "./hooks/useSettingsDraft";
 

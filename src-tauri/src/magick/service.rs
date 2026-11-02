@@ -180,18 +180,6 @@ pub async fn list_magick_formats(app: AppHandle) -> Result<Vec<MagickFormatInfo>
 }
 
 #[command]
-pub async fn convert_image(app: AppHandle, path: String) -> Result<String, String> {
-    let source = get_magick_source();
-    let output = create_magick_command(&app, &source)?
-        .arg("-convert")
-        .arg(path)
-        .output()
-        .await
-        .map_err(|e| e.to_string())?;
-    Ok(String::from_utf8_lossy(&output.stdout).to_string())
-}
-
-#[command]
 pub async fn check_version(app: AppHandle) -> Result<MagickVersionInfo, String> {
     let source = get_magick_source();
     let output = create_magick_command(&app, &source)?

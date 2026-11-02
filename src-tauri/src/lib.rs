@@ -9,18 +9,11 @@ mod app_menu;
 
 pub mod cli;
 pub mod desktop_integration;
-mod contracts;
 mod magick;
 
 pub struct AppState {
     pub batch_cancel_token: Mutex<Option<CancellationToken>>,
     pub pending_open_files: Mutex<Option<cli::OpenFilesPayload>>,
-}
-
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-#[tauri::command]
-fn greet(name: String) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
 /// `true` when the host uses a native system menubar (macOS). Windows/Linux use in-window web menubar.
@@ -49,6 +42,8 @@ pub fn run() {
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             println!("[single-instance] launched with args: {:?}", args);
             let cli_args = cli::CliArgs::parse_from_args(args);
+            #[cfg(debug_assertions)]
+            println!("{:?}", cli_args);
             let handle = app.clone();
             if cli_args.is_headless_convert() {
                 tauri::async_runtime::spawn(async move {
@@ -123,10 +118,7 @@ pub fn run() {
                 #[cfg(desktop)]
                 {
                     let icon_bytes = include_bytes!("../icons/32x32.png");
-                    if let Ok(image) = image::load_from_memory(icon_bytes) {
-                        let rgba = image.to_rgba8();
-                        let (width, height) = rgba.dimensions();
-                        let icon = tauri::image::Image::new_owned(rgba.into_raw(), width, height);
+                    if let Ok(icon) = tauri::image::Image::from_bytes(icon_bytes) {
                         let _ = window.set_icon(icon);
                     }
                 }
@@ -194,17 +186,12 @@ pub fn run() {
             );
         })
         .invoke_handler(tauri::generate_handler![
-            greet,
             menubar_uses_native,
             get_initial_open_files,
             desktop_integration::check_context_menu_status,
             desktop_integration::register_context_menu,
             desktop_integration::unregister_context_menu,
-            desktop_integration::check_dolphin_integration_status,
-            desktop_integration::register_dolphin_servicemenu,
-            desktop_integration::unregister_dolphin_servicemenu,
             desktop_integration::open_default_apps_settings,
-            magick::service::convert_image,
             magick::service::check_version,
             magick::service::get_image_metadata,
             magick::service::get_sibling_images,
@@ -227,24 +214,6 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn greet_should_return_formatted_hello_message() {
-        let result = greet("World".to_string());
-        assert_eq!(result, "Hello, World! You've been greeted from Rust!");
-    }
-
-    #[test]
-    fn greet_should_handle_empty_name() {
-        let result = greet("".to_string());
-        assert_eq!(result, "Hello, ! You've been greeted from Rust!");
-    }
-
-    #[test]
-    fn greet_should_handle_special_characters() {
-        let result = greet("Rust 🦀".to_string());
-        assert_eq!(result, "Hello, Rust 🦀! You've been greeted from Rust!");
-    }
 
     #[test]
     fn menubar_uses_native_should_return_true_on_macos() {

@@ -1,4 +1,5 @@
 import type { ConflictPolicy } from "@/features/settings/types";
+import { exists } from "@tauri-apps/plugin-fs";
 
 /**
  * Generates a unique filename by appending _1, _2, etc. before the file extension
@@ -36,7 +37,6 @@ export async function resolvePathConflict(
   }
 
   try {
-    const { exists } = await import("@tauri-apps/plugin-fs");
     const isExisting = await exists(targetPath);
     if (!isExisting) {
       return { path: targetPath, skip: false };

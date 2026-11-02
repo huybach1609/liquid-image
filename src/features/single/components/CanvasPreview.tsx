@@ -1,6 +1,6 @@
 import { Slider } from "@/components/ui/slider";
 import { Spinner } from "@/components/ui/spinner";
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { SquareSplitHorizontal } from "lucide-react";
 import {
   useCallback,
@@ -431,6 +431,7 @@ export function CanvasPreview({
               <img
                 ref={freeCropImgRef}
                 src={originUrl ?? undefined}
+                crossOrigin="anonymous"
                 alt="Original"
                 className="max-h-full max-w-full object-contain"
                 draggable={false}
@@ -441,6 +442,9 @@ export function CanvasPreview({
                     freeCrop.onProxyLoad(img.naturalWidth, img.naturalHeight);
                   }
                 }}
+                onError={(e) => {
+                  console.error("[CanvasPreview] Failed to load free-crop originUrl", e.currentTarget.src);
+                }}
               />
               </ReactCrop>
             </div>
@@ -450,6 +454,7 @@ export function CanvasPreview({
                 <img
                   key={previewUrl ?? "preview"}
                   src={previewUrl ?? undefined}
+                  crossOrigin="anonymous"
                   alt="Preview"
                   className="pointer-events-none absolute inset-0 z-10 h-full w-full object-contain"
                   style={{ clipPath: splitClip }}
@@ -466,6 +471,7 @@ export function CanvasPreview({
               <img
                 key={previewUrl}
                 src={previewUrl ?? undefined}
+                crossOrigin="anonymous"
                 alt="Preview"
                 className="pointer-events-none absolute inset-0 z-10 h-full w-full object-contain opacity-55"
                 draggable={false}
@@ -477,9 +483,13 @@ export function CanvasPreview({
             {!(compareMode === "preview" && hasPreview) ? (
               <img
                 src={originUrl ?? undefined}
+                crossOrigin="anonymous"
                 alt="Original"
                 className="h-full w-full object-contain"
                 draggable={false}
+                onError={(e) => {
+                  console.error("[CanvasPreview] Failed to load originUrl", e.currentTarget.src);
+                }}
               />
             ) : null}
 
@@ -488,6 +498,7 @@ export function CanvasPreview({
                 <img
                   key={previewUrl ?? "preview"}
                   src={previewUrl ?? undefined}
+                  crossOrigin="anonymous"
                   alt="Preview"
                   className="pointer-events-none absolute inset-0 h-full w-full object-contain"
                   style={{ clipPath: splitClip }}
@@ -504,6 +515,7 @@ export function CanvasPreview({
               <img
                 key={previewUrl}
                 src={previewUrl ?? undefined}
+                crossOrigin="anonymous"
                 alt="Preview"
                 className="h-full w-full object-contain"
                 draggable={false}

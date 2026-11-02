@@ -2,7 +2,7 @@ import { memo, type ComponentType } from "react";
 import { Ellipsis } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,

@@ -37,6 +37,7 @@ export function useImagePreloader() {
     for (const path of preloadPaths) {
       if (path && isDirectRenderable(path)) {
         const img = new Image();
+        img.crossOrigin = "anonymous";
         img.src = convertFileSrc(path);
         imagesToPreload.push(img);
       }

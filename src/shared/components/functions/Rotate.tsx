@@ -4,7 +4,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { getNumberParam, getStringParam } from "@/lib/functionParams";
 import { cn } from "@/lib/utils";
 

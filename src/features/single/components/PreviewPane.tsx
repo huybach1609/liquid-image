@@ -2,7 +2,7 @@ import { memo } from "react";
 import { ChevronDown, Play } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import {
   DropdownMenu,
@@ -21,7 +21,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/shared/components/ui/tooltip";
+} from "@/components/ui/tooltip";
 
 type PreviewPaneProps = {
   isManualPreview: boolean;

@@ -6,10 +6,6 @@ import type { MagickFormatInfo } from "@/shared/types/magick";
 let magickFormatCatalogPromise: Promise<MagickFormatInfo[]> | null = null;
 let magickFormatCatalogCache: MagickFormatInfo[] | null = null;
 
-export async function greet(name: string): Promise<string> {
-  return invoke<string>("greet", { name });
-}
-
 export async function menubarUsesNative(): Promise<boolean> {
   return invoke<boolean>("menubar_uses_native");
 }
@@ -161,8 +157,6 @@ export type ContextMenuStatus = {
   configuredFormats: string[];
 };
 
-export type DolphinIntegrationStatus = ContextMenuStatus;
-
 export async function checkContextMenuStatus(): Promise<ContextMenuStatus> {
   return invoke<ContextMenuStatus>("check_context_menu_status");
 }
@@ -173,18 +167,6 @@ export async function registerContextMenu(formats: string[]): Promise<string> {
 
 export async function unregisterContextMenu(): Promise<void> {
   return invoke<void>("unregister_context_menu");
-}
-
-export async function checkDolphinIntegrationStatus(): Promise<DolphinIntegrationStatus> {
-  return checkContextMenuStatus();
-}
-
-export async function registerDolphinServiceMenu(formats: string[]): Promise<string> {
-  return registerContextMenu(formats);
-}
-
-export async function unregisterDolphinServiceMenu(): Promise<void> {
-  return unregisterContextMenu();
 }
 
 export async function openDefaultAppsSettings(): Promise<void> {

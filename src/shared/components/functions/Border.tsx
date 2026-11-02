@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { getNumberParam, getStringParam } from "@/lib/functionParams";
-import { Input } from "../../components/ui/input";
+import { Input } from "@/components/ui/input";
 
 interface BorderFunctionProps {
   params?: Record<string, any>;

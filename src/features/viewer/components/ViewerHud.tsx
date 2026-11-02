@@ -21,7 +21,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/shared/components/ui/tooltip";
+} from "@/components/ui/tooltip";
 
 type ViewerHudProps = {
   isHudVisible: boolean;

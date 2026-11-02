@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { writeTextFile, mkdir, readTextFile, readDir, remove } from "@tauri-apps/plugin-fs";
 import { useSettingsStore } from "@/features/settings/state/settings.store";
 import { useBatchStore } from "@/features/batch/state/batch.store";
 import type { BatchPipelineStep } from "@/features/batch/types";
@@ -31,7 +32,6 @@ export async function savePreset(
   };
 
   try {
-    const { writeTextFile, mkdir } = await import("@tauri-apps/plugin-fs");
     const normalizedDir = presetFolder.replace(/\/$/, "");
     await mkdir(normalizedDir, { recursive: true });
     const filePath = `${normalizedDir}/${id}.json`;
@@ -52,7 +52,6 @@ export async function loadPreset(filePathOrId: string): Promise<PresetData | nul
         localStorage.getItem(`liquid-preset:${filePathOrId.replace("local:", "")}`) ||
         "";
     } else {
-      const { readTextFile } = await import("@tauri-apps/plugin-fs");
       content = await readTextFile(filePathOrId);
     }
 
@@ -76,7 +75,6 @@ export function usePresetActions() {
     const results: PresetData[] = [];
 
     try {
-      const { readDir, readTextFile } = await import("@tauri-apps/plugin-fs");
       const normalizedDir = presetFolder.replace(/\/$/, "");
       const entries = await readDir(normalizedDir);
       for (const entry of entries) {
@@ -112,7 +110,6 @@ export function usePresetActions() {
       if (filePathOrId.startsWith("local:")) {
         localStorage.removeItem(`liquid-preset:${filePathOrId.replace("local:", "")}`);
       } else {
-        const { remove } = await import("@tauri-apps/plugin-fs");
         await remove(filePathOrId);
       }
     } catch (e) {

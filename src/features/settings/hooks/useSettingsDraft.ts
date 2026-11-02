@@ -1,6 +1,7 @@
 import * as React from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
+import { checkVersion } from "@/shared/tauri/commands";
 
 import {
   initialSettings,
@@ -111,7 +112,7 @@ export function useSettingsDraft(activeTab: SettingsTab) {
     const fetchMagickSource = async () => {
       try {
         const source = await invoke<any>("get_current_magick_source");
-        const version = await invoke<any>("check_version");
+        const version = await checkVersion();
         setMagickStatus({
           type: source.type,
           path: source.path,
@@ -237,7 +238,7 @@ export function useSettingsDraft(activeTab: SettingsTab) {
         });
       }
 
-      const version = await invoke<any>("check_version");
+      const version = await checkVersion();
       setMagickStatus(
         draft.magickBinaryPath.trim()
           ? {

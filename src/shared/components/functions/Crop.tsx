@@ -14,9 +14,9 @@ import { useSingleStore } from "@/features/single/state/single.store";
 import { useSingleT } from "@/i18n/useSingleT";
 import { getNumberParam, getStringParam } from "@/lib/functionParams";
 import { cn } from "@/lib/utils";
-import { Button } from "@/shared/components/ui/button";
-import { Input } from "@/shared/components/ui/input";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 type CropMethod = "free" | "trim" | "shave";
 type CropGravity = "NW" | "Center" | "SE";

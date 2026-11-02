@@ -12,8 +12,6 @@ pub struct ContextMenuStatus {
     pub configured_formats: Vec<String>,
 }
 
-pub type DolphinIntegrationStatus = ContextMenuStatus;
-
 /// Detect directories where KDE Dolphin looks for ServiceMenus
 fn get_dolphin_servicemenu_dirs() -> Vec<PathBuf> {
     let mut dirs = Vec::new();
@@ -579,13 +577,7 @@ pub fn sync_context_menu_if_outdated(formats: &[String]) -> Result<bool, String>
     }
 }
 
-#[command]
-pub fn check_dolphin_integration_status() -> Result<DolphinIntegrationStatus, String> {
-    check_context_menu_status()
-}
-
-#[command]
-pub fn register_dolphin_servicemenu(formats: Vec<String>) -> Result<String, String> {
+fn register_dolphin_servicemenu(formats: Vec<String>) -> Result<String, String> {
     if !cfg!(target_os = "linux") {
         return Err("Dolphin ServiceMenu is only available on Linux".into());
     }
@@ -638,8 +630,7 @@ pub fn register_dolphin_servicemenu(formats: Vec<String>) -> Result<String, Stri
     Ok(installed_locations.join(", "))
 }
 
-#[command]
-pub fn unregister_dolphin_servicemenu() -> Result<(), String> {
+fn unregister_dolphin_servicemenu() -> Result<(), String> {
     let servicemenu_dirs = get_dolphin_servicemenu_dirs();
     for dir in servicemenu_dirs {
         let file_path = dir.join("liquid-image-actions.desktop");

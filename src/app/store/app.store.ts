@@ -9,7 +9,6 @@ import { useBatchStore } from "@/features/batch/state/batch.store";
 
 export function syncActiveImageBetweenModes(prevMode: AppMode, nextMode: AppMode) {
   if (prevMode === nextMode) return;
-  if (prevMode === "settings" || nextMode === "settings") return;
 
   // 1. Resolve current active image from previous mode
   let activeImage: string | null = null;

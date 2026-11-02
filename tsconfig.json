@@ -25,6 +25,6 @@
     },
     "types": ["bun-types"]
   },
-  "include": ["src", "src-tauri/AppIcons"],
+  "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }],
 }

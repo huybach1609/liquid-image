@@ -31,13 +31,13 @@ import {
 import { cn } from "@/lib/utils";
 import type { ConflictPolicy, SettingsState } from "@/features/settings/types";
 import {
-  checkDolphinIntegrationStatus,
-  registerDolphinServiceMenu,
-  unregisterDolphinServiceMenu,
+  checkContextMenuStatus,
+  registerContextMenu,
+  unregisterContextMenu,
   openDefaultAppsSettings,
   getImageFormatInfo,
   getCachedImageFormatInfo,
-  type DolphinIntegrationStatus,
+  type ContextMenuStatus,
 } from "@/shared/tauri/commands";
 import type { MagickFormatInfo } from "@/shared/types/magick";
 import { Check, ExternalLink, X } from "lucide-react";
@@ -57,16 +57,16 @@ export function FilesSettingsSection({
   onUpdateSetting,
 }: FilesSettingsSectionProps) {
   const { t } = useTranslation("settings");
-  const [dolphinStatus, setDolphinStatus] = useState<DolphinIntegrationStatus | null>(null);
+  const [contextMenuStatus, setContextMenuStatus] = useState<ContextMenuStatus | null>(null);
   const [isOperating, setIsOperating] = useState(false);
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
 
   const loadStatus = async () => {
     try {
-      const res = await checkDolphinIntegrationStatus();
-      setDolphinStatus(res);
+      const res = await checkContextMenuStatus();
+      setContextMenuStatus(res);
     } catch (e) {
-      console.error("[settings] failed to check dolphin status", e);
+      console.error("[settings] failed to check context menu status", e);
     }
   };
 
@@ -182,7 +182,7 @@ export function FilesSettingsSection({
     setIsOperating(true);
     setActionFeedback(null);
     try {
-      const path = await registerDolphinServiceMenu(draft.contextMenuFormats || []);
+      const path = await registerContextMenu(draft.contextMenuFormats || []);
       setActionFeedback(t("files.contextMenu.installSuccess", { path }));
       await loadStatus();
     } catch (err: any) {
@@ -200,7 +200,7 @@ export function FilesSettingsSection({
     setIsOperating(true);
     setActionFeedback(null);
     try {
-      await unregisterDolphinServiceMenu();
+      await unregisterContextMenu();
       setActionFeedback(t("files.contextMenu.uninstallSuccess"));
       await loadStatus();
     } catch (err: any) {
@@ -223,23 +223,23 @@ export function FilesSettingsSection({
   };
 
   const contextMenuTitle =
-    dolphinStatus?.platform === "windows"
+    contextMenuStatus?.platform === "windows"
       ? t("files.contextMenu.windowsTitle")
-      : dolphinStatus?.platform === "linux"
+      : contextMenuStatus?.platform === "linux"
       ? t("files.contextMenu.linuxTitle")
       : t("files.contextMenu.genericTitle");
 
   const contextMenuDescription =
-    dolphinStatus?.platform === "windows"
+    contextMenuStatus?.platform === "windows"
       ? t("files.contextMenu.windowsDescription")
-      : dolphinStatus?.platform === "linux"
+      : contextMenuStatus?.platform === "linux"
       ? t("files.contextMenu.linuxDescription")
       : t("files.contextMenu.genericDescription");
 
   const contextMenuSubtitle =
-    dolphinStatus?.platform === "windows"
+    contextMenuStatus?.platform === "windows"
       ? t("files.contextMenu.windowsSubtitle")
-      : dolphinStatus?.platform === "linux"
+      : contextMenuStatus?.platform === "linux"
       ? t("files.contextMenu.linuxSubtitle")
       : t("files.contextMenu.genericSubtitle");
 
@@ -593,9 +593,9 @@ export function FilesSettingsSection({
                 <div className="text-xs">
                   <div className="font-medium text-foreground">
                     {t("files.contextMenu.systemStatus")}{" "}
-                    {dolphinStatus?.isRegistered ? (
+                    {contextMenuStatus?.isRegistered ? (
                       <span className="text-emerald-500 font-semibold">
-                        {dolphinStatus?.platform === "windows"
+                        {contextMenuStatus?.platform === "windows"
                           ? t("files.contextMenu.registeredRegistry")
                           : t("files.contextMenu.registeredServiceMenu")}
                       </span>
@@ -605,9 +605,9 @@ export function FilesSettingsSection({
                       </span>
                     )}
                   </div>
-                  {dolphinStatus?.installedPath ? (
+                  {contextMenuStatus?.installedPath ? (
                     <div className="text-muted-foreground text-[11px] font-mono mt-0.5 truncate max-w-[360px]">
-                      {dolphinStatus.installedPath}
+                      {contextMenuStatus.installedPath}
                     </div>
                   ) : null}
                   {actionFeedback ? (
@@ -628,7 +628,7 @@ export function FilesSettingsSection({
                       ? t("files.contextMenu.processing")
                       : t("files.contextMenu.installOrUpdate")}
                   </Button>
-                  {dolphinStatus?.isRegistered ? (
+                  {contextMenuStatus?.isRegistered ? (
                     <Button
                       size="sm"
                       variant="ghost"

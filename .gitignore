@@ -46,3 +46,9 @@ src/*.tar.*
 packaging/**/src/
 packaging/**/pkg/
 
+.gitnexus
+.openidea
+.gemini
+.cursor
+.claude
+.vscode

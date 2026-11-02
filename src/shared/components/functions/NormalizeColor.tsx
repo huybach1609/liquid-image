@@ -2,7 +2,7 @@ import { useSingleStore } from "@/features/single/state/single.store";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
 import { getNumberParam, getStringParam } from "@/lib/functionParams";

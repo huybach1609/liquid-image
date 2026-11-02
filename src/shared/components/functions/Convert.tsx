@@ -24,8 +24,8 @@ import { useSingleStore } from "@/features/single/state/single.store";
 import { useSettingsStore } from "@/features/settings/state/settings.store";
 import { getNumberParam, getStringParam } from "@/lib/functionParams";
 import { cn } from "@/lib/utils";
-import { Button } from "@/shared/components/ui/button";
-import { Input } from "../ui/input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   getCachedImageFormatInfo,
   getImageFormatInfo,

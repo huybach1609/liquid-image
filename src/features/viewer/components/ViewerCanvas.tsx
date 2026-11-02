@@ -231,6 +231,7 @@ export function ViewerCanvas() {
             <img
               key={imageSrc}
               src={imageSrc}
+              crossOrigin="anonymous"
               alt="Viewer Display"
               draggable={false}
               className={`max-h-[85vh] max-w-[90vw] object-contain pointer-events-none select-none shadow-2xl shadow-black/20 dark:shadow-black/60 transition-opacity duration-200 ease-out ${

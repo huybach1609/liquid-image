@@ -4,6 +4,7 @@ import { useBatchStore } from "../state/batch.store";
 import { useAppStore } from "@/app/store/app.store";
 import { useSettingsStore } from "@/features/settings/state/settings.store";
 import { openPath } from "@tauri-apps/plugin-opener";
+import { writeTextFile } from "@tauri-apps/plugin-fs";
 import { 
   runBatch as tauriRunBatch, 
   runBatchDryRun as tauriRunBatchDryRun,
@@ -201,7 +202,6 @@ export function useBatchRunner() {
       // Auto open output folder if enabled
       if (autoOpenOutput && outputDirectory) {
         try {
-          const { openPath } = await import("@tauri-apps/plugin-opener");
           await openPath(outputDirectory);
         } catch (openErr) {
           console.warn("Failed to auto-open output directory:", openErr);
@@ -214,7 +214,6 @@ export function useBatchRunner() {
       // Save error log to file if enabled and errors occurred
       if (saveErrorLog && errorsRef.current.length > 0) {
         try {
-          const { writeTextFile } = await import("@tauri-apps/plugin-fs");
           const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
           const logFileName = `batch-error-${timestamp}.log`;
           const normalizedDir = outputDirectory.trim().replace(/\/$/, "");
