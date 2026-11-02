@@ -74,10 +74,10 @@ export function SettingsDialog() {
     >
       <DialogContent
         showCloseButton={false}
-        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[94vw] max-w-5xl sm:max-w-5xl md:max-w-5xl lg:max-w-5xl h-[86vh] max-h-[860px] p-0 gap-0 overflow-hidden rounded-2xl border border-border/80 bg-background/95 backdrop-blur-md shadow-2xl flex flex-col focus:outline-none"
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[94vw] max-w-5xl sm:max-w-5xl md:max-w-5xl lg:max-w-5xl h-[86vh] max-h-[860px] p-0 gap-0 overflow-hidden rounded-2xl border border-border/80 bg-background/85 backdrop-blur-md shadow-2xl flex flex-col focus:outline-none duration-280 ease-[cubic-bezier(0.16,1,0.3,1)] data-open:animate-in data-open:fade-in-0 data-open:zoom-in-92 data-closed:duration-180 data-closed:ease-in data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 motion-reduce:animate-none"
       >
         {/* Top Header Bar */}
-        <div className="flex h-12 shrink-0 items-center justify-between border-b border-border/60 bg-muted/20 px-4 sm:px-6 gap-3 select-none">
+        <div className="flex h-12 shrink-0 items-center justify-between border-b border-border/60 bg-background/40 backdrop-blur-sm px-4 sm:px-6 gap-3 select-none">
           <div className="flex items-center gap-2.5 min-w-0">
             <DialogTitle className="text-sm font-semibold tracking-tight text-foreground truncate">
               Settings
@@ -92,7 +92,7 @@ export function SettingsDialog() {
             <Button
               variant="ghost"
               size="icon-sm"
-              className="rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
+              className="rounded-lg text-muted-foreground hover:text-foreground cursor-pointer transition-transform duration-150 hover:scale-105 active:scale-95"
               onClick={closeSettings}
               title="Close (Esc)"
               aria-label="Close"
@@ -105,7 +105,7 @@ export function SettingsDialog() {
         {/* Dialog Body */}
         <div className="flex flex-1 min-h-0 w-full overflow-hidden">
           {/* Left Sidebar */}
-          <div className="w-56 sm:w-60 md:w-64 shrink-0 border-r border-border/40 bg-muted/10 flex flex-col min-h-0">
+          <div className="w-56 sm:w-60 md:w-64 shrink-0 border-r border-border/40 bg-muted/10 backdrop-blur-sm flex flex-col min-h-0">
             <SettingsSidebar
               activeTab={activeTab}
               onTabChange={handleTabChange}
@@ -122,7 +122,7 @@ export function SettingsDialog() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 px-2.5 text-xs font-medium cursor-pointer"
+                  className="h-7 px-2.5 text-xs font-medium cursor-pointer transition-all duration-150 hover:bg-muted active:scale-98"
                   onClick={handleResetSection}
                 >
                   <RotateCcw className="mr-1.5 size-3" />
@@ -131,7 +131,7 @@ export function SettingsDialog() {
                 <Button
                   size="sm"
                   className={cn(
-                    "h-7 px-3 text-xs font-semibold transition-all shadow-xs cursor-pointer",
+                    "h-7 px-3 text-xs font-semibold transition-all duration-150 shadow-xs cursor-pointer active:scale-98",
                     saved && "bg-emerald-600 hover:bg-emerald-600 text-white",
                   )}
                   onClick={handleSave}

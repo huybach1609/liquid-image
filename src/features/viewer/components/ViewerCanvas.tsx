@@ -9,8 +9,7 @@ import {
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { useViewerStore } from "@/features/viewer/state/viewer.store";
 import { createImageProxy } from "@/shared/tauri/commands";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Image as ImageIcon } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 const FALLBACK_EXTENSIONS = new Set([
   "heic",
@@ -49,13 +48,11 @@ export function ViewerCanvas() {
     offsetY: 0,
   });
   const [isLoadingProxy, setIsLoadingProxy] = useState(false);
-  const [isImageLoading, setIsImageLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
-  // Reset loading state when image path changes
-  useEffect(() => {
-    setIsImageLoading(true);
-  }, [currentImagePath, proxyUrl]);
+  // Target image URL
+  const targetSrc = currentImagePath ? (proxyUrl || convertFileSrc(currentImagePath)) : "";
+  const [displayedSrc, setDisplayedSrc] = useState<string>(targetSrc);
 
   // Check if format needs proxy fallback upfront
   useEffect(() => {
@@ -78,6 +75,67 @@ export function ViewerCanvas() {
         });
     }
   }, [currentImagePath, setProxyUrl]);
+
+  const handleImageError = useCallback(() => {
+    if (!currentImagePath || proxyUrl) {
+      setHasError(true);
+      return;
+    }
+
+    // Try fallback to ImageMagick proxy once
+    setIsLoadingProxy(true);
+    createImageProxy(currentImagePath)
+      .then((proxyPath) => {
+        setProxyUrl(convertFileSrc(proxyPath));
+      })
+      .catch((err) => {
+        console.error("[ViewerCanvas] Image load and proxy fallback failed", err);
+        setHasError(true);
+      })
+      .finally(() => {
+        setIsLoadingProxy(false);
+      });
+  }, [currentImagePath, proxyUrl, setProxyUrl]);
+
+  // Preload and seamless transition when targetSrc changes:
+  // Keep the previous image rendered on screen until the new image has finished loading!
+  // This completely eliminates any white flash / blank frame during navigation.
+  useEffect(() => {
+    if (!targetSrc) {
+      setDisplayedSrc("");
+      return;
+    }
+
+    let isCancelled = false;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = targetSrc;
+
+    const commitImage = () => {
+      if (isCancelled) return;
+      setDisplayedSrc(targetSrc);
+      if (img.naturalWidth > 0) {
+        setImageDimensions({
+          width: img.naturalWidth,
+          height: img.naturalHeight,
+        });
+      }
+    };
+
+    if (img.complete && img.naturalWidth > 0) {
+      commitImage();
+    } else {
+      img.onload = commitImage;
+      img.onerror = () => {
+        if (isCancelled) return;
+        handleImageError();
+      };
+    }
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [targetSrc, handleImageError, setImageDimensions]);
 
   const handleWheel = useCallback(
     (e: WheelEvent<HTMLDivElement>) => {
@@ -149,32 +207,9 @@ export function ViewerCanvas() {
     [zoomLevel, resetView, zoomAtPoint, setZoom]
   );
 
-  const handleImageError = useCallback(() => {
-    if (!currentImagePath || proxyUrl) {
-      setHasError(true);
-      return;
-    }
-
-    // Try fallback to ImageMagick proxy once
-    setIsLoadingProxy(true);
-    createImageProxy(currentImagePath)
-      .then((proxyPath) => {
-        setProxyUrl(convertFileSrc(proxyPath));
-      })
-      .catch((err) => {
-        console.error("[ViewerCanvas] Image load and proxy fallback failed", err);
-        setHasError(true);
-      })
-      .finally(() => {
-        setIsLoadingProxy(false);
-      });
-  }, [currentImagePath, proxyUrl, setProxyUrl]);
-
   if (!currentImagePath) {
     return null;
   }
-
-  const imageSrc = proxyUrl || convertFileSrc(currentImagePath);
 
   const cursorClass =
     zoomLevel > 1.0 ? (isDragging ? "cursor-grabbing" : "cursor-grab") : "cursor-default";
@@ -199,23 +234,11 @@ export function ViewerCanvas() {
         </div>
       ) : (
         <>
-          {/* Skeleton Placeholder when image or proxy is loading */}
-          {(isLoadingProxy || isImageLoading) && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 select-none">
-              <div
-                className="relative rounded-2xl overflow-hidden border border-border/40 bg-muted/30 backdrop-blur-sm flex items-center justify-center shadow-xl transition-all"
-                style={{
-                  width: imageDimensions?.width ? `min(85vw, ${imageDimensions.width}px)` : "min(72vw, 820px)",
-                  height: imageDimensions?.height ? `min(80vh, ${imageDimensions.height}px)` : "min(68vh, 540px)",
-                  aspectRatio: imageDimensions ? `${imageDimensions.width} / ${imageDimensions.height}` : "16 / 10",
-                }}
-              >
-                <Skeleton className="absolute inset-0 size-full bg-muted/40" />
-                <div className="relative z-10 flex flex-col items-center justify-center gap-3 text-muted-foreground/50">
-                  <ImageIcon className="size-12 stroke-[1.2] animate-pulse" />
-                  <div className="h-1.5 w-24 rounded-full bg-muted-foreground/20 animate-pulse" />
-                </div>
-              </div>
+          {/* Subtle non-intrusive loading badge when generating ImageMagick proxy */}
+          {isLoadingProxy && (
+            <div className="absolute top-4 right-4 z-20 flex items-center gap-2 rounded-full border border-border/40 bg-background/80 px-3 py-1.5 text-xs text-muted-foreground backdrop-blur-md shadow-md animate-in fade-in duration-200">
+              <Loader2 className="size-3.5 animate-spin text-primary" />
+              <span>Rendering preview...</span>
             </div>
           )}
 
@@ -228,28 +251,24 @@ export function ViewerCanvas() {
               transition: isDragging ? "none" : "transform 0.12s cubic-bezier(0, 0, 0.2, 1)",
             }}
           >
-            <img
-              key={imageSrc}
-              src={imageSrc}
-              crossOrigin="anonymous"
-              alt="Viewer Display"
-              draggable={false}
-              className={`max-h-[85vh] max-w-[90vw] object-contain pointer-events-none select-none shadow-2xl shadow-black/20 dark:shadow-black/60 transition-opacity duration-200 ease-out ${
-                isImageLoading || isLoadingProxy ? "opacity-0" : "opacity-100"
-              }`}
-              onLoad={(e) => {
-                const img = e.currentTarget;
-                setImageDimensions({
-                  width: img.naturalWidth,
-                  height: img.naturalHeight,
-                });
-                setIsImageLoading(false);
-              }}
-              onError={() => {
-                setIsImageLoading(false);
-                handleImageError();
-              }}
-            />
+            {displayedSrc && (
+              <img
+                src={displayedSrc}
+                crossOrigin="anonymous"
+                alt="Viewer Display"
+                draggable={false}
+                className="max-h-[85vh] max-w-[90vw] object-contain pointer-events-none select-none shadow-2xl shadow-black/20 dark:shadow-black/60"
+                onLoad={(e) => {
+                  const img = e.currentTarget;
+                  if (!imageDimensions || imageDimensions.width !== img.naturalWidth) {
+                    setImageDimensions({
+                      width: img.naturalWidth,
+                      height: img.naturalHeight,
+                    });
+                  }
+                }}
+              />
+            )}
           </div>
         </>
       )}
