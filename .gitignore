@@ -48,7 +48,10 @@ packaging/**/pkg/
 
 .gitnexus
 .openidea
-.gemini
-.cursor
-.claude
-.vscode
+.gemini/
+.cursor/
+.claude/
+.agents/
+.vscode/
+AGENTS.md
+CLAUDE.md

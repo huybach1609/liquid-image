@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "mcp__gitnexus__query",
-      "mcp__gitnexus__cypher"
-    ]
-  }
-}
